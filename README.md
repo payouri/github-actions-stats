@@ -1,3 +1,11 @@
+# Purpose
+The code contained in this repository is used to retrieve github actions workflows usage data.
+
+The reason behind the creation of this tool was :
+* to gather data about actions runs
+* to only retrieving new run usage data (after the initial data fetching)
+* to aggregate job runs data over a selected period
+
 # Installation
 Open the project root inside your terminal then :
 ```bash
