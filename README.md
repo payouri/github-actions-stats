@@ -45,3 +45,25 @@ Options:
   --filePath <filePath>                File path to save data
   -h, --help                           display help for command
 ```
+
+## Examples
+### Get workflow runs data
+```bash
+# this will retrieve workflow runs data for the Continuous Integration workflow
+yarn run start:cli:tsx get-workflow-runs \
+  -t "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
+  --workflowName "Continuous Integration" \
+  --repositoryName "github-actions-stats" \
+  --repositoryOwner "payouri" \
+  --filePath "/home/youri/.../continous_integration/ci_workflow_runs.json"
+```
+### Get aggregated stats
+```bash
+# this will aggregate workflow runs data for the Continuous Integration workflow previously retrieved
+yarn run start:cli:tsx get-aggregated-stats
+  -t "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
+  --period "month" \
+  --workflowDataFile "/home/youri/.../continous_integration/ci_workflow_runs.json" \
+  --outputFile "/home/youri/.../continous_integration/ci_aggregated_stats.json"
+
+```
