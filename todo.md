@@ -4,6 +4,7 @@
 * use the same helpers to generate runs and workflow ids
 * review data structure of workflow runs
     * run details are deeply nested
+* redo ReadMe
 
 # Server
 * rework workflow routes
