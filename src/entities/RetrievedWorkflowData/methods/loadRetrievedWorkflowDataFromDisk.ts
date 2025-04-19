@@ -1,10 +1,10 @@
-import { ProcessResponse } from "ProcessResponse.types.js";
-import { RetrievedWorkflowV1 } from "../types.js";
-import { isExistingPath } from "helpers/isExistingPath.js";
-import { retrievedWorkflowSchema } from "../schemas.js";
 import { readFile } from "node:fs/promises";
+import { sortWorkflowMapKeys } from "../../../entities/FormattedWorkflow/helpers/sortWorkflowMapKeys.js";
+import { isExistingPath } from "../../../helpers/isExistingPath.js";
+import { ProcessResponse } from "../../../ProcessResponse.types.js";
 import { isRetrievedWorkflowV0 } from "../helpers.js";
-import { sortWorkflowMapKeys } from "entities/FormattedWorkflow/helpers/sortWorkflowMapKeys.js";
+import { retrievedWorkflowSchema } from "../schemas.js";
+import { RetrievedWorkflowV1 } from "../types.js";
 
 export const loadRetrievedWorkflowData = async (
   filePath: string

@@ -1,6 +1,8 @@
 import { WorkFlowInstance } from "entities/RetrievedWorkflowData/types.js";
 import { components } from "@octokit/openapi-types";
 import type { Octokit } from "octokit";
+import type { MethodResult } from "../../types/MethodResult.js";
+import type { GetRateLimitRequest } from "./requests/getRateLimit.js";
 
 export type RequestsManagerParams = {
   octokit: Octokit;
@@ -18,30 +20,11 @@ export type RequestsManager = {
       filePath?: string;
     }
   ) => Promise<
-    | {
-        hasFailed: false;
-        data: WorkFlowInstance;
-      }
-    | {
-        hasFailed: true;
-        error: {
-          code: string;
-          message: string;
-        };
-      }
+    MethodResult<
+      WorkFlowInstance,
+      "repo_not_found" | "workflow_not_found" | "failed_to_load_workflow_data"
+    >
   >;
   /** @returns The GitHub rate limit for the current account */
-  getRateLimit: () => Promise<
-    | {
-        hasFailed: false;
-        data: components["schemas"]["rate-limit"];
-      }
-    | {
-        hasFailed: true;
-        error: {
-          code: number;
-          message: string;
-        };
-      }
-  >;
+  getRateLimit: GetRateLimitRequest;
 };

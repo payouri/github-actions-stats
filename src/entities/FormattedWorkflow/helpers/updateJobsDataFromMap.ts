@@ -6,14 +6,18 @@ export const updateJobsDataFromMap = (params: {
 }): RunUsageData => {
   const { jobsMap, usageData } = params;
 
-  Object.entries(usageData.billable).forEach(([osName, osData]) => {
-    if (!osData.jobs || !osData.job_runs) return;
-    osData.job_runs.forEach((jobRun) => {
+  if (!usageData.billable.jobRuns) return usageData;
+
+  usageData.billable.jobRuns = usageData.billable.jobRuns.map(
+    (jobRun): GithubJobData => {
       const job = jobsMap[jobRun.job_id];
-      if (!job) return;
+      if (!job) return jobRun;
 
       jobRun.data = job;
-    });
-  });
+
+      return jobRun;
+    }
+  );
+
   return usageData;
 };

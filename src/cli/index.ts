@@ -1,13 +1,7 @@
 import { Command } from "commander";
 import { GITHUB_TOKEN_OPTION } from "./constants.js";
-import { buildGetWorkflowRunsInstanceCommand } from "./getWorkflowRunsInstance.js";
-import { buildGithubStatsModule } from "index.js";
-import { isAbsolute } from "path";
-import { z } from "zod";
-import { retrievedWorkflowService } from "entities/RetrievedWorkflowData/index.js";
-import { CommandOption } from "./types.js";
-import { createOption } from "./helpers/createOption.js";
 import { buildGetAggregatedStatsCommand } from "./getAggregatedStats.js";
+import { buildGetWorkflowRunsInstanceCommand } from "./getWorkflowRunsInstance.js";
 
 const program = new Command("github-actions-stats");
 program.requiredOption(

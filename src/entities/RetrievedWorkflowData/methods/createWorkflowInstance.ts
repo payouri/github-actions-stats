@@ -7,6 +7,7 @@ import { createDurationMap } from "../internals/durationMap.js";
 import { createWorkflowsMaps } from "../internals/workflowMaps.js";
 import { RetrievedWorkflowV1, WorkFlowInstance } from "../types.js";
 import { saveRetrievedWorkflowDataSync } from "./saveRetrievedWorkDataFromDisk.js";
+import logger from "../../../lib/Logger/logger.js";
 
 const initInternals = (rawData: RetrievedWorkflowV1) => {
   const w = createWorkflowsMaps(rawData.workflowWeekRunsMap);
@@ -85,6 +86,7 @@ export const createWorkflowInstance = (
   const weekRunsIdsMap = new Map<string, number[]>();
   let unCommittedRunsCount = 0;
   let currentLastRun: FormattedWorkflowRun | undefined;
+  let oldestRun: FormattedWorkflowRun | undefined;
   let lastUpdatedAt = rawData.lastUpdatedAt;
   let total = 0;
   let _cachedArray: FormattedWorkflowRun[] | null = null;
@@ -96,6 +98,9 @@ export const createWorkflowInstance = (
   const onRunAdded = (run: FormattedWorkflowRun, isInitFlow = false) => {
     if (!currentLastRun || dayjs(currentLastRun.runAt).isBefore(run.runAt)) {
       currentLastRun = run;
+    }
+    if (!oldestRun || dayjs(oldestRun.runAt).isAfter(run.runAt)) {
+      oldestRun = run;
     }
     if (_cachedArray) {
       _cachedArray = null;
@@ -177,7 +182,7 @@ export const createWorkflowInstance = (
       weekRunsMap.has(getWeekRunsMapKey(rawData.workflowId, runId)) &&
       !allowSkip
     ) {
-      console.log("Already existing run data", {
+      logger.warn("Already existing run data", {
         stored: weekRunsMap.get(getWeekRunsMapKey(rawData.workflowId, runId)),
         new: runData,
       });
@@ -228,15 +233,12 @@ export const createWorkflowInstance = (
     updateRunData,
     addRunData,
     runHasMissingData(runData: FormattedWorkflowRun) {
+      if (!runData.conclusion) return true;
+      if (!runData.status || runData.status === "unknown") return true;
       if (!runData.usageData) return true;
       if (!runData.usageData.billable) return true;
-      if (
-        Object.values(runData.usageData.billable).some(
-          (osData) =>
-            osData.jobs > 0 &&
-            (!osData.job_runs || osData.job_runs.some((job) => !job.data))
-        )
-      ) {
+      if (!runData.usageData.billable.jobRuns) return true;
+      if (runData.usageData.billable.jobRuns.some((job) => !job.data)) {
         return true;
       }
 
@@ -252,6 +254,7 @@ export const createWorkflowInstance = (
         lastRunAt: currentLastRun?.runAt ?? rawData.lastRunAt,
         lastUpdatedAt:
           currentLastRun?.runAt ?? lastUpdatedAt ?? rawData.lastUpdatedAt,
+        oldestRunAt: oldestRun?.runAt ?? rawData.oldestRunAt,
       } satisfies RetrievedWorkflowV1;
     },
     isExistingRunData(runId: number) {
@@ -263,11 +266,20 @@ export const createWorkflowInstance = (
         null
       );
     },
+    get lastUpdatedAt() {
+      return rawData.lastUpdatedAt;
+    },
     get lastRunAt() {
       return currentLastRun?.runAt ?? rawData.lastRunAt;
     },
+    get oldestRunAt() {
+      return oldestRun?.runAt ?? rawData.oldestRunAt;
+    },
     get totalWorkflowRuns() {
       return total;
+    },
+    get workflowId() {
+      return rawData.workflowId;
     },
     get workflowName() {
       return rawData.workflowName;

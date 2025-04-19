@@ -3,15 +3,24 @@ import { z } from "zod";
 export const runDataJobIdSchema = z.number();
 export const workflowRunId = z.number();
 
-export const runCompletionStatusSchema = z.union([
-  z.literal("success"),
-  z.literal("failure"),
-  z.literal("neutral"),
-  z.literal("cancelled"),
-  z.literal("skipped"),
-  z.literal("timed_out"),
-  z.literal("action_required"),
+export const runCompletionStatusSchema = z.enum([
+  "success",
+  "failure",
+  "neutral",
+  "cancelled",
+  "skipped",
+  "timed_out",
+  "action_required",
 ]);
+export const runStatus = z.enum([
+  "queued",
+  "in_progress",
+  "completed",
+  "waiting",
+  "requested",
+  "pending",
+]);
+export const stepStatus = z.enum(["queued", "in_progress", "completed"]);
 
 export const runJobDataSchema = z.object({
   id: runDataJobIdSchema,
@@ -22,32 +31,61 @@ export const runJobDataSchema = z.object({
   head_sha: z.string(),
   url: z.string(),
   html_url: z.string().nullable(),
-  status: z.union([
-    z.literal("queued"),
-    z.literal("in_progress"),
-    z.literal("completed"),
-    z.literal("waiting"),
-    z.literal("requested"),
-    z.literal("pending"),
-  ]),
+  status: runStatus,
   conclusion: runCompletionStatusSchema.nullable(),
-  created_at: z.string(),
-  started_at: z.string(),
-  completed_at: z.string().nullable(),
+  created_at: z.union([z.string(), z.date()]).transform((val) => {
+    if (val instanceof Date) return val;
+
+    return new Date(val);
+  }),
+  started_at: z
+    .union([z.string().nullable(), z.null(), z.date()])
+    .transform((val) => {
+      if (!val) return null;
+      if (val instanceof Date) return val;
+
+      return new Date(val);
+    })
+    .nullable()
+    .optional(),
+  completed_at: z
+    .union([z.string().nullable(), z.null(), z.date()])
+    .transform((val) => {
+      if (!val) return null;
+      if (val instanceof Date) return val;
+
+      return new Date(val);
+    })
+    .nullable()
+    .optional(),
   name: z.string(),
   steps: z
     .array(
       z.object({
-        status: z.union([
-          z.literal("queued"),
-          z.literal("in_progress"),
-          z.literal("completed"),
-        ]),
+        status: stepStatus,
         conclusion: z.string().nullable(),
         name: z.string(),
         number: z.number(),
-        started_at: z.string().optional().nullable(),
-        completed_at: z.string().optional().nullable(),
+        started_at: z
+          .union([z.string().nullable(), z.null(), z.date()])
+          .transform((val) => {
+            if (!val) return null;
+            if (val instanceof Date) return val;
+
+            return new Date(val);
+          })
+          .nullable()
+          .optional(),
+        completed_at: z
+          .union([z.string().nullable(), z.null(), z.date()])
+          .transform((val) => {
+            if (!val) return null;
+            if (val instanceof Date) return val;
+
+            return new Date(val);
+          })
+          .nullable()
+          .optional(),
       })
     )
     .optional(),
@@ -69,35 +107,45 @@ export const githubJobDataSchema = z.object({
 
 export const runUsageDataSchema = z.object({
   billable: z.object({
-    UBUNTU: z
-      .object({
-        total_ms: z.number(),
-        jobs: z.number(),
-        job_runs: z.array(githubJobDataSchema).optional(),
-      })
-      .optional(),
-    MACOS: z
-      .object({
-        total_ms: z.number(),
-        jobs: z.number(),
-        job_runs: z.array(githubJobDataSchema).optional(),
-      })
-      .optional(),
-    WINDOWS: z
-      .object({
-        total_ms: z.number(),
-        jobs: z.number(),
-        job_runs: z.array(githubJobDataSchema).optional(),
-      })
-      .optional(),
+    durationPerLabel: z.record(z.string(), z.number()),
+    totalMs: z.number(),
+    jobsCount: z.number(),
+    jobRuns: z.array(githubJobDataSchema).optional(),
   }),
   run_duration_ms: z.number().optional(),
 });
 
+export const formattedWorkflowRunStatusSchema = z.enum([
+  "completed",
+  "action_required",
+  "cancelled",
+  "failure",
+  "neutral",
+  "skipped",
+  "stale",
+  "success",
+  "timed_out",
+  "in_progress",
+  "queued",
+  "requested",
+  "waiting",
+  "pending",
+  "unknown",
+]);
+
+export const formattedWorkflowRunConclusionSchema = z
+  .enum(["success", "failure", "neutral", "cancelled", "skipped", "timed_out"])
+  .nullable();
+
 export const formattedWorkflowRunSchema = z.object({
   name: z.string(),
-  status: z.string(),
-  runAt: z.string(),
+  status: formattedWorkflowRunStatusSchema,
+  conclusion: formattedWorkflowRunConclusionSchema,
+  runAt: z.union([z.string(), z.date()]).transform((val) => {
+    if (val instanceof Date) return val;
+
+    return new Date(val);
+  }),
   week_year: z.string(),
   runId: workflowRunId,
   workflowId: z.number(),

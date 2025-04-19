@@ -85,26 +85,17 @@ const buildInitJobData = (dependencies: {
     }
 
     const { billable } = usageData;
-    const updatedBillable: typeof billable = {};
-
-    for (const [osName, osData] of Object.entries(billable)) {
-      if (!osData) continue;
-      const { jobs, job_runs } = osData;
-      if (!jobs || !job_runs?.length) continue;
-
-      const newOsData: Required<typeof osData> = {
-        total_ms: osData.total_ms,
-        jobs: osData.jobs,
-        job_runs: buildFormatJobRun({ runWorkflowJobMap, runIdJobIdsMap })({
-          runId: workflowRun.runId,
-          weekYear: workflowRun.week_year,
-          osName: osName as keyof typeof updatedBillable,
-          job_runs: job_runs,
-        }),
-      };
-
-      updatedBillable[osName as keyof typeof updatedBillable] = newOsData;
-    }
+    const updatedBillable: typeof billable = {
+      durationPerLabel: billable.durationPerLabel ?? {},
+      totalMs: billable.totalMs ?? 0,
+      jobsCount: billable.jobsCount ?? 0,
+      jobRuns: buildFormatJobRun({ runWorkflowJobMap, runIdJobIdsMap })({
+        runId: workflowRun.runId,
+        weekYear: workflowRun.week_year,
+        osName: "Default",
+        job_runs: billable.jobRuns ?? [],
+      }),
+    };
 
     return {
       data: {

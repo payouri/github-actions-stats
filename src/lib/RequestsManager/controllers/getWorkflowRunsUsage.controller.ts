@@ -2,6 +2,7 @@ import type { components } from "@octokit/openapi-types";
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
 import { RunUsageData } from "entities/index.js";
 import { RetrievedWorkflowV1 } from "entities/RetrievedWorkflowData/types.js";
+import { formatGithubUsageDataToLocalUsageData } from "../../../helpers/format/formatGithubUsageDataToLocalUsageData.js";
 
 export type GetWorkflowRunsUsageControllerDependencies = {
   githubClient: GithubApi["rest"];
@@ -75,49 +76,10 @@ export const buildGetWorkflowRunsUsageController = (
 
         onAfterRequest?.(i, n);
 
-        const billable: RunUsageData["billable"] = {
-          ...(response.data.billable?.MACOS
-            ? {
-                MACOS: {
-                  ...response.data.billable.MACOS,
-                  job_runs: (response.data.billable.MACOS.job_runs || []).map(
-                    (v) => ({
-                      ...v,
-                    })
-                  ),
-                },
-              }
-            : {}),
-          ...(response.data.billable?.UBUNTU
-            ? {
-                UBUNTU: {
-                  ...response.data.billable.UBUNTU,
-                  job_runs: (response.data.billable.UBUNTU.job_runs || []).map(
-                    (v) => ({
-                      ...v,
-                    })
-                  ),
-                },
-              }
-            : {}),
-          ...(response.data.billable?.WINDOWS
-            ? {
-                WINDOWS: {
-                  ...response.data.billable.WINDOWS,
-                  job_runs: (response.data.billable.WINDOWS.job_runs || []).map(
-                    (v) => ({
-                      ...v,
-                    })
-                  ),
-                },
-              }
-            : {}),
-        };
+        workflowRunsUsageData[runId] = formatGithubUsageDataToLocalUsageData(
+          response.data
+        );
 
-        workflowRunsUsageData[runId] = {
-          ...response.data,
-          billable,
-        };
         if (
           i % sleepConfig.everyIteration === 0 &&
           i > 0 &&

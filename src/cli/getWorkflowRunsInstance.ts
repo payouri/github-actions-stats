@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { CommandOption } from "./types.js";
 import { GITHUB_TOKEN_OPTION } from "./constants.js";
 import { createOption } from "./helpers/createOption.js";
+import logger from "../lib/Logger/logger.js";
 
 const getWorkflowRunsInstanceOptions: CommandOption[] = [
   {
@@ -79,7 +80,7 @@ export const buildGetWorkflowRunsInstanceCommand = (program: Command) => {
         }
       }
 
-      console.log("Starting Github Actions Stats...".bgBlack.yellow);
+      logger.info("Starting Github Actions Stats...".bgBlack.yellow);
 
       const statsModule = buildGithubStatsModule({
         githubToken: globalOptions[GITHUB_TOKEN_OPTION.name],

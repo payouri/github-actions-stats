@@ -10,16 +10,12 @@ type JobData = {
 export const getJobsArray = (
   usageData: RunUsageData | null
 ): Array<JobData> => {
-  if (!usageData?.billable) return [];
+  if (!usageData?.billable?.jobRuns?.length) return [];
 
-  return Object.values(usageData.billable).flatMap<JobData>(({ job_runs }) =>
-    !job_runs?.length
-      ? []
-      : job_runs.map((job) => ({
-          jobId: job.job_id,
-          jobName: job.data?.name ?? null,
-          durationMs: job.duration_ms,
-          data: job.data ?? null,
-        }))
-  );
+  return usageData.billable.jobRuns.map((job) => ({
+    jobId: job.job_id,
+    jobName: job.data?.name ?? null,
+    durationMs: job.duration_ms,
+    data: job.data ?? null,
+  }));
 };

@@ -1,4 +1,3 @@
-import type { components } from "@octokit/openapi-types";
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
 import { RunJobData } from "entities/index.js";
 
@@ -21,7 +20,7 @@ export type GetAllJobsByIdsControllerResponse =
       hasFailed: false;
       data: {
         total: number;
-        jobsMap: { [k: number]: components["schemas"]["job"] };
+        jobsMap: { [k: number]: RunJobData };
       };
     }
   | {
@@ -53,7 +52,7 @@ export const buildGetAllJobsByIds: BuildGetAllJobsByIdsController = (
   return async (params) => {
     const { owner, repo, workflowJobIds, runDataMap } = params;
 
-    const jobsMap: Record<number, components["schemas"]["job"]> = {};
+    const jobsMap: Record<number, RunJobData> = {};
 
     try {
       for (let i = 0, n = workflowJobIds.length; i < n; i += 1) {
@@ -79,7 +78,27 @@ export const buildGetAllJobsByIds: BuildGetAllJobsByIdsController = (
 
         onAfterRequest?.(i, n);
 
-        jobsMap[jobId] = response.data;
+        jobsMap[jobId] = {
+          ...response.data,
+          created_at: new Date(response.data.created_at),
+          started_at: response.data.started_at
+            ? new Date(response.data.started_at)
+            : null,
+          completed_at: response.data.completed_at
+            ? new Date(response.data.completed_at)
+            : null,
+          steps: response.data.steps
+            ? response.data.steps.map((step) => ({
+                ...step,
+                started_at: step.started_at ? new Date(step.started_at) : null,
+                completed_at: step.completed_at
+                  ? new Date(step.completed_at)
+                  : null,
+                conclusion: step.conclusion,
+                status: step.status,
+              }))
+            : undefined,
+        };
         if (
           i % sleepConfig.everyIteration === 0 &&
           i > 0 &&

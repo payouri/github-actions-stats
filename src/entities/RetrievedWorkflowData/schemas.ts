@@ -1,4 +1,4 @@
-import { formattedWorkflowRunSchema } from "entities/FormattedWorkflow/schema.js";
+import { formattedWorkflowRunSchema } from "../../entities/FormattedWorkflow/schema.js";
 import { z } from "zod";
 
 export const retrievedWorkflowV0Schema = z.record(
@@ -18,8 +18,21 @@ export const retrievedWorkflowV1Schema = z.object({
   }),
   workflowWeekRunsMap: retrievedWorkflowV0Schema,
   totalWorkflowRuns: z.number(),
-  lastRunAt: z.string(),
-  lastUpdatedAt: z.string(),
+  lastRunAt: z.union([z.string(), z.date()]).transform((val) => {
+    if (val instanceof Date) return val;
+
+    return new Date(val);
+  }),
+  oldestRunAt: z.union([z.string(), z.date()]).transform((val) => {
+    if (val instanceof Date) return val;
+
+    return new Date(val);
+  }),
+  lastUpdatedAt: z.union([z.string(), z.date()]).transform((val) => {
+    if (val instanceof Date) return val;
+
+    return new Date(val);
+  }),
 });
 
 export const retrievedWorkflowSchema = z.union([

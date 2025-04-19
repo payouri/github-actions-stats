@@ -1,7 +1,11 @@
 import type { components } from "@octokit/openapi-types";
 import dayjs from "dayjs";
 import weekOfYear from "dayjs/plugin/weekOfYear.js";
-import { FormattedWorkflowRun } from "entities/index.js";
+import {
+  FormattedWorkflowRun,
+  formattedWorkflowRunConclusionSchema,
+  formattedWorkflowRunStatusSchema,
+} from "../entities/index.js";
 
 dayjs.extend(weekOfYear);
 
@@ -14,10 +18,12 @@ export const getFormattedWorkflowRun = ({
   run_started_at,
   workflow_id,
   id,
+  conclusion,
 }: components["schemas"]["workflow-run"]): FormattedWorkflowRun => ({
   name: name ?? "unknown",
-  status: status ?? "unknown",
-  runAt: dayjs(run_started_at).toISOString(),
+  status: formattedWorkflowRunStatusSchema.parse(status ?? "unknown"),
+  conclusion: formattedWorkflowRunConclusionSchema.parse(conclusion),
+  runAt: dayjs(run_started_at).toDate(),
   week_year: getFormattedWorkflowRunWeekYear(
     run_started_at || dayjs().toISOString()
   ),

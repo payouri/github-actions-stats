@@ -1,7 +1,7 @@
 import type { components } from "@octokit/openapi-types";
 import "colors";
-import type { GetAllJobsByIdsController } from "controllers/getAllJobsByIds.controller.js";
-import type { GetWorkflowRunsUsageController } from "controllers/getWorkflowRunsUsage.controller.js";
+import type { GetAllJobsByIdsController } from "lib/RequestsManager/controllers/getAllJobsByIds.controller.js";
+import type { GetWorkflowRunsUsageController } from "lib/RequestsManager/controllers/getWorkflowRunsUsage.controller.js";
 import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";
 import { updateJobsDataFromMap } from "entities/FormattedWorkflow/helpers/updateJobsDataFromMap.js";
 import type { FormattedWorkflowRun } from "entities/index.js";
@@ -10,6 +10,8 @@ import { createWorkflowInstance } from "entities/RetrievedWorkflowData/methods/c
 import type { WorkFlowInstance } from "entities/RetrievedWorkflowData/types.js";
 import type { ProcessResponse } from "ProcessResponse.types.js";
 import type { GetAllWorkflowsController } from "../getAllWorkflowRuns.controller.js";
+import type { MethodResult } from "../../../../types/MethodResult.js";
+import logger from "../../../Logger/logger.js";
 
 export type BuildGetRetrievedWorkflowDataControllerDependencies = {
   getAllWorkflowsController: GetAllWorkflowsController<FormattedWorkflowRun>;
@@ -28,8 +30,13 @@ export type GetRetrievedWorkflowDataControllerParams = {
   filePath?: string;
 };
 
-export type GetRetrievedWorkflowDataControllerResponse =
-  ProcessResponse<WorkFlowInstance>;
+export type GetRetrievedWorkflowDataControllerResponse = MethodResult<
+  WorkFlowInstance,
+  | "file_does_not_exist"
+  | "failed_to_load_workflow_data"
+  | "no_workflow_runs_found"
+  | "failed_to_save_workflow_data"
+>;
 
 export type GetRetrievedWorkflowDataController = (
   params: GetRetrievedWorkflowDataControllerParams
@@ -73,7 +80,7 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
       const loadRetrievedWorkflowDataResponse =
         await retrievedWorkflowService.loadRetrievedWorkflowData(filePath);
 
-      console.log("Loading workflow data located at", filePath.bold);
+      logger.debug("Loading workflow data located at", filePath.bold);
       if (
         loadRetrievedWorkflowDataResponse.hasFailed &&
         ["FILE_DOES_NOT_EXIST", "FAILED_TO_LOAD_WORKFLOW_DATA"].includes(
@@ -82,15 +89,21 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
       ) {
         return {
           hasFailed: true,
-          error: loadRetrievedWorkflowDataResponse.error,
+          error: {
+            code: "failed_to_load_workflow_data",
+            message: loadRetrievedWorkflowDataResponse.error.message,
+            error: loadRetrievedWorkflowDataResponse.error,
+            data: undefined,
+          },
         };
       }
 
       const workflowInstance = createWorkflowInstance(
         loadRetrievedWorkflowDataResponse.hasFailed
           ? {
-              lastRunAt: new Date().toISOString(),
-              lastUpdatedAt: new Date().toISOString(),
+              lastRunAt: new Date(),
+              oldestRunAt: new Date(),
+              lastUpdatedAt: new Date(),
               totalWorkflowRuns: 0,
               workflowId,
               workflowName,
@@ -112,7 +125,7 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
         }
       );
 
-      console.log("Retrieving new workflow runs...".bgBlack.yellow);
+      logger.debug("Retrieving new workflow runs...".bgBlack.yellow);
       const newWorkflowRuns = await getAllWorkflowsController({
         owner,
         repo,
@@ -120,11 +133,11 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
         branchName,
         workflowStatus: "completed",
         createdAfter: !loadRetrievedWorkflowDataResponse.hasFailed
-          ? workflowInstance.lastRunAt
+          ? workflowInstance.lastRunAt.toISOString()
           : undefined,
         onFinalWorkflow: (workflowRun) => {
           if (!workflowInstance.isExistingRunData(workflowRun.runId)) {
-            // console.log("Adding run data for workflow run", workflowRun.runId);
+            // logger.debug("Adding run data for workflow run", workflowRun.runId);
             workflowInstance.addRunData({
               runId: workflowRun.runId,
               runData: workflowRun,
@@ -135,7 +148,7 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
           const existingData = workflowInstance.getRunData(workflowRun.runId);
           if (!existingData) throw new Error("This Should not happen");
 
-          // console.log("Updating run data for workflow run", workflowRun.runId);
+          // logger.debug("Updating run data for workflow run", workflowRun.runId);
           if (
             workflowInstance.runHasMissingData(existingData) &&
             !workflowInstance.runHasMissingData(workflowRun)
@@ -150,10 +163,15 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
       if (newWorkflowRuns.hasFailed) {
         return {
           hasFailed: true,
-          error: newWorkflowRuns.error,
+          error: {
+            code: "failed_to_load_workflow_data",
+            message: newWorkflowRuns.error.message,
+            error: newWorkflowRuns.error,
+            data: undefined,
+          },
         };
       }
-      console.log(
+      logger.debug(
         `Found ${newWorkflowRuns.data.workflows.length} new workflow runs`
       );
 
@@ -161,7 +179,12 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
         if (loadRetrievedWorkflowDataResponse.hasFailed) {
           return {
             hasFailed: true,
-            error: new Error("NO_WORKFLOW_RUNS_FOUND"),
+            error: {
+              code: "no_workflow_runs_found",
+              message: "Did not find any workflow runs",
+              error: new Error("NO_WORKFLOW_RUNS_FOUND"),
+              data: undefined,
+            },
           };
         }
 
@@ -231,7 +254,15 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
       );
 
       if (save.hasFailed) {
-        return save;
+        return {
+          hasFailed: true,
+          error: {
+            code: "failed_to_save_workflow_data",
+            message: save.error.message,
+            error: save.error,
+            data: undefined,
+          },
+        };
       }
       return {
         hasFailed: false,

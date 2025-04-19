@@ -1,23 +1,20 @@
 import type { z } from "zod";
+import { workflowRunId } from "../FormattedWorkflow/schema.js";
+import {
+  FormattedWorkflowRun,
+  RunUsageData,
+} from "../FormattedWorkflow/types.js";
 import type {
   retrievedWorkflowV0Schema,
   retrievedWorkflowV1Schema,
 } from "./schemas.js";
-import { workflowRunId } from "entities/FormattedWorkflow/schema.js";
-import {
-  FormattedWorkflowRun,
-  RunUsageData,
-} from "entities/FormattedWorkflow/types.js";
 
 export type RetrievedWorkflowV0 = z.infer<typeof retrievedWorkflowV0Schema>;
 export type RetrievedWorkflowV1 = z.infer<typeof retrievedWorkflowV1Schema>;
 
 export type WorkflowRunId = z.infer<typeof workflowRunId>;
 
-export type WorkFlowInstance = Pick<
-  RetrievedWorkflowV1,
-  "workflowWeekRunsMap" | "totalWorkflowRuns" | "lastRunAt" | "workflowName"
-> & {
+export type WorkFlowInstance = Omit<RetrievedWorkflowV1, "workflowParams"> & {
   updateRunData: (params: {
     runId: WorkflowRunId;
     runUsageData: RunUsageData;

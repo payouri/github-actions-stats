@@ -1,15 +1,16 @@
+import { existsSync, writeFileSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import { isAbsolute } from "node:path";
+import { sortWorkflowMapKeys } from "../../../entities/FormattedWorkflow/helpers/sortWorkflowMapKeys.js";
 import {
   createDirIfNotExists,
   createDirIfNotExistsSync,
-} from "helpers/createDirIfNotExists.js";
-import { isExistingPath } from "helpers/isExistingPath.js";
-import { writeFile } from "node:fs/promises";
-import { isAbsolute } from "node:path";
-import { ProcessResponse } from "ProcessResponse.types.js";
+} from "../../../helpers/createDirIfNotExists.js";
+import { isExistingPath } from "../../../helpers/isExistingPath.js";
+import { ProcessResponse } from "../../../ProcessResponse.types.js";
 import { getDefaultWorkflowFilePath } from "../helpers.js";
 import { RetrievedWorkflowV1 } from "../types.js";
-import { sortWorkflowMapKeys } from "entities/FormattedWorkflow/helpers/sortWorkflowMapKeys.js";
-import { existsSync, writeFileSync } from "node:fs";
+import logger from "../../../lib/Logger/logger.js";
 
 export const saveRetrievedWorkflowData = async (
   data: RetrievedWorkflowV1,
@@ -29,7 +30,7 @@ export const saveRetrievedWorkflowData = async (
   }
 
   try {
-    console.log("Saving workflow data to disk", filePath);
+    logger.debug("Saving workflow data to disk", filePath);
     await createDirIfNotExists(filePath);
     await writeFile(
       filePath,
@@ -83,11 +84,12 @@ export const saveRetrievedWorkflowDataSync = (
           workflowWeekRunsMap: sortWorkflowMapKeys(data.workflowWeekRunsMap),
         },
         null,
-        2
+        0
       ),
       "utf-8"
     );
   } catch (error) {
+    console.error("Failed to save workflow data", error);
     throw new Error("Failed to save workflow data", {
       cause: error,
     });

@@ -1,4 +1,4 @@
-import type { RunJobData } from "entities/FormattedWorkflow/types.js";
+import type { RunJobData } from "../FormattedWorkflow/types.js";
 
 export type FormattedWorkflowStep = {
   name: string;
@@ -32,8 +32,8 @@ export const getFormattedWorkflowSteps = (
       runId: run_id,
       runNumber: number,
       runAttempt: run_attempt ?? 0,
-      startedAt: started_at || null,
-      completedAt: completed_at || null,
+      startedAt: started_at?.toISOString() || null,
+      completedAt: completed_at?.toISOString() || null,
     };
   });
 };
@@ -42,9 +42,9 @@ export const getFormattedJob = (jobData: RunJobData): FormattedJob => {
   const steps = getFormattedWorkflowSteps(jobData);
 
   return {
-    completedAt: jobData.completed_at,
+    completedAt: jobData.completed_at?.toISOString() || null,
     name: jobData.name,
-    startedAt: jobData.started_at,
+    startedAt: jobData.started_at?.toISOString() || null,
     status: jobData.status,
     steps,
   };

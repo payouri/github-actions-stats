@@ -7,17 +7,13 @@ export const getJobsMapFromUsageData = (
     [k: string]: RunJobData;
   }>((acc, usage) => {
     const { runId, usageData } = usage;
-    if (!usageData.billable) return acc;
+    if (!usageData.billable.jobRuns?.length) return acc;
 
-    Object.values(usageData.billable).forEach((usage) => {
-      if (!usage?.job_runs) return;
+    for (const job of usageData.billable.jobRuns) {
+      if (!job.data) continue;
 
-      usage.job_runs.forEach((job) => {
-        if (!job.data) return;
-
-        acc[`${runId}_${job.job_id}`] = job.data;
-      });
-    });
+      acc[`${runId}_${job.job_id}`] = job.data;
+    }
 
     return acc;
   }, {});

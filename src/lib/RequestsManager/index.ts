@@ -1,11 +1,13 @@
-import {
-  buildGetAllJobsByIds,
-  buildGetAllWorkflowsController,
-  buildGetRetrievedWorkflowDataController,
-  buildGetWorkflowRunsUsageController,
-} from "controllers/index.js";
-import { getFormattedWorkflowRun } from "helpers/getFormattedWorkflowRun.js";
-import type { RequestsManagerParams, RequestsManager } from "./types.js";
+import { formatRawGithubJobToGithubJob } from "../../helpers/format/formatGithubJobToLocalJob.js";
+import { formatGithubUsageDataToLocalUsageData } from "../../helpers/format/formatGithubUsageDataToLocalUsageData.js";
+import { getFormattedWorkflowRun } from "../../helpers/getFormattedWorkflowRun.js";
+import logger from "../Logger/logger.js";
+import { buildGetAllJobsByIds } from "./controllers/getAllJobsByIds.controller.js";
+import { buildGetAllWorkflowsController } from "./controllers/getAllWorkflowRuns.controller.js";
+import { buildGetRetrievedWorkflowDataController } from "./controllers/getRetrievedWorkflowData/getRetrievedWorkflowData.controller.js";
+import { buildGetWorkflowRunsUsageController } from "./controllers/getWorkflowRunsUsage.controller.js";
+import { buildGetRateLimit } from "./requests/getRateLimit.js";
+import type { RequestsManager, RequestsManagerParams } from "./types.js";
 
 export const buildRequestsManager = (
   params: RequestsManagerParams
@@ -16,7 +18,7 @@ export const buildRequestsManager = (
     githubClient: octokit.rest,
     formatWorkflow: getFormattedWorkflowRun,
     onPage: ({ page, total, perPage }) => {
-      console.log(
+      logger.debug(
         !total
           ? `Fetched page ${page} but found no workflow`
           : `Fetched page ${page}/${Math.ceil(total / perPage)} (${Math.min(
@@ -27,8 +29,8 @@ export const buildRequestsManager = (
     },
     transformWorkflow: async ({ workflow, owner, repo }) => {
       if (workflow.status !== "completed") return workflow;
-      console.log("Fetching usage data for run", workflow.runId);
-      if (!workflow.usageData) {
+      logger.debug("Fetching usage data for run", workflow.runId);
+      if (!workflow.usageData?.billable) {
         const response = await octokit.rest.actions.getWorkflowRunUsage({
           owner,
           repo,
@@ -36,32 +38,32 @@ export const buildRequestsManager = (
         });
         if (!response?.data?.billable) return workflow;
 
-        workflow.usageData = response.data;
+        workflow.usageData = formatGithubUsageDataToLocalUsageData(
+          response.data
+        );
       }
+      if (!workflow.usageData?.billable?.jobRuns?.length) return workflow;
 
       let fetchedJobsCount = 0;
-      for (const [_, osData] of Object.entries(workflow.usageData.billable)) {
-        if (!osData || !osData.jobs || !osData.job_runs) continue;
+      for (const job of workflow.usageData.billable.jobRuns) {
+        if (job.data) continue;
 
-        for (const [_, job] of osData.job_runs.entries()) {
-          if (job.data) continue;
+        const response = await octokit.rest.actions.getJobForWorkflowRun({
+          owner,
+          repo,
+          job_id: job.job_id,
+        });
 
-          const response = await octokit.rest.actions.getJobForWorkflowRun({
-            owner,
-            repo,
-            job_id: job.job_id,
-          });
+        fetchedJobsCount += 1;
+        if (!response.data) continue;
 
-          fetchedJobsCount += 1;
-          if (!response.data) continue;
-
-          job.data = response.data;
-        }
+        job.data = formatRawGithubJobToGithubJob(response.data).data;
       }
+
       if (fetchedJobsCount === 0) {
-        console.log("No jobs fetched for workflow", workflow.runId);
+        logger.warn("No jobs fetched for workflow", workflow.runId);
       } else {
-        console.log(
+        logger.debug(
           `Fetched ${fetchedJobsCount.toString().yellow} jobs for workflow`
             .bgBlack.white,
           workflow.runId
@@ -79,14 +81,14 @@ export const buildRequestsManager = (
       ms: 1000,
     },
     onBeforeRequest: (index, total) => {
-      console.log("Fetching workflow runs usage", `${index}/${total}`);
+      logger.debug("Fetching workflow runs usage", `${index}/${total}`);
     },
   });
 
   const getAllJobsByIds = buildGetAllJobsByIds({
     githubClient: octokit.rest,
     onBeforeRequest: (index, total) => {
-      console.log("Fetching job data", `${index}/${total}`);
+      logger.debug("Fetching job data", `${index}/${total}`);
     },
   });
 
@@ -98,12 +100,12 @@ export const buildRequestsManager = (
     });
 
   const getRepoWorkflowData: RequestsManager["getRepoWorkflowData"] = async (
-    params,
-    options
-  ) => {
+    params: Parameters<RequestsManager["getRepoWorkflowData"]>[0],
+    options: Parameters<RequestsManager["getRepoWorkflowData"]>[1]
+  ): ReturnType<RequestsManager["getRepoWorkflowData"]> => {
     const { repositoryName, repositoryOwner, workflowName, branchName } =
       params;
-    console.log("Fetching Repo Data...".bgBlack.yellow);
+    logger.debug("Fetching Repo Data...".bgBlack.yellow);
     const [repoData, repoWorkflowsResponse] = await Promise.all([
       octokit.rest.repos.get({
         owner: repositoryOwner,
@@ -116,11 +118,14 @@ export const buildRequestsManager = (
     ]);
 
     if (!repoData.data) {
+      const message = `Repository ${params.repositoryName} not found`;
       return {
         hasFailed: true,
         error: {
           code: "repo_not_found",
-          message: `Repository ${params.repositoryName} not found`,
+          message,
+          data: repoData.data,
+          error: new Error(message),
         },
       };
     }
@@ -129,11 +134,14 @@ export const buildRequestsManager = (
       !repoWorkflowsResponse.data.workflows ||
       repoWorkflowsResponse.data.total_count === 0
     ) {
+      const message = `Workflow ${params.workflowName} not found`;
       return {
         hasFailed: true,
         error: {
           code: "workflow_not_found",
-          message: `Workflow ${params.workflowName} not found`,
+          message,
+          data: repoWorkflowsResponse.data,
+          error: new Error(message),
         },
       };
     }
@@ -142,11 +150,14 @@ export const buildRequestsManager = (
       (workflow) => workflow.name === workflowName
     );
     if (!workflowData) {
+      const message = `Workflow ${params.workflowName} not found`;
       return {
         hasFailed: true,
         error: {
           code: "workflow_not_found",
-          message: `Workflow ${params.workflowName} not found`,
+          message,
+          data: workflowData,
+          error: new Error(message),
         },
       };
     }
@@ -167,6 +178,8 @@ export const buildRequestsManager = (
         error: {
           code: "failed_to_load_workflow_data",
           message: getRetrievedWorkflowDataResponse.error.message,
+          error: getRetrievedWorkflowDataResponse.error.error,
+          data: getRetrievedWorkflowDataResponse.error.data,
         },
       };
     }
@@ -177,24 +190,9 @@ export const buildRequestsManager = (
     };
   };
 
-  const getRateLimit: RequestsManager["getRateLimit"] = async () => {
-    const response = await octokit.rest.rateLimit.get();
-
-    if (response.status >= 400) {
-      return {
-        hasFailed: true,
-        error: {
-          code: response.status,
-          message: "Failed to fetch GitHub rate limit",
-        },
-      };
-    }
-
-    return {
-      hasFailed: false,
-      data: response.data.rate,
-    };
-  };
+  const getRateLimit = buildGetRateLimit({
+    githubClient: octokit.rest,
+  });
 
   return {
     getRepoWorkflowData,

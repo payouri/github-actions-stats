@@ -1,0 +1,16 @@
+import { config as configDotEnv } from "dotenv";
+console.log(
+  configDotEnv({
+    // path: "../.env",
+  })
+);
+
+// import { GITHUB_CONFIG } from "./github.js";
+import { MONGO_CONFIG } from "./mongo.js";
+import { SERVER_CONFIG } from "./server.js";
+
+export const config = {
+  MONGO: MONGO_CONFIG,
+  //   GITHUB: GITHUB_CONFIG,
+  SERVER: SERVER_CONFIG,
+};

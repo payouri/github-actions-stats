@@ -14,7 +14,7 @@ export type * from "./types.js";
 dayjs.extend(isoWeek);
 dayjs.extend(advancedFormat);
 
-export const WorkflowStats = (() => {
+export const buildStats = () => {
   const getAverages = (data: WorkflowsStats): Record<string, number> => {
     return data.stepsArray.reduce<{ [name in string]: number }>((acc, step) => {
       acc[step.name] =
@@ -35,4 +35,8 @@ export const WorkflowStats = (() => {
     ) => getAveragesByPeriod(data, { period: "week", ...options }),
     getAveragesByPeriod,
   } as const;
-})();
+};
+
+export const WorkflowStats = buildStats();
+
+export default buildStats();

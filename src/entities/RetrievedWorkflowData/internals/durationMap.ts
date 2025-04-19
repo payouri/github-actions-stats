@@ -1,7 +1,7 @@
-import { getJobsCount } from "entities/FormattedWorkflow/helpers/getJobsCount.js";
+import { getJobsCount } from "../../../entities/FormattedWorkflow/helpers/getJobsCount.js";
 import { RetrievedWorkflowV0 } from "../types.js";
-import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";
-import { GithubJobData } from "entities/FormattedWorkflow/types.js";
+import { getJobsArray } from "../../../entities/FormattedWorkflow/helpers/getJobsArray.js";
+import { GithubJobData } from "../../../entities/FormattedWorkflow/types.js";
 
 type JobRun = {
   jobId: number;

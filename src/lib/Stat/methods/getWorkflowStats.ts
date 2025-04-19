@@ -76,7 +76,11 @@ export const getWorkflowStats = (data: WorkFlowInstance): WorkflowsStats => {
   const stats = data.formattedWorkflowRuns.reduce<
     Pick<WorkflowsStats, "steps" | "stepsNames" | "runsStats" | "runs">
   >((acc, run) => {
-    const { runId, status, runAt, usageData } = run;
+    const { runId, runAt, usageData } = run;
+    let { status } = run;
+    if (!status) {
+      status = "unknown";
+    }
     if (!usageData) return acc;
     const jobs = getJobsArray(usageData);
 
@@ -157,17 +161,17 @@ export const getWorkflowStats = (data: WorkFlowInstance): WorkflowsStats => {
       stepsNames.add(name);
     });
     acc.runs[runId] = {
-      date: runAt,
+      date: runAt.toISOString(),
       durationMs: usageData.run_duration_ms ?? 0,
       runId,
       stepsNames: stepsNames,
       stepsArray: runStepsArray,
-      status,
+      status: typeof status === "string" ? status : "unknown",
     };
 
     if (!(status in acc.runsStats)) {
       acc.runsStats.unknown += 1;
-    } else if (status !== "unknown" && status !== "total") {
+    } else if (!["unknown", "total"].includes(status)) {
       acc.runsStats[
         status as "success" | "failure" | "cancelled" | "skipped" | "completed"
       ] += 1;

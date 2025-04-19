@@ -10,23 +10,33 @@
     "npm": ">=10.2.0"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
     "@types/node": "20.11.5",
+    "jest": "^29.7.0",
     "tsc-alias": "^1.8.10",
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@hono/node-server": "^1.14.1",
     "colors": "^1.4.0",
     "commander": "^12.1.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
+    "hono": "^4.7.7",
     "inquirer": "^12.1.0",
+    "mongoose": "^8.13.2",
     "octokit": "^4.0.2",
+    "ts-node": "^10.9.2",
+    "winston": "^3.17.0",
     "zod": "^3.23.8"
   },
   "scripts": {
+    "test": "jest --config ./jest.config.json",
     "build": "tsc -p ./tsconfig.json && tsc-alias -p ./tsconfig.json",
     "postinstall": "$npm_execpath run build",
     "start:cli:tsx": "tsx src/cli.ts",
-    "start:cli": "node dist/cli.js"
+    "start:cli": "node dist/cli.js",
+    "start:server": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./src/server/start.ts",
+    "dev:server": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./src/server/start.ts"
   }
 }

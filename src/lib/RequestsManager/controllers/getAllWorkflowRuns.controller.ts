@@ -2,6 +2,7 @@ import type { components } from "@octokit/openapi-types";
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
 import "colors";
 import dayjs from "dayjs";
+import logger from "../../Logger/logger.js";
 
 export type BuildGetAllWorkflowsControllerDependencies<
   T = components["schemas"]["workflow"]
@@ -80,7 +81,7 @@ export const buildGetAllWorkflowsController = <
 
     let workflows: T[] = [];
     let page = typeof startPage !== "number" || startPage < 1 ? 1 : startPage;
-    console.log("Fetching page", page);
+    logger.debug("Fetching page", page);
     let isDone: boolean = false;
     let total: number = 0;
     const now = dayjs();

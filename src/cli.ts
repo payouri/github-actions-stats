@@ -1,3 +1,3 @@
-import { runCli } from "lib/cli/index.js";
+import { runCli } from "./cli/index.js";
 
 runCli();
