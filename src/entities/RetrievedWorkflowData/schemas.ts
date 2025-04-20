@@ -1,4 +1,4 @@
-import { formattedWorkflowRunSchema } from "../../entities/FormattedWorkflow/schema.js";
+import { formattedWorkflowRunSchema } from "../FormattedWorkflow/schemas/schema.js";
 import { z } from "zod";
 
 export const retrievedWorkflowV0Schema = z.record(

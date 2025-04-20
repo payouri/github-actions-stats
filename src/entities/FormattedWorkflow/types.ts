@@ -3,9 +3,11 @@ import type {
   formattedWorkflowRunSchema,
   runUsageDataSchema,
   githubJobDataSchema,
-  runJobDataSchema,
+} from "./schemas/schema.js";
+import type {
   runCompletionStatusSchema,
-} from "./schema.js";
+  runJobDataSchema,
+} from "./schemas/formattedJob.schema.js";
 
 export type RunCompletionStatus = z.infer<typeof runCompletionStatusSchema>;
 export type RunJobData = z.infer<typeof runJobDataSchema>;

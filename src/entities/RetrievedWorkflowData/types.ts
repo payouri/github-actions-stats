@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { workflowRunId } from "../FormattedWorkflow/schema.js";
+import type { workflowRunId } from "../FormattedWorkflow/schemas/shared.js";
 import {
   FormattedWorkflowRun,
   RunUsageData,

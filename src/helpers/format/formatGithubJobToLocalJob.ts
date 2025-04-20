@@ -1,11 +1,11 @@
 import type { components } from "@octokit/openapi-types";
 import {
   formattedWorkflowRunConclusionSchema,
-  runStatus,
   type GithubJobData,
   type RunJobData,
 } from "../../entities/index.js";
 import dayjs from "dayjs";
+import { runStatus } from "../../entities/FormattedWorkflow/schemas/formattedJob.schema.js";
 
 export function formatRunStepToGirlJobStep(
   step: NonNullable<components["schemas"]["job"]["steps"]>[number]

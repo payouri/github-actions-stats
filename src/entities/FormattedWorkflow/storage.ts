@@ -1,0 +1,68 @@
+import { z } from "zod";
+import { MONGO_CONFIG } from "../../config/mongo.js";
+import logger from "../../lib/Logger/logger.js";
+import { createMongoStorage } from "../../storage/mongo/index.js";
+import { formattedWorkflowRunSchema } from "./schemas/schema.js";
+import type { MongoStorage } from "../../storage/mongo/types.js";
+
+const storedWorkflow = z.object({
+  workflowId: z.number(),
+  workflowName: z.string(),
+  workflowParams: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    branchName: z.string().optional(),
+    workflowStatus: z.string().optional(),
+    triggerEvent: z.string().optional(),
+  }),
+  totalWorkflowRuns: z.number(),
+  lastRunAt: z.union([z.string(), z.date()]).transform((val) => {
+    if (val instanceof Date) return val;
+
+    return new Date(val);
+  }),
+  oldestRunAt: z.union([z.string(), z.date()]).transform((val) => {
+    if (val instanceof Date) return val;
+
+    return new Date(val);
+  }),
+  lastUpdatedAt: z.union([z.string(), z.date()]).transform((val) => {
+    if (val instanceof Date) return val;
+
+    return new Date(val);
+  }),
+});
+const storedWorkflowRun = formattedWorkflowRunSchema.merge(
+  z.object({
+    workflowId: z.number(),
+    workflowName: z.string(),
+    repositoryName: z.string(),
+    repositoryOwner: z.string(),
+    branchName: z.string().optional(),
+  })
+);
+
+export const workflowStorage = createMongoStorage({
+  collectionName: "workflow-data",
+  dbURI: MONGO_CONFIG.dbURI,
+  indexes: MONGO_CONFIG.indexes.workflows,
+  schema: storedWorkflow,
+  logger,
+});
+
+export const workflowRunsStorage = createMongoStorage({
+  collectionName: "workflow-runs",
+  dbURI: MONGO_CONFIG.dbURI,
+  schema: storedWorkflowRun,
+  indexes: MONGO_CONFIG.indexes.workflowRuns,
+  logger,
+});
+
+export type WorkflowStorage = MongoStorage<z.infer<typeof storedWorkflow>>;
+export type WorkflowRunsStorage = MongoStorage<
+  z.infer<typeof storedWorkflowRun>
+>;
+
+export const initFormattedWorkflowStorage = async () => {
+  await Promise.all([workflowStorage.init(), workflowRunsStorage.init()]);
+};

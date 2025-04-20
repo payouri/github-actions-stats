@@ -1,44 +1,18 @@
 import dayjs from "dayjs";
 import type { Octokit } from "octokit";
 import { buildFetchWorkflowUpdatesController } from "../../controllers/fetchWorkflowUpdates.js";
-import type { FormattedWorkflowRun } from "../../entities/index.js";
 import { isWorkflowInstance } from "../../entities/RetrievedWorkflowData/helpers.js";
 import { createWorkflowInstance } from "../../entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
-import type {
-  RetrievedWorkflowV1,
-  WorkFlowInstance,
-} from "../../entities/RetrievedWorkflowData/types.js";
+import type { WorkFlowInstance } from "../../entities/RetrievedWorkflowData/types.js";
 import logger from "../../lib/Logger/logger.js";
 import type { MethodResult } from "../../types/MethodResult.js";
+import type { LoadWorkflowDataMethod } from "./methods/loadWorkflowData.js";
+import type { SaveWorkflowDataMethod } from "./methods/saveWorkflowData.js";
 
 export type BuildGetWorkflowInstaceDependencies = {
   githubClient: Octokit["rest"];
-  loadWorkflowData: (params: {
-    workflowName: string;
-    repositoryName: string;
-    repositoryOwner: string;
-    branchName?: string;
-  }) =>
-    | Promise<
-        MethodResult<
-          WorkFlowInstance | RetrievedWorkflowV1,
-          "failed_to_load_workflow_data"
-        >
-      >
-    | MethodResult<
-        WorkFlowInstance | RetrievedWorkflowV1,
-        "failed_to_load_workflow_data"
-      >;
-  saveWorkflowData: (params: {
-    workflowName: string;
-    repositoryName: string;
-    repositoryOwner: string;
-    branchName?: string;
-    workflowData: WorkFlowInstance;
-    newOrUpdatedRuns?: FormattedWorkflowRun[];
-  }) =>
-    | Promise<MethodResult<WorkFlowInstance, "failed_to_save_workflow_data">>
-    | MethodResult<WorkFlowInstance, "failed_to_save_workflow_data">;
+  loadWorkflowData: LoadWorkflowDataMethod;
+  saveWorkflowData: SaveWorkflowDataMethod;
 };
 
 export type GetWorkflowInstanceParams = {

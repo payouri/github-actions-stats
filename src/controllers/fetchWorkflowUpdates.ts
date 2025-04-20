@@ -9,6 +9,7 @@ import { formatGithubUsageDataToLocalUsageData } from "../helpers/format/formatG
 import { formatRawGithubJobToGithubJob } from "../helpers/format/formatGithubJobToLocalJob.js";
 import { updateRunUsageWithJobs } from "../helpers/updateRunUsageWithJobs.js";
 import type { FormattedWorkflowRun } from "../entities/index.js";
+import type { SaveWorkflowDataMethod } from "../features/getWorkflowInstance/methods/saveWorkflowData.js";
 
 const DEFAULT_WORKFLOW_PER_PAGE = 100 as const;
 const DEFAULT_UPDATE_TYPE = "newest" as const;
@@ -36,16 +37,7 @@ export type FetchWorkflowUpdatesControllerDependencies = {
     page: number;
     total: number;
   }) => Promise<void> | void;
-  saveWorkflowData: (params: {
-    workflowName: string;
-    repositoryName: string;
-    repositoryOwner: string;
-    branchName?: string;
-    workflowData: WorkFlowInstance;
-    newOrUpdatedRuns?: FormattedWorkflowRun[];
-  }) =>
-    | Promise<MethodResult<WorkFlowInstance, "failed_to_save_workflow_data">>
-    | MethodResult<WorkFlowInstance, "failed_to_save_workflow_data">;
+  saveWorkflowData: SaveWorkflowDataMethod;
 };
 export type FetchWorkflowUpdatesControllerParams = {
   workflowInstance: WorkFlowInstance;
