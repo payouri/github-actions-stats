@@ -1,12 +1,12 @@
 import { Octokit } from "octokit";
-import { GITHUB_CONFIG } from "../config/github.js";
+import { config } from "../config/config.js";
 
 function createGithubClient() {
-  if (!GITHUB_CONFIG.token) {
+  if (!config.GITHUB.token) {
     throw new Error("GITHUB_TOKEN is not set");
   }
   return new Octokit({
-    auth: GITHUB_CONFIG.token,
+    auth: config.GITHUB.token,
   });
 }
 

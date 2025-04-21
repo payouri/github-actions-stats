@@ -67,51 +67,16 @@ export function buildJobsWorkflowsRoutes<
 
     setImmediate(async () => {
       try {
-        console.log(
-          "getWorkflowInstance",
-          await getWorkflowInstance(
-            {
-              repositoryName: "havresac",
-              repositoryOwner: "Waapi-Pro",
-              workflowName: "Continous Integration",
-            },
-            {
-              withoutUpdate: false,
-            }
-          )
+        await getWorkflowInstance(
+          {
+            repositoryName: "havresac",
+            repositoryOwner: "Waapi-Pro",
+            workflowName: "Continous Integration",
+          },
+          {
+            withoutUpdate: false,
+          }
         );
-        const requests = buildGithubRequests({
-          octokit: githubClient.rest,
-        });
-        // const workflowDataResponse = await requests.getRunData({
-        //   owner: "Waapi-Pro",
-        //   repo: "havresac",
-        //   workflowRunId: 14536034667,
-        // });
-        // const workflowRunsUsageResponse = buildGetWorkflowRunsUsageRequest({
-        //   githubClient: githubClient.rest,
-        // });
-        // console.log(workflowDataResponse);
-        // const a = await workflowRunsUsageResponse({
-        //   owner: "Waapi-Pro",
-        //   repo: "havresac",
-        //   workflowRunIds: [14536034667],
-        // });
-        // if (a["hasFailed"]) {
-        //   console.error(a.error);
-        //   return;
-        // }
-        // console.log(
-        //   (
-        //     await requests.getWorkflowRunJobs({
-        //       owner: "Waapi-Pro",
-        //       repo: "havresac",
-        //       workflowRunId: 14532652157,
-        //     })
-        //     // @ts-expect-error lsqkmldqks
-        //   ).data.jobs.find((job) => job.id === 40775230137)
-        // );
-        // console.log(a.data.usage[14536034667].billable.UBUNTU);
       } catch (error) {
         console.error(error);
       }
