@@ -1,18 +1,8 @@
 import { join } from "node:path";
-import { retrievedWorkflowV0Schema } from "./schemas.js";
-import type {
-  RetrievedWorkflowV0,
-  RetrievedWorkflowV1,
-  WorkFlowInstance,
-} from "./types.js";
-
-export const isRetrievedWorkflowV0 = (
-  data: unknown
-): data is RetrievedWorkflowV0 =>
-  retrievedWorkflowV0Schema.safeParse(data).success;
+import type { RetrievedWorkflow, WorkFlowInstance } from "./types.js";
 
 export const getDefaultWorkflowFilePath = (
-  workflowV1: Pick<RetrievedWorkflowV1, "workflowName" | "workflowParams">,
+  workflowV1: Pick<RetrievedWorkflow, "workflowName" | "workflowParams">,
   basePath: string = process.cwd()
 ) => {
   const { workflowName, workflowParams } = workflowV1;

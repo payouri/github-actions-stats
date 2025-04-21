@@ -1,15 +1,12 @@
 import dayjs from "dayjs";
 import type { Octokit } from "octokit";
-import type { WorkFlowInstance } from "../entities/RetrievedWorkflowData/types.js";
+import type { WorkFlowInstance } from "../cli/entities/RetrievedWorkflowData/types.js";
+import type { SaveWorkflowDataMethod } from "../features/getWorkflowInstance/methods/saveWorkflowData.js";
 import { getFormattedWorkflowRun } from "../helpers/getFormattedWorkflowRun.js";
+import { updateRunUsageWithJobs } from "../helpers/updateRunUsageWithJobs.js";
+import logger from "../lib/Logger/logger.js";
 import { buildGithubRequests } from "../lib/RequestsManager/requests/buildRequests.js";
 import type { MethodResult } from "../types/MethodResult.js";
-import logger from "../lib/Logger/logger.js";
-import { formatGithubUsageDataToLocalUsageData } from "../helpers/format/formatGithubUsageDataToLocalUsageData.js";
-import { formatRawGithubJobToGithubJob } from "../helpers/format/formatGithubJobToLocalJob.js";
-import { updateRunUsageWithJobs } from "../helpers/updateRunUsageWithJobs.js";
-import type { FormattedWorkflowRun } from "../entities/index.js";
-import type { SaveWorkflowDataMethod } from "../features/getWorkflowInstance/methods/saveWorkflowData.js";
 
 const DEFAULT_WORKFLOW_PER_PAGE = 100 as const;
 const DEFAULT_UPDATE_TYPE = "newest" as const;

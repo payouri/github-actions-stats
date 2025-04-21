@@ -1,7 +1,6 @@
-import type { components } from "@octokit/openapi-types";
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
-import { RunUsageData } from "entities/index.js";
-import { RetrievedWorkflowV1 } from "entities/RetrievedWorkflowData/types.js";
+import { RetrievedWorkflow } from "../../../cli/entities/RetrievedWorkflowData/types.js";
+import { RunUsageData } from "../../../entities/index.js";
 import { formatGithubUsageDataToLocalUsageData } from "../../../helpers/format/formatGithubUsageDataToLocalUsageData.js";
 
 export type GetWorkflowRunsUsageControllerDependencies = {
@@ -15,7 +14,7 @@ export type GetWorkflowRunsUsageControllerParams = {
   owner: string;
   repo: string;
   workflowRunIds: number[];
-  workflowsMap?: RetrievedWorkflowV1["workflowWeekRunsMap"];
+  workflowsMap?: RetrievedWorkflow["workflowWeekRunsMap"];
 };
 
 export type GetWorkflowRunsUsageControllerResponse =

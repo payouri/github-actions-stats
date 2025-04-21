@@ -4,8 +4,8 @@ import type {
   WorkflowStorage,
 } from "../../../entities/FormattedWorkflow/storage.js";
 import type { FormattedWorkflowRun } from "../../../entities/index.js";
-import { createWorkflowInstance } from "../../../entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
-import type { WorkFlowInstance } from "../../../entities/RetrievedWorkflowData/types.js";
+import { createWorkflowInstance } from "../../../cli/entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
+import type { WorkFlowInstance } from "../../../cli/entities/RetrievedWorkflowData/types.js";
 import logger from "../../../lib/Logger/logger.js";
 import type { MethodResult } from "../../../types/MethodResult.js";
 

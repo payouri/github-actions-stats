@@ -3,13 +3,13 @@ import {
   FormattedWorkflowRun,
   RunUsageData,
 } from "entities/FormattedWorkflow/types.js";
+import logger from "../../../../lib/Logger/logger.js";
 import { createDurationMap } from "../internals/durationMap.js";
 import { createWorkflowsMaps } from "../internals/workflowMaps.js";
-import { RetrievedWorkflowV1, WorkFlowInstance } from "../types.js";
+import { RetrievedWorkflow, WorkFlowInstance } from "../types.js";
 import { saveRetrievedWorkflowDataSync } from "./saveRetrievedWorkDataFromDisk.js";
-import logger from "../../../lib/Logger/logger.js";
 
-const initInternals = (rawData: RetrievedWorkflowV1) => {
+const initInternals = (rawData: RetrievedWorkflow) => {
   const w = createWorkflowsMaps(rawData.workflowWeekRunsMap);
   const computedDurationMap = createDurationMap(rawData.workflowWeekRunsMap);
 
@@ -68,7 +68,7 @@ const getWeekRunsMapKey = (workflowId: number, runId: number) =>
   `${workflowId}_${runId}`;
 
 export const createWorkflowInstance = (
-  rawData: RetrievedWorkflowV1,
+  rawData: RetrievedWorkflow,
   options?: {
     autoCommit?:
       | {
@@ -120,20 +120,21 @@ export const createWorkflowInstance = (
     }
   };
   const getWorkflowWeekRunsMap = () =>
-    Array.from(weekRunsIdsMap).reduce<
-      RetrievedWorkflowV1["workflowWeekRunsMap"]
-    >((acc, [weekYear, runIds]) => {
-      acc[weekYear] = runIds.reduce<FormattedWorkflowRun[]>((acc, runId) => {
-        const run = weekRunsMap.get(
-          getWeekRunsMapKey(rawData.workflowId, runId)
-        )?.run;
-        if (!run) return acc;
+    Array.from(weekRunsIdsMap).reduce<RetrievedWorkflow["workflowWeekRunsMap"]>(
+      (acc, [weekYear, runIds]) => {
+        acc[weekYear] = runIds.reduce<FormattedWorkflowRun[]>((acc, runId) => {
+          const run = weekRunsMap.get(
+            getWeekRunsMapKey(rawData.workflowId, runId)
+          )?.run;
+          if (!run) return acc;
 
-        acc.push(run);
+          acc.push(run);
+          return acc;
+        }, []);
         return acc;
-      }, []);
-      return acc;
-    }, {});
+      },
+      {}
+    );
 
   for (const [weekYear, runs] of Object.entries(rawData.workflowWeekRunsMap)) {
     for (const run of runs) {
@@ -255,7 +256,7 @@ export const createWorkflowInstance = (
         lastUpdatedAt:
           currentLastRun?.runAt ?? lastUpdatedAt ?? rawData.lastUpdatedAt,
         oldestRunAt: oldestRun?.runAt ?? rawData.oldestRunAt,
-      } satisfies RetrievedWorkflowV1;
+      } satisfies RetrievedWorkflow;
     },
     isExistingRunData(runId: number) {
       return weekRunsMap.has(getWeekRunsMapKey(rawData.workflowId, runId));

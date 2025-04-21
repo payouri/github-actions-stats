@@ -5,11 +5,22 @@ import { dirname } from "node:path";
 import { isExistingPath } from "./isExistingPath.js";
 import logger from "../lib/Logger/logger.js";
 
-export const createDirIfNotExists = async (filePath: string) => {
+const creatingMap = new Map<string, Promise<string | undefined>>();
+
+export const createDirIfNotExists = async (
+  filePath: string
+): Promise<string> => {
   const dir = dirname(filePath);
+  if (creatingMap.has(dir)) {
+    await creatingMap.get(dir);
+    return filePath;
+  }
+
   if (!(await isExistingPath(dir))) {
     logger.debug("Creating directory", dir);
-    await mkdir(dir, { recursive: true });
+    creatingMap.set(dir, mkdir(dir, { recursive: true }));
+    await creatingMap.get(dir);
+    creatingMap.delete(dir);
   }
 
   return filePath;

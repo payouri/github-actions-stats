@@ -1,7 +1,7 @@
-import { getJobsCount } from "../../../entities/FormattedWorkflow/helpers/getJobsCount.js";
-import { RetrievedWorkflowV0 } from "../types.js";
-import { getJobsArray } from "../../../entities/FormattedWorkflow/helpers/getJobsArray.js";
-import { GithubJobData } from "../../../entities/FormattedWorkflow/types.js";
+import { getJobsCount } from "../../../../entities/FormattedWorkflow/helpers/getJobsCount.js";
+import { getJobsArray } from "../../../../entities/FormattedWorkflow/helpers/getJobsArray.js";
+import { GithubJobData } from "../../../../entities/FormattedWorkflow/types.js";
+import type { RetrievedWorkflow } from "../types.js";
 
 type JobRun = {
   jobId: number;
@@ -22,7 +22,9 @@ const emptyDurationItem: DurationItem = {
   jobRuns: [],
 };
 
-export const createDurationMap = (map: RetrievedWorkflowV0) => {
+export const createDurationMap = (
+  map: RetrievedWorkflow["workflowWeekRunsMap"]
+) => {
   const durationMap = new Map<string, DurationItem>();
 
   for (const [weekYear, workflowRuns] of Object.entries(map)) {

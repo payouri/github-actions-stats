@@ -1,12 +1,7 @@
-import { formattedWorkflowRunSchema } from "../FormattedWorkflow/schemas/schema.js";
 import { z } from "zod";
+import { formattedWorkflowRunSchema } from "../../../entities/FormattedWorkflow/schemas/schema.js";
 
-export const retrievedWorkflowV0Schema = z.record(
-  z.string(),
-  z.array(formattedWorkflowRunSchema)
-);
-
-export const retrievedWorkflowV1Schema = z.object({
+export const retrievedWorkflowSchema = z.object({
   workflowId: z.number(),
   workflowName: z.string(),
   workflowParams: z.object({
@@ -16,7 +11,10 @@ export const retrievedWorkflowV1Schema = z.object({
     workflowStatus: z.string().optional(),
     triggerEvent: z.string().optional(),
   }),
-  workflowWeekRunsMap: retrievedWorkflowV0Schema,
+  workflowWeekRunsMap: z.record(
+    z.string(),
+    z.array(formattedWorkflowRunSchema)
+  ),
   totalWorkflowRuns: z.number(),
   lastRunAt: z.union([z.string(), z.date()]).transform((val) => {
     if (val instanceof Date) return val;
@@ -34,8 +32,3 @@ export const retrievedWorkflowV1Schema = z.object({
     return new Date(val);
   }),
 });
-
-export const retrievedWorkflowSchema = z.union([
-  retrievedWorkflowV1Schema,
-  retrievedWorkflowV0Schema,
-]);

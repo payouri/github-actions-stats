@@ -1,4 +1,5 @@
 import logger from "../lib/Logger/logger.js";
+import { createFSStorage } from "../storage/fs/index.js";
 import { createServer } from "./index.js";
 
 async function main() {
@@ -51,6 +52,13 @@ async function main() {
     logger.error("Unhandled rejection", err);
     process.exit(1);
   });
+
+  // const fsStorage = createFSStorage({
+  //   directory: "./data",
+  //   generateFileName: (key) => `${key}.json`,
+  //   logger,
+  // });
+  // console.log(await fsStorage.init());
 }
 
 await main();

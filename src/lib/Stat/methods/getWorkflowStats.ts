@@ -1,4 +1,4 @@
-import { WorkFlowInstance } from "entities/RetrievedWorkflowData/types.js";
+import { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
 import { StepStats, WorkflowsStats } from "../types.js";
 import { RunCompletionStatus } from "entities/index.js";
 import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";

@@ -1,0 +1,46 @@
+import { join } from "node:path";
+import type { RetrievedWorkflow } from "../types.js";
+
+function replaceSpacesWithUnderscores(str: string) {
+  return str.replaceAll(/\s/g, "_");
+}
+
+export function generateWorkflowKey(
+  params: Pick<RetrievedWorkflow, "workflowParams" | "workflowName">
+) {
+  const {
+    workflowName,
+    workflowParams: {
+      owner: repositoryOwner,
+      repo: repositoryName,
+      branchName,
+    },
+  } = params;
+
+  const base = `${repositoryOwner}/${repositoryName}/${workflowName}`;
+  if (!branchName) {
+    return replaceSpacesWithUnderscores(base);
+  }
+
+  return replaceSpacesWithUnderscores(`${base}/${branchName}`);
+}
+
+export const generateWorkflowRunKey = (params: {
+  workflowName: string;
+  repositoryName: string;
+  repositoryOwner: string;
+  branchName?: string;
+  runId: number;
+}) => {
+  const { workflowName, repositoryName, repositoryOwner, branchName, runId } =
+    params;
+
+  const base = join(
+    branchName
+      ? `${repositoryOwner}/${repositoryName}/${workflowName}/${branchName}`
+      : `${repositoryOwner}/${repositoryName}/${workflowName}`,
+    runId.toString()
+  );
+
+  return replaceSpacesWithUnderscores(base);
+};

@@ -3,7 +3,7 @@ import {
   GithubJobData,
   RunUsageData,
 } from "entities/FormattedWorkflow/types.js";
-import { RetrievedWorkflowV1 } from "../types.js";
+import { RetrievedWorkflow } from "../types.js";
 
 const buildFormatJobRun = (dependencies: {
   runWorkflowJobMap: Map<
@@ -109,7 +109,7 @@ const buildInitJobData = (dependencies: {
 };
 
 export const createWorkflowsMaps = (
-  workflowWeekRunsMap: RetrievedWorkflowV1["workflowWeekRunsMap"]
+  workflowWeekRunsMap: RetrievedWorkflow["workflowWeekRunsMap"]
 ) => {
   const runIdMap = new Map<
     number,

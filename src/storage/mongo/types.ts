@@ -1,6 +1,13 @@
-import type { ClientSession, Document } from "mongoose";
+import type {
+  ClientSession,
+  Document,
+  IndexDefinition,
+  IndexOptions,
+} from "mongoose";
 import type { OverrideMethods } from "../../types/OverrideMethods.js";
 import type { Storage } from "../types.js";
+import type { Logger } from "winston";
+import type { AnyZodObject, z } from "zod";
 
 export type DocumentWithKey<T> = T & {
   key: string;
@@ -41,6 +48,18 @@ export type MongoStorageQueryMethod<Result> = (
   },
   options?: { session?: ClientSession; limit?: number }
 ) => Promise<Result[]>;
+
+export type CreateMongoStorageParams<
+  Schema extends AnyZodObject,
+  Result extends z.infer<Schema> = z.infer<Schema>,
+  Storage extends MongoStorage<Result> = MongoStorage<Result>
+> = {
+  collectionName: string;
+  dbURI: string;
+  indexes: [IndexDefinition, IndexOptions][];
+  schema: Schema;
+  logger?: Logger;
+};
 
 export type MongoStorage<Result> = OverrideMethods<
   Storage<Result>,

@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { createWorkflowInstance } from "../../../entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
+import { createWorkflowInstance } from "../../../cli/entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
 import { getFeaturesModule } from "../../../features/index.js";
 import { buildGithubRequests } from "../../../lib/RequestsManager/requests/buildRequests.js";
 import githubClient from "../../../lib/githubClient.js";

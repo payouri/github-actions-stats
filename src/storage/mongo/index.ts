@@ -8,6 +8,7 @@ import type { AnyZodObject, z } from "zod";
 import defaultLogger from "../../lib/Logger/logger.js";
 import { buildQuery } from "./methods/query.js";
 import type {
+  CreateMongoStorageParams,
   DocumentWithKey,
   MongoStorage,
   MongoStorageDeleteMethod,
@@ -36,13 +37,7 @@ export function createMongoStorage<
   Schema extends AnyZodObject,
   Result extends z.infer<Schema> = z.infer<Schema>,
   Storage extends MongoStorage<Result> = MongoStorage<Result>
->(params: {
-  collectionName: string;
-  dbURI: string;
-  indexes: [IndexDefinition, IndexOptions][];
-  schema: Schema;
-  logger?: Logger;
-}): Storage {
+>(params: CreateMongoStorageParams<Schema, Result, Storage>): Storage {
   const { schema, collectionName, dbURI, logger = defaultLogger } = params;
 
   const mongooseSchema = new Schema<DocumentWithKey<Result>>(

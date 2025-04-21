@@ -1,20 +1,15 @@
 import type { z } from "zod";
-import type { workflowRunId } from "../FormattedWorkflow/schemas/shared.js";
+import type { workflowRunId } from "../../../entities/FormattedWorkflow/schemas/shared.js";
 import {
   FormattedWorkflowRun,
   RunUsageData,
-} from "../FormattedWorkflow/types.js";
-import type {
-  retrievedWorkflowV0Schema,
-  retrievedWorkflowV1Schema,
-} from "./schemas.js";
+} from "../../../entities/FormattedWorkflow/types.js";
+import { retrievedWorkflowSchema } from "./schemas.js";
 
-export type RetrievedWorkflowV0 = z.infer<typeof retrievedWorkflowV0Schema>;
-export type RetrievedWorkflowV1 = z.infer<typeof retrievedWorkflowV1Schema>;
-
+export type RetrievedWorkflow = z.infer<typeof retrievedWorkflowSchema>;
 export type WorkflowRunId = z.infer<typeof workflowRunId>;
 
-export type WorkFlowInstance = Omit<RetrievedWorkflowV1, "workflowParams"> & {
+export type WorkFlowInstance = Omit<RetrievedWorkflow, "workflowParams"> & {
   updateRunData: (params: {
     runId: WorkflowRunId;
     runUsageData: RunUsageData;
@@ -27,7 +22,7 @@ export type WorkFlowInstance = Omit<RetrievedWorkflowV1, "workflowParams"> & {
     },
     options?: { allowSkip?: boolean }
   ) => void;
-  serializableData: RetrievedWorkflowV1;
+  serializableData: RetrievedWorkflow;
   isExistingRunData: (runId: WorkflowRunId) => boolean;
   getRunData: (runId: WorkflowRunId) => FormattedWorkflowRun | null;
   [Symbol.iterator]: () => Iterator<

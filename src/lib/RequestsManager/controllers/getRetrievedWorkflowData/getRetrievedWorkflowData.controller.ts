@@ -5,13 +5,13 @@ import type { GetWorkflowRunsUsageController } from "lib/RequestsManager/control
 import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";
 import { updateJobsDataFromMap } from "entities/FormattedWorkflow/helpers/updateJobsDataFromMap.js";
 import type { FormattedWorkflowRun } from "entities/index.js";
-import { retrievedWorkflowService } from "entities/RetrievedWorkflowData/index.js";
-import { createWorkflowInstance } from "entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
-import type { WorkFlowInstance } from "entities/RetrievedWorkflowData/types.js";
-import type { ProcessResponse } from "ProcessResponse.types.js";
+import { retrievedWorkflowService } from "cli/entities/RetrievedWorkflowData/index.js";
+import { createWorkflowInstance } from "cli/entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
+import type { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
 import type { GetAllWorkflowsController } from "../getAllWorkflowRuns.controller.js";
 import type { MethodResult } from "../../../../types/MethodResult.js";
 import logger from "../../../Logger/logger.js";
+import { getWorkflowStoragePath } from "../../../../cli/entities/RetrievedWorkflowData/storage.js";
 
 export type BuildGetRetrievedWorkflowDataControllerDependencies = {
   getAllWorkflowsController: GetAllWorkflowsController<FormattedWorkflowRun>;
@@ -63,24 +63,29 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
         owner,
         repo,
         branchName,
+        workflowStatus,
         saveRunsEvery,
-        filePath: filePathParam,
       } = params;
 
-      const filePath =
-        filePathParam ||
-        retrievedWorkflowService.getDefaultFilePath({
+      const filePath = getWorkflowStoragePath({
+        repositoryName: repo,
+        repositoryOwner: owner,
+        workflowName,
+        branchName,
+      });
+      logger.debug("Loading workflow data located at", filePath.bold);
+
+      const loadRetrievedWorkflowDataResponse =
+        await retrievedWorkflowService.loadRetrievedWorkflowData({
           workflowName,
           workflowParams: {
             owner,
             repo,
-            branchName,
+            branchName: branchName,
+            workflowStatus: workflowStatus,
           },
         });
-      const loadRetrievedWorkflowDataResponse =
-        await retrievedWorkflowService.loadRetrievedWorkflowData(filePath);
 
-      logger.debug("Loading workflow data located at", filePath.bold);
       if (
         loadRetrievedWorkflowDataResponse.hasFailed &&
         ["FILE_DOES_NOT_EXIST", "FAILED_TO_LOAD_WORKFLOW_DATA"].includes(

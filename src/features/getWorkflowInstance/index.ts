@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import type { Octokit } from "octokit";
 import { buildFetchWorkflowUpdatesController } from "../../controllers/fetchWorkflowUpdates.js";
-import { isWorkflowInstance } from "../../entities/RetrievedWorkflowData/helpers.js";
-import { createWorkflowInstance } from "../../entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
-import type { WorkFlowInstance } from "../../entities/RetrievedWorkflowData/types.js";
+import { isWorkflowInstance } from "../../cli/entities/RetrievedWorkflowData/helpers.js";
+import { createWorkflowInstance } from "../../cli/entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
+import type { WorkFlowInstance } from "../../cli/entities/RetrievedWorkflowData/types.js";
 import logger from "../../lib/Logger/logger.js";
 import type { MethodResult } from "../../types/MethodResult.js";
 import type { LoadWorkflowDataMethod } from "./methods/loadWorkflowData.js";

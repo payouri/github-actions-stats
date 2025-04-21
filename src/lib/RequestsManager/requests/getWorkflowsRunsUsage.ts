@@ -1,10 +1,10 @@
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
-import { RunUsageData } from "entities/index.js";
-import { RetrievedWorkflowV1 } from "entities/RetrievedWorkflowData/types.js";
+import { RetrievedWorkflow } from "../../../cli/entities/RetrievedWorkflowData/types.js";
+import { getJobsArray } from "../../../entities/FormattedWorkflow/helpers/getJobsArray.js";
+import { RunUsageData } from "../../../entities/index.js";
+import { formatGithubUsageDataToLocalUsageData } from "../../../helpers/format/formatGithubUsageDataToLocalUsageData.js";
 import type { MethodResult } from "../../../types/MethodResult.js";
 import { DEFAULT_SLEEP_CONFIG } from "./constants.js";
-import { getJobsArray } from "../../../entities/FormattedWorkflow/helpers/getJobsArray.js";
-import { formatGithubUsageDataToLocalUsageData } from "../../../helpers/format/formatGithubUsageDataToLocalUsageData.js";
 
 export type GetWorkflowRunsUsageRequestDependencies = {
   githubClient: GithubApi["rest"];
@@ -18,7 +18,7 @@ export type GetWorkflowRunsUsageRequestParams = {
   owner: string;
   repo: string;
   workflowRunIds: number[];
-  cachedWorkflowsMap?: RetrievedWorkflowV1["workflowWeekRunsMap"];
+  cachedWorkflowsMap?: RetrievedWorkflow["workflowWeekRunsMap"];
 };
 
 export type GetWorkflowRunsUsageRequestResponse = MethodResult<

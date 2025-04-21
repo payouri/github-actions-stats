@@ -1,19 +1,19 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { isAbsolute } from "node:path";
-import { sortWorkflowMapKeys } from "../../../entities/FormattedWorkflow/helpers/sortWorkflowMapKeys.js";
+import { sortWorkflowMapKeys } from "../../../../entities/FormattedWorkflow/helpers/sortWorkflowMapKeys.js";
 import {
   createDirIfNotExists,
   createDirIfNotExistsSync,
-} from "../../../helpers/createDirIfNotExists.js";
-import { isExistingPath } from "../../../helpers/isExistingPath.js";
-import { ProcessResponse } from "../../../ProcessResponse.types.js";
+} from "../../../../helpers/createDirIfNotExists.js";
+import { isExistingPath } from "../../../../helpers/isExistingPath.js";
+import { ProcessResponse } from "../../../../ProcessResponse.types.js";
 import { getDefaultWorkflowFilePath } from "../helpers.js";
-import { RetrievedWorkflowV1 } from "../types.js";
-import logger from "../../../lib/Logger/logger.js";
+import { RetrievedWorkflow } from "../types.js";
+import logger from "../../../../lib/Logger/logger.js";
 
 export const saveRetrievedWorkflowData = async (
-  data: RetrievedWorkflowV1,
+  data: RetrievedWorkflow,
   options?: {
     filePath?: string;
     overwrite?: boolean;
@@ -58,7 +58,7 @@ export const saveRetrievedWorkflowData = async (
 };
 
 export const saveRetrievedWorkflowDataSync = (
-  data: RetrievedWorkflowV1,
+  data: RetrievedWorkflow,
   options?: {
     filePath?: string;
     overwrite?: boolean;

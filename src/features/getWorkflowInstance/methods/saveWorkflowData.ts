@@ -3,7 +3,7 @@ import type {
   WorkflowStorage,
 } from "../../../entities/FormattedWorkflow/storage.js";
 import type { FormattedWorkflowRun } from "../../../entities/index.js";
-import type { WorkFlowInstance } from "../../../entities/RetrievedWorkflowData/types.js";
+import type { WorkFlowInstance } from "../../../cli/entities/RetrievedWorkflowData/types.js";
 import logger from "../../../lib/Logger/logger.js";
 import type { MethodResult } from "../../../types/MethodResult.js";
 

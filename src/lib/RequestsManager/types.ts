@@ -1,4 +1,4 @@
-import { WorkFlowInstance } from "entities/RetrievedWorkflowData/types.js";
+import { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
 import { components } from "@octokit/openapi-types";
 import type { Octokit } from "octokit";
 import type { MethodResult } from "../../types/MethodResult.js";
