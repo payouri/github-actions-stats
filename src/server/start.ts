@@ -1,8 +1,9 @@
 import logger from "../lib/Logger/logger.js";
-import { createFSStorage } from "../storage/fs/index.js";
+import { beforeListen } from "./beforeListen.js";
 import { createServer } from "./index.js";
 
 async function main() {
+  await beforeListen();
   logger.info("Starting server...");
   const server = await createServer();
 

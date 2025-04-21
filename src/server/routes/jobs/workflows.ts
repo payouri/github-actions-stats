@@ -33,6 +33,7 @@ export function buildJobsWorkflowsRoutes<
           workflowData.error.code === "repo_not_found"
             ? 404
             : 500;
+
         throw new HTTPException(errCode, {
           res: new Response(
             errCode === 404 ? "Not Found" : "Internal Server Error",

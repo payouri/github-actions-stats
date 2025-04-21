@@ -1,9 +1,4 @@
-import mongoose, {
-  type ClientSession,
-  type IndexDefinition,
-  type IndexOptions,
-} from "mongoose";
-import type { Logger } from "winston";
+import mongoose, { type ClientSession } from "mongoose";
 import type { AnyZodObject, z } from "zod";
 import defaultLogger from "../../lib/Logger/logger.js";
 import { buildQuery } from "./methods/query.js";

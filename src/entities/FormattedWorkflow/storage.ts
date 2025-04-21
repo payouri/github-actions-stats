@@ -64,5 +64,6 @@ export type WorkflowRunsStorage = MongoStorage<
 >;
 
 export const initFormattedWorkflowStorage = async () => {
+  logger.debug("Initializing Workflows MongoDB storage");
   await Promise.all([workflowStorage.init(), workflowRunsStorage.init()]);
 };
