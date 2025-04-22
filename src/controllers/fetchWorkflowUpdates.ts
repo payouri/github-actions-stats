@@ -193,7 +193,7 @@ export function buildFetchWorkflowUpdatesController(
           const saveResult = await saveWorkflowData({
             repositoryName: workflowInstance.repositoryName,
             repositoryOwner: workflowInstance.repositoryOwner,
-            workflowData: workflowInstance,
+            workflowData: workflowInstance.serializableData,
             workflowName: workflowInstance.workflowName,
             branchName: workflowInstance.branchName,
             newOrUpdatedRuns: [formattedWorkflowRun],

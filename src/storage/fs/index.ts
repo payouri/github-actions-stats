@@ -1,4 +1,4 @@
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
 import type { AnyZodObject, z } from "zod";
 import { createDirIfNotExists } from "../../helpers/createDirIfNotExists.js";
@@ -77,8 +77,7 @@ export function createFSStorage<
     );
     const targetDir = dirname(filePath);
     if (!(await isExistingPath(targetDir))) {
-      logger.debug(`Creating directory ${targetDir}`);
-      await mkdir(targetDir, { recursive: true });
+      await createDirIfNotExists(targetDir);
     }
     logger.debug(`Setting data for key ${key}, file path ${filePath}`);
     const start = performance.now();

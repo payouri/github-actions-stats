@@ -1,14 +1,14 @@
+import type { RetrievedWorkflow } from "../../../cli/entities/RetrievedWorkflowData/types.js";
 import type {
   WorkflowRunsStorage,
   WorkflowStorage,
 } from "../../../entities/FormattedWorkflow/storage.js";
-import type { FormattedWorkflowRun } from "../../../entities/index.js";
-import type { WorkFlowInstance } from "../../../cli/entities/RetrievedWorkflowData/types.js";
+import type { FormattedWorkflowRun } from "../../../entities/FormattedWorkflow/types.js";
 import logger from "../../../lib/Logger/logger.js";
 import type { MethodResult } from "../../../types/MethodResult.js";
 
 export type SaveWorkflowDataResponse = Promise<
-  MethodResult<WorkFlowInstance, "failed_to_save_workflow_data">
+  MethodResult<RetrievedWorkflow, "failed_to_save_workflow_data">
 >;
 
 export type SaveWorkflowDataParams = {
@@ -16,7 +16,7 @@ export type SaveWorkflowDataParams = {
   repositoryName: string;
   repositoryOwner: string;
   branchName?: string;
-  workflowData: WorkFlowInstance;
+  workflowData: RetrievedWorkflow;
   newOrUpdatedRuns?: FormattedWorkflowRun[];
 };
 
@@ -46,12 +46,7 @@ export function buildSaveWorkflowData(
       workflowData,
     } = params;
 
-    const {
-      workflowWeekRunsMap,
-      serializableData: _,
-      formattedWorkflowRuns: __,
-      ...restWorkFlowData
-    } = workflowData;
+    const { workflowWeekRunsMap, ...restWorkFlowData } = workflowData;
 
     const transaction = await workflowStorage.startTransaction();
     transaction?.startTransaction({});
@@ -61,9 +56,9 @@ export function buildSaveWorkflowData(
         {
           ...restWorkFlowData,
           workflowParams: {
-            owner: restWorkFlowData.repositoryOwner,
-            repo: restWorkFlowData.repositoryName,
-            branchName: restWorkFlowData.branchName,
+            owner: restWorkFlowData.workflowParams.owner,
+            repo: restWorkFlowData.workflowParams.repo,
+            branchName: restWorkFlowData.workflowParams.branchName,
           },
         },
         {
@@ -104,9 +99,9 @@ export function buildSaveWorkflowData(
             runId: runs.runId,
             workflowId: restWorkFlowData.workflowId,
             week_year: runs.week_year,
-            repositoryName: restWorkFlowData.repositoryName,
-            repositoryOwner: restWorkFlowData.repositoryOwner,
-            branchName: restWorkFlowData.branchName,
+            repositoryName: restWorkFlowData.workflowParams.repo,
+            repositoryOwner: restWorkFlowData.workflowParams.owner,
+            branchName: restWorkFlowData.workflowParams.branchName,
             workflowName: restWorkFlowData.workflowName,
           };
           return acc;
@@ -122,9 +117,9 @@ export function buildSaveWorkflowData(
             runId: run.runId,
             workflowId: restWorkFlowData.workflowId,
             week_year: run.week_year,
-            repositoryName: restWorkFlowData.repositoryName,
-            repositoryOwner: restWorkFlowData.repositoryOwner,
-            branchName: restWorkFlowData.branchName,
+            repositoryName: restWorkFlowData.workflowParams.repo,
+            repositoryOwner: restWorkFlowData.workflowParams.owner,
+            branchName: restWorkFlowData.workflowParams.branchName,
             workflowName: restWorkFlowData.workflowName,
           };
         });

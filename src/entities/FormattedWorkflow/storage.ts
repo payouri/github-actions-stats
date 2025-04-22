@@ -45,6 +45,7 @@ const storedWorkflowRun = formattedWorkflowRunSchema.merge(
 export const workflowStorage = createMongoStorage({
   collectionName: "workflow-data",
   dbURI: MONGO_CONFIG.dbURI,
+  dbName: MONGO_CONFIG.databaseName,
   indexes: MONGO_CONFIG.indexes.workflows,
   schema: storedWorkflow,
   logger,
@@ -53,6 +54,7 @@ export const workflowStorage = createMongoStorage({
 export const workflowRunsStorage = createMongoStorage({
   collectionName: "workflow-runs",
   dbURI: MONGO_CONFIG.dbURI,
+  dbName: MONGO_CONFIG.databaseName,
   schema: storedWorkflowRun,
   indexes: MONGO_CONFIG.indexes.workflowRuns,
   logger,

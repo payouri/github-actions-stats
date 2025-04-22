@@ -10,6 +10,7 @@ import type {
   MongoStorageGetMethod,
   MongoStorageSetMethod,
 } from "./types.js";
+import { config } from "../../config/config.js";
 
 const { connection, ConnectionStates, Schema } = mongoose;
 mongoose.set("strictQuery", false);
@@ -33,7 +34,13 @@ export function createMongoStorage<
   Result extends z.infer<Schema> = z.infer<Schema>,
   Storage extends MongoStorage<Result> = MongoStorage<Result>
 >(params: CreateMongoStorageParams<Schema, Result, Storage>): Storage {
-  const { schema, collectionName, dbURI, logger = defaultLogger } = params;
+  const {
+    schema,
+    collectionName,
+    dbURI,
+    logger = defaultLogger,
+    dbName = config.MONGO.databaseName,
+  } = params;
 
   const mongooseSchema = new Schema<DocumentWithKey<Result>>(
     getSchemaFields(schema),
@@ -202,10 +209,14 @@ export function createMongoStorage<
             await new Promise((resolve) => setTimeout(resolve, 100));
           }
           logger.debug("Opening MongoDB connection");
-          await connection.openUri(dbURI);
+          await connection.openUri(dbURI, {
+            dbName,
+          });
         } else if (connection.readyState === ConnectionStates.uninitialized) {
           logger.debug("Opening MongoDB connection");
-          await connection.openUri(dbURI);
+          await connection.openUri(dbURI, {
+            dbName,
+          });
         }
       }
       logger.debug("MongoDB connection is open");

@@ -1,97 +1,184 @@
-import { existsSync, writeFileSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
-import { isAbsolute } from "node:path";
-import { sortWorkflowMapKeys } from "../../../../entities/FormattedWorkflow/helpers/sortWorkflowMapKeys.js";
-import {
-  createDirIfNotExists,
-  createDirIfNotExistsSync,
-} from "../../../../helpers/createDirIfNotExists.js";
-import { isExistingPath } from "../../../../helpers/isExistingPath.js";
+import type { FormattedWorkflowRun } from "../../../../entities/FormattedWorkflow/types.js";
 import { ProcessResponse } from "../../../../ProcessResponse.types.js";
-import { getDefaultWorkflowFilePath } from "../helpers.js";
+import { workflowRunsStorage, workflowStorage } from "../storage.js";
 import { RetrievedWorkflow } from "../types.js";
-import logger from "../../../../lib/Logger/logger.js";
+import { generateWorkflowKey, generateWorkflowRunKey } from "./generateKey.js";
+
+function getRunsArrayAndMapToStore(
+  runs: RetrievedWorkflow["workflowWeekRunsMap"],
+  workflowData: {
+    workflowName: string;
+    repositoryName: string;
+    repositoryOwner: string;
+    branchName?: string;
+  }
+): {
+  runsIds: number[];
+  runsMap: {
+    [runKey: string]: FormattedWorkflowRun & {
+      workflowName: string;
+      repositoryName: string;
+      repositoryOwner: string;
+      branchName?: string;
+    };
+  };
+} {
+  return Object.entries(runs).reduce<{
+    runsIds: number[];
+    runsMap: {
+      [runKey: string]: FormattedWorkflowRun & {
+        workflowName: string;
+        repositoryName: string;
+        repositoryOwner: string;
+        branchName?: string;
+      };
+    };
+  }>(
+    (acc, [_, runs]) => {
+      runs.forEach((run) => {
+        const runKey = generateWorkflowRunKey({
+          repositoryName: workflowData.repositoryName,
+          repositoryOwner: workflowData.repositoryOwner,
+          workflowName: workflowData.workflowName,
+          branchName: workflowData.branchName,
+          runId: run.runId,
+        });
+
+        acc.runsIds.push(run.runId);
+        acc.runsMap[runKey] = {
+          ...run,
+          workflowName: workflowData.workflowName,
+          repositoryName: workflowData.repositoryName,
+          repositoryOwner: workflowData.repositoryOwner,
+          branchName: workflowData.branchName,
+        };
+      });
+
+      return acc;
+    },
+    { runsIds: [], runsMap: {} }
+  );
+}
+export const saveRetrivedWorkflowRuns = async (data: {
+  workflowName: string;
+  repositoryName: string;
+  repositoryOwner: string;
+  branchName?: string;
+  runs: Record<number | string, FormattedWorkflowRun>;
+}): Promise<ProcessResponse<void>> => {
+  const { workflowName, repositoryName, repositoryOwner, branchName, runs } =
+    data;
+  const workflowKey = generateWorkflowKey({
+    workflowName,
+    workflowParams: {
+      owner: repositoryOwner,
+      repo: repositoryName,
+      branchName,
+    },
+  });
+
+  const workflowData = await workflowStorage.get(workflowKey);
+  if (!workflowData) {
+    return { hasFailed: true, error: new Error("Workflow data not found") };
+  }
+  const newRunsIds = Object.keys(runs);
+  if (!newRunsIds.length) return { hasFailed: false };
+
+  const updatedRunsArray = new Set<number>(workflowData.workflowsList);
+  for (const runId of newRunsIds) {
+    updatedRunsArray.add(Number(runId));
+  }
+
+  const toSave = Object.entries(runs).reduce<
+    Record<
+      string,
+      FormattedWorkflowRun & {
+        workflowName: string;
+        repositoryName: string;
+        repositoryOwner: string;
+        branchName?: string;
+      }
+    >
+  >((acc, [runId, run]) => {
+    const runKey = generateWorkflowRunKey({
+      repositoryName,
+      repositoryOwner,
+      workflowName,
+      branchName,
+      runId: Number(runId),
+    });
+
+    acc[runKey] = {
+      ...run,
+      workflowName,
+      repositoryName,
+      repositoryOwner,
+      branchName,
+    };
+    return acc;
+  }, {});
+
+  await Promise.all([
+    workflowRunsStorage.setMany(toSave),
+    workflowStorage.set(workflowKey, {
+      ...workflowData,
+      workflowsList: Array.from(updatedRunsArray).sort((a, b) => a - b),
+    }),
+  ]);
+
+  return {
+    hasFailed: false,
+  };
+};
 
 export const saveRetrievedWorkflowData = async (
   data: RetrievedWorkflow,
-  options?: {
-    filePath?: string;
-    overwrite?: boolean;
-  }
+  options?: { upsert?: boolean }
 ): Promise<ProcessResponse<void>> => {
-  const { filePath = getDefaultWorkflowFilePath(data), overwrite = false } =
-    options ?? {};
-  if (!filePath.endsWith(".json") || !isAbsolute(filePath)) {
-    return { hasFailed: true, error: new Error("Invalid file path") };
-  }
+  const { workflowName, workflowParams } = data;
+  const { upsert = true } = options ?? {};
+  const { owner, repo, branchName } = workflowParams;
 
-  if (!overwrite && (await isExistingPath(filePath))) {
-    return { hasFailed: true, error: new Error("File already exists") };
-  }
+  const workflowKey = generateWorkflowKey({
+    workflowName,
+    workflowParams: {
+      owner,
+      repo,
+      branchName,
+    },
+  });
 
-  try {
-    logger.debug("Saving workflow data to disk", filePath);
-    await createDirIfNotExists(filePath);
-    await writeFile(
-      filePath,
-      JSON.stringify(
-        {
-          ...data,
-          workflowWeekRunsMap: sortWorkflowMapKeys(data.workflowWeekRunsMap),
-        },
-        null,
-        2
-      ),
-      "utf-8"
-    );
-    return {
-      hasFailed: false,
-    };
-  } catch (error) {
-    return {
-      hasFailed: true,
-      error: new Error("Failed to save workflow data", {
-        cause: error,
-      }),
+  let workflowData = await workflowStorage.get(workflowKey);
+  if (!workflowData) {
+    if (!upsert) {
+      return { hasFailed: true, error: new Error("Workflow data not found") };
+    }
+
+    const { workflowWeekRunsMap, ...rest } = data;
+    workflowData = {
+      ...rest,
+      workflowsList: [],
     };
   }
-};
 
-export const saveRetrievedWorkflowDataSync = (
-  data: RetrievedWorkflow,
-  options?: {
-    filePath?: string;
-    overwrite?: boolean;
-  }
-): void => {
-  const { filePath = getDefaultWorkflowFilePath(data), overwrite = false } =
-    options ?? {};
-  if (!filePath.endsWith(".json") || !isAbsolute(filePath)) {
-    throw new Error("Invalid file path");
-  }
+  const { runsIds, runsMap } = getRunsArrayAndMapToStore(
+    data.workflowWeekRunsMap,
+    {
+      workflowName: data.workflowName,
+      repositoryName: data.workflowParams.repo,
+      repositoryOwner: data.workflowParams.owner,
+      branchName: data.workflowParams.branchName,
+    }
+  );
+  await Promise.all([
+    workflowStorage.set(workflowKey, {
+      ...workflowData,
+      workflowsList: runsIds,
+    }),
+    workflowRunsStorage.setMany(runsMap),
+  ]);
 
-  if (!overwrite && existsSync(filePath)) {
-    throw new Error("File already exists");
-  }
-
-  try {
-    createDirIfNotExistsSync(filePath);
-    writeFileSync(
-      filePath,
-      JSON.stringify(
-        {
-          ...data,
-          workflowWeekRunsMap: sortWorkflowMapKeys(data.workflowWeekRunsMap),
-        },
-        null,
-        0
-      ),
-      "utf-8"
-    );
-  } catch (error) {
-    console.error("Failed to save workflow data", error);
-    throw new Error("Failed to save workflow data", {
-      cause: error,
-    });
-  }
+  return {
+    hasFailed: false,
+  };
 };

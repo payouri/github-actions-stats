@@ -2,7 +2,18 @@ import logger from "../lib/Logger/logger.js";
 import { beforeListen } from "./beforeListen.js";
 import { createServer } from "./index.js";
 
+// import { createClient } from "redis";
+
 async function main() {
+  // console.log("Connecting to redis");
+  // const client = createClient({
+  //   socket: {
+  //     tls: true,
+  //     rejectUnauthorized: false,
+  //   },
+  // });
+  // await client.connect();
+
   await beforeListen();
   logger.info("Starting server...");
   const server = await createServer();

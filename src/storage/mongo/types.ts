@@ -56,6 +56,7 @@ export type CreateMongoStorageParams<
 > = {
   collectionName: string;
   dbURI: string;
+  dbName?: string;
   indexes: [IndexDefinition, IndexOptions][];
   schema: Schema;
   logger?: Logger;

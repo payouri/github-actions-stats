@@ -1,9 +1,9 @@
 import type { IndexDefinition, IndexOptions } from "mongoose";
 
 export const MONGO_CONFIG = {
-  dbURI: "mongodb://localhost:27017/My_Db",
-  testDbURI: "mongodb://localhost:27017/Test_My_Db",
-  collectionName: "workflow-stats",
+  dbURI: process.env.MONGODB_URI || "mongodb://localhost:27017/",
+  testDbURI: process.env.TEST_MONGODB_URI || "mongodb://localhost:27017/",
+  databaseName: process.env.MONGODB_DATABASE_NAME || "Test_My_Db",
   indexes: {
     workflows: [
       [
