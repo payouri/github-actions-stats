@@ -39,6 +39,7 @@ export type FetchWorkflowUpdatesControllerDependencies = {
 export type FetchWorkflowUpdatesControllerParams = {
   workflowInstance: WorkFlowInstance;
   updateType?: "oldest" | "newest" | "both";
+  abortSignal?: AbortSignal;
 };
 export type FetchWorkflowUpdatesControllerResponse = MethodResult<
   WorkFlowInstance,
@@ -65,7 +66,11 @@ export function buildFetchWorkflowUpdatesController(
   return async function fetchWorkflowUpdatesController(
     params: FetchWorkflowUpdatesControllerParams
   ): Promise<FetchWorkflowUpdatesControllerResponse> {
-    const { workflowInstance, updateType = DEFAULT_UPDATE_TYPE } = params;
+    const {
+      workflowInstance,
+      updateType = DEFAULT_UPDATE_TYPE,
+      abortSignal,
+    } = params;
 
     if (updateType === "both") {
       throw new Error("Both update type is not supported yet");
@@ -74,11 +79,26 @@ export function buildFetchWorkflowUpdatesController(
 
     const { created } = getRequestCreatedAtParams(workflowInstance, updateType);
 
+    abortSignal?.addEventListener(
+      "abort",
+      () => {
+        aborted = true;
+      },
+      { once: true }
+    );
+    let aborted = false;
     let page = 1;
     let isDone = false;
     let totalCount = 0;
     do {
       try {
+        if (aborted) {
+          logger.warn(
+            `Fetching ${workflowInstance.repositoryOwner}/${workflowInstance.repositoryName}/${workflowInstance.workflowId} workflow runs aborted`
+          );
+          break;
+        }
+
         const response = await githubClient.actions.listWorkflowRuns({
           created,
           owner: workflowInstance.repositoryOwner,

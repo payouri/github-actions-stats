@@ -1,7 +1,7 @@
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
 import { RetrievedWorkflow } from "../../../cli/entities/RetrievedWorkflowData/types.js";
 import { getJobsArray } from "../../../entities/FormattedWorkflow/helpers/getJobsArray.js";
-import { RunUsageData } from "../../../entities/index.js";
+import type { RunUsageData } from "../../../entities/FormattedWorkflow/types.js";
 import { formatGithubUsageDataToLocalUsageData } from "../../../helpers/format/formatGithubUsageDataToLocalUsageData.js";
 import type { MethodResult } from "../../../types/MethodResult.js";
 import { DEFAULT_SLEEP_CONFIG } from "./constants.js";

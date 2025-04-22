@@ -1,7 +1,7 @@
-import { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
-import { StepStats, WorkflowsStats } from "../types.js";
-import { RunCompletionStatus } from "entities/index.js";
+import type { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
 import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";
+import type { RunCompletionStatus } from "../../../entities/FormattedWorkflow/types.js";
+import type { StepStats, WorkflowsStats } from "../types.js";
 
 const completionStatuses: Extract<
   RunCompletionStatus,

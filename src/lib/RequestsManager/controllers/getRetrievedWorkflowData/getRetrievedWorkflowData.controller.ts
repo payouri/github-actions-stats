@@ -1,17 +1,17 @@
 import type { components } from "@octokit/openapi-types";
-import "colors";
-import type { GetAllJobsByIdsController } from "lib/RequestsManager/controllers/getAllJobsByIds.controller.js";
-import type { GetWorkflowRunsUsageController } from "lib/RequestsManager/controllers/getWorkflowRunsUsage.controller.js";
-import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";
-import { updateJobsDataFromMap } from "entities/FormattedWorkflow/helpers/updateJobsDataFromMap.js";
-import type { FormattedWorkflowRun } from "entities/index.js";
 import { retrievedWorkflowService } from "cli/entities/RetrievedWorkflowData/index.js";
 import { createWorkflowInstance } from "cli/entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
 import type { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
-import type { GetAllWorkflowsController } from "../getAllWorkflowRuns.controller.js";
+import "colors";
+import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";
+import { updateJobsDataFromMap } from "entities/FormattedWorkflow/helpers/updateJobsDataFromMap.js";
+import type { GetAllJobsByIdsController } from "lib/RequestsManager/controllers/getAllJobsByIds.controller.js";
+import type { GetWorkflowRunsUsageController } from "lib/RequestsManager/controllers/getWorkflowRunsUsage.controller.js";
+import { getWorkflowStoragePath } from "../../../../cli/entities/RetrievedWorkflowData/storage.js";
+import type { FormattedWorkflowRun } from "../../../../entities/FormattedWorkflow/types.js";
 import type { MethodResult } from "../../../../types/MethodResult.js";
 import logger from "../../../Logger/logger.js";
-import { getWorkflowStoragePath } from "../../../../cli/entities/RetrievedWorkflowData/storage.js";
+import type { GetAllWorkflowsController } from "../getAllWorkflowRuns.controller.js";
 
 export type BuildGetRetrievedWorkflowDataControllerDependencies = {
   getAllWorkflowsController: GetAllWorkflowsController<FormattedWorkflowRun>;
@@ -252,10 +252,7 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
       }
 
       const save = await retrievedWorkflowService.saveRetrievedWorkflowData(
-        workflowInstance.serializableData,
-        {
-          overwrite: true,
-        }
+        workflowInstance.serializableData
       );
 
       if (save.hasFailed) {

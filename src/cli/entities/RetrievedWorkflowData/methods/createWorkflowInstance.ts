@@ -7,7 +7,10 @@ import logger from "../../../../lib/Logger/logger.js";
 import { createDurationMap } from "../internals/durationMap.js";
 import { createWorkflowsMaps } from "../internals/workflowMaps.js";
 import { RetrievedWorkflow, WorkFlowInstance } from "../types.js";
-import { saveRetrievedWorkflowDataSync } from "./saveRetrievedWorkDataFromDisk.js";
+import {
+  saveRetrievedWorkflowData,
+  saveRetrivedWorkflowRuns,
+} from "./saveRetrievedWorkDataFromDisk.js";
 
 const initInternals = (rawData: RetrievedWorkflow) => {
   const w = createWorkflowsMaps(rawData.workflowWeekRunsMap);
@@ -52,10 +55,24 @@ const buildCommitChanges = (dependencies: {
     if (commitPromise) await commitPromise;
 
     commitPromise = new Promise<void>(async (resolve) => {
-      saveRetrievedWorkflowDataSync(workflowInstance.serializableData, {
-        overwrite: true,
-        filePath: path,
-      });
+      await Promise.all([
+        saveRetrievedWorkflowData(workflowInstance.serializableData),
+        saveRetrivedWorkflowRuns({
+          repositoryName: workflowInstance.repositoryName,
+          repositoryOwner: workflowInstance.repositoryOwner,
+          workflowName: workflowInstance.workflowName,
+          branchName: workflowInstance.branchName,
+          runs: Object.values(
+            workflowInstance.serializableData.workflowWeekRunsMap
+          ).reduce<Record<number, FormattedWorkflowRun>>((acc, runs) => {
+            runs.forEach((run) => {
+              acc[run.runId] = run;
+            });
+
+            return acc;
+          }, {}),
+        }),
+      ]);
       resolve();
     });
 

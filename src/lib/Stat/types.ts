@@ -1,4 +1,4 @@
-import { RunCompletionStatus } from "entities/index.js";
+import type { RunCompletionStatus } from "../../entities/FormattedWorkflow/types.js";
 
 export type StandardWorkflowStats = {
   total: number;

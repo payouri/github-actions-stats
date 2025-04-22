@@ -1,5 +1,8 @@
-import type { GithubJobData, RunUsageData } from "../entities/index.js";
 import type { components } from "@octokit/openapi-types";
+import type {
+  GithubJobData,
+  RunUsageData,
+} from "../entities/FormattedWorkflow/types.js";
 import { formatRawGithubJobToGithubJob } from "./format/formatGithubJobToLocalJob.js";
 
 export function updateRunUsageWithJobs(params: {

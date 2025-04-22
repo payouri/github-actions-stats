@@ -1,7 +1,7 @@
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
 import { RetrievedWorkflow } from "../../../cli/entities/RetrievedWorkflowData/types.js";
-import { RunUsageData } from "../../../entities/index.js";
 import { formatGithubUsageDataToLocalUsageData } from "../../../helpers/format/formatGithubUsageDataToLocalUsageData.js";
+import type { RunUsageData } from "../../../entities/FormattedWorkflow/types.js";
 
 export type GetWorkflowRunsUsageControllerDependencies = {
   githubClient: GithubApi["rest"];

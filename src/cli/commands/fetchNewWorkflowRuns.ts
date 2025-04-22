@@ -1,15 +1,16 @@
 import { Command } from "commander";
 import type { Logger } from "winston";
 import { z } from "zod";
+import { buildFetchWorkflowData } from "../../controllers/fetchWorkflowData.js";
 import { buildFetchWorkflowUpdatesController } from "../../controllers/fetchWorkflowUpdates.js";
-import type { FormattedWorkflowRun } from "../../entities/FormattedWorkflow/types.js";
-import type { SaveWorkflowDataResponse } from "../../features/getWorkflowInstance/methods/saveWorkflowData.js";
 import githubClient from "../../lib/githubClient.js";
 import defaultLogger from "../../lib/Logger/logger.js";
-import { saveRetrivedWorkflowRuns } from "../entities/RetrievedWorkflowData/methods/saveRetrievedWorkDataFromDisk.js";
+import { isExistingWorkflowData } from "../entities/RetrievedWorkflowData/methods/isExistingWorkflowData.js";
+import { loadRetrievedWorkflowData } from "../entities/RetrievedWorkflowData/methods/loadRetrievedWorkflowData.js";
 import { createOption } from "../helpers/createOption.js";
-import { getWorkflowInstance } from "../helpers/getWorkflowInstance/index.js";
 import type { CommandOption } from "../types.js";
+import { saveWorkflowData } from "./fetchNewWorkflowRuns/methods/saveWorkflowData.js";
+import { createWorkflowInstance } from "../entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
 
 const getWorkflowRunsInstanceOptions: CommandOption[] = [
   {
@@ -52,55 +53,25 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
 
   const fetchWorkflowUpdatesController = buildFetchWorkflowUpdatesController({
     githubClient: githubClient.rest,
-    workflowPerPage: 10,
-    saveWorkflowData: async (params): Promise<SaveWorkflowDataResponse> => {
-      const {
-        workflowName,
-        repositoryName,
-        repositoryOwner,
-        branchName,
-        workflowData,
-        newOrUpdatedRuns,
-      } = params;
-
-      if (newOrUpdatedRuns?.length) {
-        await saveRetrivedWorkflowRuns({
-          repositoryName,
-          repositoryOwner,
-          workflowName,
-          branchName,
-          runs: newOrUpdatedRuns.reduce<Record<number, FormattedWorkflowRun>>(
-            (acc, run) => {
-              acc[run.runId] = run;
-              return acc;
-            },
-            {}
-          ),
-        });
-        return { hasFailed: false, data: workflowData };
-      }
-      await saveRetrivedWorkflowRuns({
-        repositoryName,
-        repositoryOwner,
-        workflowName,
-        branchName,
-        runs: Object.values(workflowData.workflowWeekRunsMap).reduce<
-          Record<number, FormattedWorkflowRun>
-        >((acc, runs) => {
-          runs.forEach((run) => {
-            acc[run.runId] = run;
-          });
-          return acc;
-        }, {}),
-      });
-
-      return { hasFailed: false, data: workflowData };
-    },
+    workflowPerPage: 1,
+    saveWorkflowData,
+  });
+  const fetchWorkflowData = buildFetchWorkflowData({
+    githubClient: githubClient.rest,
+    isExistingWorkflowData,
+    loadRetrievedWorkflowData,
+    saveRetrievedWorkflowData: saveWorkflowData,
   });
 
-  const fetchNewWorkflowRunsCommand = new Command("get-workflow-runs")
-    .description("Get workflow runs data")
+  const fetchNewWorkflowRunsCommand = new Command("fetch-new-runs")
+    .description("Retrieve workflow runs data")
     .action(async (parsedOptions) => {
+      function onAbort() {
+        logger.warn("SIGINT signal received");
+        abortController.abort();
+      }
+      process.on("SIGINT", onAbort);
+      const abortController = new AbortController();
       const globalOptions = program.opts();
       for (const option of getWorkflowRunsInstanceOptions) {
         if (
@@ -117,12 +88,17 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
         }
       }
 
-      const workflowDataResponse = await getWorkflowInstance({
-        repositoryName: parsedOptions.repositoryName,
-        repositoryOwner: parsedOptions.repositoryOwner,
-        workflowName: parsedOptions.workflowName,
-        branchName: parsedOptions.branchName,
-      });
+      const workflowDataResponse = await fetchWorkflowData(
+        {
+          repositoryName: parsedOptions.repositoryName,
+          repositoryOwner: parsedOptions.repositoryOwner,
+          workflowName: parsedOptions.workflowName,
+        },
+        {
+          allowFallback: false,
+          createIfNotExists: true,
+        }
+      );
 
       if (workflowDataResponse.hasFailed) {
         throw new Error(
@@ -137,8 +113,9 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
 
       logger.info("Fetching new workflow runs...".bgBlack.yellow);
       const newWorkflowRunsResponse = await fetchWorkflowUpdatesController({
-        workflowInstance,
-        updateType: "newest",
+        workflowInstance: createWorkflowInstance(workflowInstance),
+        updateType: parsedOptions.updateType,
+        abortSignal: abortController.signal,
       });
 
       if (newWorkflowRunsResponse.hasFailed) {
@@ -150,6 +127,7 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
       logger.info(
         `New workflow runs count: ${newWorkflowRunsResponse.data.totalWorkflowRuns}`
       );
+      process.removeListener("SIGINT", onAbort);
     });
 
   for (const option of getWorkflowRunsInstanceOptions) {

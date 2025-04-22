@@ -1,11 +1,11 @@
 import type { components } from "@octokit/openapi-types";
+import dayjs from "dayjs";
+import { runJobDataSchema } from "../../entities/FormattedWorkflow/schemas/formattedJob.schema.js";
 import {
   type GithubJobData,
   type RunJobData,
   type RunUsageData,
-} from "../../entities/index.js";
-import dayjs from "dayjs";
-import { runJobDataSchema } from "../../entities/FormattedWorkflow/schemas/formattedJob.schema.js";
+} from "../../entities/FormattedWorkflow/types.js";
 
 export function formatGithubUsageDataToLocalUsageData(
   usageData: components["schemas"]["workflow-run-usage"],

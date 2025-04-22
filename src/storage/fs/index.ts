@@ -55,7 +55,7 @@ export function createFSStorage<
     );
     logger.debug(`Getting data for key ${key}, file path ${filePath}`);
     if (!(await isExistingPath(filePath))) {
-      logger.debug(`File ${filePath} does not exist`);
+      logger.warn(`File ${filePath} does not exist`);
       return null;
     }
 
@@ -75,6 +75,7 @@ export function createFSStorage<
       absoluteDirectory,
       generateFileName({ key, format })
     );
+
     const targetDir = dirname(filePath);
     if (!(await isExistingPath(targetDir))) {
       await createDirIfNotExists(targetDir);
@@ -108,7 +109,7 @@ export function createFSStorage<
     );
     logger.debug(`Deleting data for key ${key}, file path ${filePath}`);
     if (!(await isExistingPath(filePath))) {
-      logger.debug(`File ${filePath} does not exist`);
+      logger.warn(`File ${filePath} does not exist`);
       return;
     }
 

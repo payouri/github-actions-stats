@@ -49,7 +49,7 @@ export function buildJobsWorkflowsRoutes<
         repositoryName: workflowData.data.repository.name,
         repositoryOwner: workflowData.data.repository.owner.login,
         workflowName: workflowData.data.workflows.workflow.name,
-        workflowData: createWorkflowInstance({
+        workflowData: {
           lastRunAt: new Date(),
           oldestRunAt: new Date(),
           lastUpdatedAt: new Date(),
@@ -62,7 +62,7 @@ export function buildJobsWorkflowsRoutes<
             branchName: workflowData.data.repository.default_branch,
           },
           workflowWeekRunsMap: {},
-        }),
+        },
       });
     }
 

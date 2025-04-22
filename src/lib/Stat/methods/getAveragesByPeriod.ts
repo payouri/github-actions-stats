@@ -1,4 +1,6 @@
 import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek.js";
+import advancedFormat from "dayjs/plugin/advancedFormat.js";
 import type {
   AggregatedPeriodStats,
   AggregatedPeriodStatsByStepMinutes,
@@ -8,6 +10,9 @@ import type {
 import { getStandardDeviation } from "./getStandardDeviation.js";
 import { getDeciles } from "./getDeciles.js";
 import { getXPercentile } from "./getXPercentile.js";
+
+dayjs.extend(isoWeek);
+dayjs.extend(advancedFormat);
 
 const Periods = {
   WEEK: "week",

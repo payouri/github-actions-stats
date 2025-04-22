@@ -1,5 +1,5 @@
 import { createWorkflowInstance } from "./methods/createWorkflowInstance.js";
-import { loadRetrievedWorkflowData } from "./methods/loadRetrievedWorkflowDataFromDisk.js";
+import { loadRetrievedWorkflowData } from "./methods/loadRetrievedWorkflowData.js";
 import { saveRetrievedWorkflowData } from "./methods/saveRetrievedWorkDataFromDisk.js";
 
 export const retrievedWorkflowService = (() => {

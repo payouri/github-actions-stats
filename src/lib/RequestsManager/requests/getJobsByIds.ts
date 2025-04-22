@@ -1,7 +1,6 @@
-import type { components } from "@octokit/openapi-types";
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
+import type { RunJobData } from "../../../entities/FormattedWorkflow/types.js";
 import type { MethodResult } from "../../../types/MethodResult.js";
-import type { RunJobData } from "../../../entities/index.js";
 
 export type BuildGetJobsByIdsRequestDependencies = {
   githubClient: GithubApi["rest"];

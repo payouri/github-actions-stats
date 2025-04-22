@@ -82,7 +82,10 @@ export const saveRetrivedWorkflowRuns = async (data: {
     return { hasFailed: true, error: new Error("Workflow data not found") };
   }
   const newRunsIds = Object.keys(runs);
-  if (!newRunsIds.length) return { hasFailed: false };
+  if (!newRunsIds.length) {
+    await workflowStorage.set(workflowKey, workflowData);
+    return { hasFailed: false };
+  }
 
   const updatedRunsArray = new Set<number>(workflowData.workflowsList);
   for (const runId of newRunsIds) {
