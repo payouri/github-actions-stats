@@ -56,5 +56,6 @@ export type FSStorage<
   }
 > & {
   getFilePath: (key: string) => string;
+  schema: Schema;
   init: () => Promise<void>;
 };

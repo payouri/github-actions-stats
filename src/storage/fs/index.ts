@@ -158,5 +158,8 @@ export function createFSStorage<
     query: (async () => []) as FSStorageQueryMethod<Result>,
     getMany,
     getFilePath,
+    get schema() {
+      return schema;
+    },
   } as Storage;
 }
