@@ -1,88 +1,55 @@
 import type { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { createWorkflowInstance } from "../../../cli/entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
-import { getFeaturesModule } from "../../../features/index.js";
-import { buildGithubRequests } from "../../../lib/RequestsManager/requests/buildRequests.js";
-import githubClient from "../../../lib/githubClient.js";
+import { validator } from "hono/validator";
+import { z } from "zod";
+import { processWorkflowJobQueue } from "../../queue.js";
+import { generateWorkflowKey } from "../../../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
 
 export function buildJobsWorkflowsRoutes<
   Env extends Record<string, unknown>
 >(dependencies: { app: Hono<Env> }) {
   const { app } = dependencies;
-  const { getWorkflowInstance, loadWorkflowData, saveWorkflowData } =
-    getFeaturesModule();
 
-  app.post("/jobs/workflows", async (c) => {
-    const { getRepoWorkflowData } = buildGithubRequests({
-      octokit: githubClient.rest,
-    });
-    const workflowDataResponse = await loadWorkflowData({
-      repositoryName: "havresac",
-      repositoryOwner: "Waapi-Pro",
-      workflowName: "Continous Integration",
-    });
-    if (workflowDataResponse.hasFailed) {
-      const workflowData = await getRepoWorkflowData({
-        repositoryName: "havresac",
-        repositoryOwner: "Waapi-Pro",
-        workflowName: "Continous Integration",
-      });
-      if (workflowData.hasFailed) {
-        const errCode =
-          workflowData.error.code === "workflow_not_found" ||
-          workflowData.error.code === "repo_not_found"
-            ? 404
-            : 500;
+  const zodSchema = z.object({
+    workflowKey: z.string(),
+  });
 
-        throw new HTTPException(errCode, {
-          res: new Response(
-            errCode === 404 ? "Not Found" : "Internal Server Error",
-            {
-              status: errCode,
-              statusText:
-                errCode === 404 ? "Not Found" : "Internal Server Error",
-            }
-          ),
+  app.post(
+    "/jobs/workflows",
+    validator("json", (value) => {
+      const parsedBody = zodSchema.safeParse(value);
+      if (!parsedBody.success) {
+        throw new HTTPException(400, {
+          message: "Validation Failed",
+          res: new Response("Bad Request", {
+            status: 400,
+            statusText: "Validation Failed",
+          }),
         });
       }
-      await saveWorkflowData({
-        repositoryName: workflowData.data.repository.name,
-        repositoryOwner: workflowData.data.repository.owner.login,
-        workflowName: workflowData.data.workflows.workflow.name,
-        workflowData: {
-          lastRunAt: new Date(),
-          oldestRunAt: new Date(),
-          lastUpdatedAt: new Date(),
-          totalWorkflowRuns: 0,
-          workflowId: workflowData.data.workflows.workflow.id,
-          workflowName: workflowData.data.workflows.workflow.name,
-          workflowParams: {
-            owner: workflowData.data.repository.owner.login,
-            repo: workflowData.data.repository.name,
-            branchName: workflowData.data.repository.default_branch,
-          },
-          workflowWeekRunsMap: {},
+
+      return parsedBody.data;
+    }),
+    async (c) => {
+      const { workflowKey } = await c.req.json();
+
+      const addJobResult = await processWorkflowJobQueue.addJob({
+        jobName: "retrieve-workflow-updates",
+        jobData: {
+          workflowKey,
         },
       });
-    }
 
-    setImmediate(async () => {
-      try {
-        await getWorkflowInstance(
-          {
-            repositoryName: "havresac",
-            repositoryOwner: "Waapi-Pro",
-            workflowName: "Continous Integration",
-          },
-          {
-            withoutUpdate: false,
-          }
-        );
-      } catch (error) {
-        console.error(error);
+      if (addJobResult.hasFailed) {
+        throw new HTTPException(500, {
+          res: new Response("Internal Server Error", {
+            status: 500,
+            statusText: "Internal Server Error",
+          }),
+        });
       }
-    });
 
-    return c.json({ message: "Process Started" });
-  });
+      return c.json({ message: "Process will start shortly" });
+    }
+  );
 }

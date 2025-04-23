@@ -8,6 +8,7 @@ import type {
   Worker,
 } from "./types.js";
 
+const PREFIX = "github-actions-stats-queues";
 const INIT_TIMEOUT = 10_000;
 
 export function createQueue<T extends DefaultJobsMap>(
@@ -25,7 +26,7 @@ export function createQueue<T extends DefaultJobsMap>(
       lazyConnect: true,
       url: redisUrl,
     },
-    prefix: name,
+    prefix: PREFIX,
     streams: {
       events: {
         maxLen: 5000,
@@ -48,10 +49,10 @@ export function createQueue<T extends DefaultJobsMap>(
     const [{ jobName, jobData }] = data;
 
     await queue.add(jobName, jobData, {
-      deduplication: {
-        id: jobName,
-        ttl: 2000,
-      },
+      // deduplication: {
+      //   id: jobName,
+      //   ttl: 2000,
+      // },
     });
 
     return {
@@ -177,16 +178,18 @@ export function createWorker<Job extends DefaultJobsMap>(
     : abortController.signal;
 
   const worker = new BullWorker(
-    name,
+    queue,
     async (job) => {
-      logger.debug(`Processing job ${job.id}, job name ${job.name}`);
+      logger.debug(`[${queue}] Processing job ${job.id}, job name ${job.name}`);
       const start = performance.now();
       const result = await processJob(job, {
         abortSignal,
       });
       const end = performance.now();
       logger.debug(
-        `Job ${job.id} processed in ${end - start}ms, result: ${result}`
+        `[${queue}] Job ${job.id} processed in ${
+          end - start
+        }ms, result: ${result}`
       );
     },
     {
@@ -196,7 +199,7 @@ export function createWorker<Job extends DefaultJobsMap>(
       },
       autorun: false,
       concurrency,
-      prefix: queue,
+      prefix: PREFIX,
     }
   );
 
@@ -251,6 +254,12 @@ export function createWorker<Job extends DefaultJobsMap>(
     }
 
     if (worker.isRunning()) {
+      if (worker.isPaused()) {
+        logger.debug(`Worker ${name} is already paused`);
+        return {
+          hasFailed: false,
+        };
+      }
       logger.debug(`Worker ${name} is already running`);
       return {
         hasFailed: false,
@@ -258,10 +267,10 @@ export function createWorker<Job extends DefaultJobsMap>(
     }
 
     const start = Date.now();
-    logger.debug(`Starting worker ${name}`);
+    logger.debug(`Starting worker ${name}:${worker.id}`);
     worker.run();
     while (!worker.isRunning()) {
-      logger.debug(`Waiting for worker ${name} to be ready`);
+      logger.debug(`Waiting for worker ${name}:${worker.id} to be ready`);
       await new Promise((resolve) => {
         setTimeout(resolve, 100);
       });
@@ -270,13 +279,21 @@ export function createWorker<Job extends DefaultJobsMap>(
           hasFailed: true,
           error: {
             code: "failed_to_init_worker",
-            message: `RedisClient of worker ${name} failed to connect`,
-            error: new Error(`RedisClient of worker ${name} is not ready`),
+            message: `RedisClient of worker ${name}:${worker.id} failed to connect`,
+            error: new Error(
+              `RedisClient of worker ${name}:${worker.id} is not ready`
+            ),
             data: undefined,
           },
         };
       }
     }
+    if (worker.isPaused()) {
+      logger.debug(`Worker ${name}:${worker.id} is paused`);
+      worker.resume();
+    }
+
+    logger.debug(`Worker ${name}:${worker.id} initialized`);
 
     return {
       hasFailed: false,
@@ -286,7 +303,7 @@ export function createWorker<Job extends DefaultJobsMap>(
   abortSignal.addEventListener(
     "abort",
     () => {
-      logger.debug(`Aborting worker ${name}`);
+      logger.debug(`Aborting worker ${name}:${worker.id}`);
       close();
     },
     { once: true }
