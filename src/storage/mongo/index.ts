@@ -175,6 +175,12 @@ export function createMongoStorage<
     logger.debug(`Data for key ${key} has been deleted in ${endTime - time}ms`);
   }
 
+  async function close() {
+    logger.debug("Closing MongoDB connection");
+    await connection.close();
+    logger.debug("MongoDB connection has been closed");
+  }
+
   return {
     get hasInit() {
       return connection.readyState !== ConnectionStates.disconnected;
@@ -187,6 +193,7 @@ export function createMongoStorage<
     get,
     set,
     delete: deleteOne,
+    close,
     startTransaction: () => {
       if (!connection.db?.writeConcern) {
         return Promise.resolve(undefined);

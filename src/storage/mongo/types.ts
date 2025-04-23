@@ -75,4 +75,5 @@ export type MongoStorage<Result> = OverrideMethods<
   startTransaction: () => Promise<ClientSession | undefined>;
   hasInit: boolean;
   init: () => Promise<void>;
+  close: () => Promise<void>;
 };

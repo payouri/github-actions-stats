@@ -1,19 +1,10 @@
 import logger from "../lib/Logger/logger.js";
 import { beforeListen } from "./beforeListen.js";
+import { globalServerAbortController } from "./globalServerAbortController.js";
 import { createServer } from "./index.js";
-
-// import { createClient } from "redis";
+import { processWorkflowJobQueue } from "./queue.js";
 
 async function main() {
-  // console.log("Connecting to redis");
-  // const client = createClient({
-  //   socket: {
-  //     tls: true,
-  //     rejectUnauthorized: false,
-  //   },
-  // });
-  // await client.connect();
-
   await beforeListen();
   logger.info("Starting server...");
   const server = await createServer();
@@ -22,38 +13,38 @@ async function main() {
     logger.error("Server error", err);
   });
 
-  process.on("SIGTERM", () => {
+  process.on("SIGTERM", async () => {
+    globalServerAbortController.abort("SIGTERM");
+    await Promise.all([processWorkflowJobQueue.close()]);
+    if (!server.listening) {
+      logger.debug("Server wasn't listening");
+      process.exit(0);
+    }
+    logger.debug("Closing server");
     server.close((error) => {
       if (error) {
         logger.error("Error closing server", error);
-        // logger.once("drain", () => {
-        // });
         process.exit(1);
       }
-      // logger.once("drain", () => {
-      // });
       logger.info("Server closed");
       process.exit(0);
     });
   });
   process.on("SIGINT", () => {
+    if (!server.listening) {
+      logger.debug("Server wasn't listening");
+      process.exit(0);
+    }
+    logger.debug("Closing server");
     server.close((error) => {
       if (error) {
         logger.error("Error closing server", error);
-        // logger.once("drain", () => {
-        // });
         process.exit(1);
       }
-      // logger.once("drain", () => {
-      // });
       logger.info("Server closed");
       process.exit(0);
     });
   });
-  // process.on("beforeExit", async () => {
-  //   // process.exit(0);
-  //   console.log("beforeExit");
-  // });
   process.on("uncaughtException", (err) => {
     console.error(err);
     logger.error("Uncaught exception", err);
@@ -64,13 +55,6 @@ async function main() {
     logger.error("Unhandled rejection", err);
     process.exit(1);
   });
-
-  // const fsStorage = createFSStorage({
-  //   directory: "./data",
-  //   generateFileName: (key) => `${key}.json`,
-  //   logger,
-  // });
-  // console.log(await fsStorage.init());
 }
 
 await main();

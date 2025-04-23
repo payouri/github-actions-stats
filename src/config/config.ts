@@ -4,6 +4,7 @@ import { MONGO_CONFIG } from "./mongo.js";
 import { SERVER_CONFIG } from "./server.js";
 import { FS_CONFIG } from "./fs.js";
 import { resolve } from "path";
+import { REDIS_CONFIG } from "./redis.js";
 
 const DOT_ENV_FILE_PATH = resolve(process.cwd(), ".env");
 
@@ -16,4 +17,5 @@ export const config = {
   GITHUB: GITHUB_CONFIG,
   SERVER: SERVER_CONFIG,
   FS: FS_CONFIG,
+  REDIS: REDIS_CONFIG,
 };
