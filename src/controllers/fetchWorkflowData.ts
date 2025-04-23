@@ -42,10 +42,11 @@ export type FetchWorkflowDataControllerResponse = MethodResult<
 >;
 
 export type FetchWorkflowDataController = (
-  params: FetchWorkflowDataControllerParams
+  params: FetchWorkflowDataControllerParams,
+  options?: FetchWorkflowDataControllerOptions
 ) => Promise<FetchWorkflowDataControllerResponse>;
 
-export function buildFetchWorkflowData(
+export function buildFetchWorkflowDataController(
   dependencies: FetchWorkflowDataControllerDependencies
 ) {
   const {
@@ -59,7 +60,7 @@ export function buildFetchWorkflowData(
     octokit: githubClient,
   });
 
-  return async function fetchWorkflowData(
+  return async function fetchWorkflowDataController(
     params: FetchWorkflowDataControllerParams,
     options?: FetchWorkflowDataControllerOptions
   ): Promise<FetchWorkflowDataControllerResponse> {

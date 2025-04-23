@@ -1,10 +1,17 @@
 import { Command } from "commander";
 import type { Logger } from "winston";
 import { z } from "zod";
-import { buildFetchWorkflowData } from "../../controllers/fetchWorkflowData.js";
-import { buildFetchWorkflowUpdatesController } from "../../controllers/fetchWorkflowUpdates.js";
+import {
+  buildFetchWorkflowDataController,
+  type FetchWorkflowDataController,
+} from "../../controllers/fetchWorkflowData.js";
+import {
+  buildFetchWorkflowUpdatesController,
+  type FetchWorkflowUpdatesController,
+} from "../../controllers/fetchWorkflowUpdates.js";
 import githubClient from "../../lib/githubClient.js";
 import defaultLogger from "../../lib/Logger/logger.js";
+import { GITHUB_TOKEN_OPTION } from "../constants.js";
 import { createWorkflowInstance } from "../entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
 import { isExistingWorkflowData } from "../entities/RetrievedWorkflowData/methods/isExistingWorkflowData.js";
 import { loadRetrievedWorkflowData } from "../entities/RetrievedWorkflowData/methods/loadRetrievedWorkflowData.js";
@@ -13,12 +20,7 @@ import type { CommandOption } from "../types.js";
 import { saveWorkflowData } from "./fetchNewWorkflowRuns/methods/saveWorkflowData.js";
 
 const getWorkflowRunsInstanceOptions: CommandOption[] = [
-  {
-    name: "githubToken",
-    paramName: "github-token",
-    description: "Github token",
-    required: true,
-  },
+  GITHUB_TOKEN_OPTION,
   {
     name: "workflowName",
     description: "Workflow name",
@@ -51,6 +53,96 @@ const getWorkflowRunsInstanceOptions: CommandOption[] = [
   },
 ];
 
+function buildFetchNewWorkflowRuns(dependencies: {
+  logger: Logger;
+  program: Command;
+  fetchWorkflowData: FetchWorkflowDataController;
+  fetchWorkflowUpdatesController: FetchWorkflowUpdatesController;
+}) {
+  const { logger, program, fetchWorkflowData, fetchWorkflowUpdatesController } =
+    dependencies;
+
+  return async function fetchNewWorkflowRunsCommand(
+    parsedOptions: Record<string, any>
+  ) {
+    function onAbort(signal: string) {
+      logger.warn(`${signal} signal received`);
+      abortController.abort(`${signal} signal received`);
+    }
+    process.on("SIGINT", onAbort);
+    process.on("SIGTERM", onAbort);
+    const abortController = new AbortController();
+
+    const globalOptions = program.opts();
+    console.log(globalOptions);
+    for (const option of getWorkflowRunsInstanceOptions) {
+      if (
+        option.required &&
+        !option.defaultValue &&
+        !parsedOptions[option.name]
+      ) {
+        throw new Error(`Option ${option.name} is required`);
+      }
+      if (option.validator) {
+        const { name } = option;
+        const optionValue = parsedOptions[name];
+        option.validator.parse(optionValue);
+      }
+    }
+    if (abortController.signal.aborted) {
+      return;
+    }
+
+    const workflowDataResponse = await fetchWorkflowData(
+      {
+        repositoryName: parsedOptions.repositoryName,
+        repositoryOwner: parsedOptions.repositoryOwner,
+        workflowName: parsedOptions.workflowName,
+      },
+      {
+        allowFallback: false,
+        createIfNotExists: true,
+      }
+    );
+
+    if (workflowDataResponse.hasFailed) {
+      throw new Error(
+        `[${workflowDataResponse.error.code}]: ${workflowDataResponse.error.message}`,
+        {
+          cause: workflowDataResponse.error,
+        }
+      );
+    }
+
+    const { data: workflowInstance } = workflowDataResponse;
+
+    if (abortController.signal.aborted) {
+      return;
+    }
+    logger.info("Fetching new workflow runs...".bgBlack.yellow);
+    const newWorkflowRunsResponse = await fetchWorkflowUpdatesController({
+      workflowInstance: createWorkflowInstance(workflowInstance),
+      updateType: parsedOptions.updateType,
+      abortSignal: abortController.signal,
+    });
+
+    if (newWorkflowRunsResponse.hasFailed) {
+      throw new Error(`Failed to fetch new workflow runs`, {
+        cause: newWorkflowRunsResponse.error,
+      });
+    }
+
+    logger.info(
+      `New workflow runs count: ${newWorkflowRunsResponse.data.totalWorkflowRuns}`
+    );
+
+    process.removeListener("SIGINT", onAbort);
+    process.removeListener("SIGTERM", onAbort);
+
+    process.exit(0);
+  };
+}
+
 export function buildFetchNewWorkflowRunsCommand(dependencies: {
   program: Command;
   logger?: Logger;
@@ -62,87 +154,22 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
     workflowPerPage: 1,
     saveWorkflowData,
   });
-  const fetchWorkflowData = buildFetchWorkflowData({
+  const fetchWorkflowData = buildFetchWorkflowDataController({
     githubClient: githubClient.rest,
     isExistingWorkflowData,
     loadRetrievedWorkflowData,
     saveRetrievedWorkflowData: saveWorkflowData,
   });
+  const fetchWorkflowUpdatesAction = buildFetchNewWorkflowRuns({
+    fetchWorkflowData,
+    fetchWorkflowUpdatesController,
+    logger,
+    program,
+  });
 
   const fetchNewWorkflowRunsCommand = new Command("fetch-new-runs")
     .description("Retrieve workflow runs data")
-    .action(async (parsedOptions) => {
-      function onAbort(signal: string) {
-        logger.warn(`${signal} signal received`);
-        abortController.abort(`${signal} signal received`);
-      }
-      process.on("SIGINT", onAbort);
-      process.on("SIGTERM", onAbort);
-      const abortController = new AbortController();
-
-      const globalOptions = program.opts();
-      console.log(globalOptions);
-      for (const option of getWorkflowRunsInstanceOptions) {
-        if (
-          option.required &&
-          !option.defaultValue &&
-          !parsedOptions[option.name]
-        ) {
-          throw new Error(`Option ${option.name} is required`);
-        }
-        if (option.validator) {
-          const { name } = option;
-          const optionValue = parsedOptions[name];
-          option.validator.parse(optionValue);
-        }
-      }
-
-      const workflowDataResponse = await fetchWorkflowData(
-        {
-          repositoryName: parsedOptions.repositoryName,
-          repositoryOwner: parsedOptions.repositoryOwner,
-          workflowName: parsedOptions.workflowName,
-        },
-        {
-          allowFallback: false,
-          createIfNotExists: true,
-        }
-      );
-
-      if (workflowDataResponse.hasFailed) {
-        throw new Error(
-          `[${workflowDataResponse.error.code}]: ${workflowDataResponse.error.message}`,
-          {
-            cause: workflowDataResponse.error,
-          }
-        );
-      }
-
-      const { data: workflowInstance } = workflowDataResponse;
-
-      logger.info("Fetching new workflow runs...".bgBlack.yellow);
-      const newWorkflowRunsResponse = await fetchWorkflowUpdatesController({
-        workflowInstance: createWorkflowInstance(workflowInstance),
-        updateType: parsedOptions.updateType,
-        abortSignal: abortController.signal,
-      });
-
-      if (newWorkflowRunsResponse.hasFailed) {
-        throw new Error(`Failed to fetch new workflow runs`, {
-          cause: newWorkflowRunsResponse.error,
-        });
-      }
-
-      logger.info(
-        `New workflow runs count: ${newWorkflowRunsResponse.data.totalWorkflowRuns}`
-      );
-
-      process.removeListener("SIGINT", onAbort);
-      process.removeListener("SIGTERM", onAbort);
-
-      console.log("Done");
-      process.exit(0);
-    });
+    .action(fetchWorkflowUpdatesAction);
 
   for (const option of getWorkflowRunsInstanceOptions) {
     if (option.required) {
