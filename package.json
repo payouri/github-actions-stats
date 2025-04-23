@@ -35,7 +35,7 @@
     "test": "jest --config ./jest.config.json",
     "build": "tsc -p ./tsconfig.json && tsc-alias -p ./tsconfig.json",
     "postinstall": "$npm_execpath run build",
-    "start:cli:tsx": "tsx src/cli.ts",
+    "start:cli:tsx": "NODE_NO_WARNINGS=1 node --loader ts-node/esm src/cli.ts",
     "start:cli": "node dist/cli.js",
     "start:server": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./src/server/start.ts",
     "dev:server": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./src/server/start.ts"

@@ -79,20 +79,12 @@ export function buildFetchWorkflowUpdatesController(
 
     const { created } = getRequestCreatedAtParams(workflowInstance, updateType);
 
-    abortSignal?.addEventListener(
-      "abort",
-      () => {
-        aborted = true;
-      },
-      { once: true }
-    );
-    let aborted = false;
     let page = 1;
     let isDone = false;
     let totalCount = 0;
     do {
       try {
-        if (aborted) {
+        if (abortSignal?.aborted) {
           logger.warn(
             `Fetching ${workflowInstance.repositoryOwner}/${workflowInstance.repositoryName}/${workflowInstance.workflowId} workflow runs aborted`
           );

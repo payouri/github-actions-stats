@@ -5,14 +5,20 @@ import { buildFetchWorkflowData } from "../../controllers/fetchWorkflowData.js";
 import { buildFetchWorkflowUpdatesController } from "../../controllers/fetchWorkflowUpdates.js";
 import githubClient from "../../lib/githubClient.js";
 import defaultLogger from "../../lib/Logger/logger.js";
+import { createWorkflowInstance } from "../entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
 import { isExistingWorkflowData } from "../entities/RetrievedWorkflowData/methods/isExistingWorkflowData.js";
 import { loadRetrievedWorkflowData } from "../entities/RetrievedWorkflowData/methods/loadRetrievedWorkflowData.js";
 import { createOption } from "../helpers/createOption.js";
 import type { CommandOption } from "../types.js";
 import { saveWorkflowData } from "./fetchNewWorkflowRuns/methods/saveWorkflowData.js";
-import { createWorkflowInstance } from "../entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
 
 const getWorkflowRunsInstanceOptions: CommandOption[] = [
+  {
+    name: "githubToken",
+    paramName: "github-token",
+    description: "Github token",
+    required: true,
+  },
   {
     name: "workflowName",
     description: "Workflow name",
@@ -66,13 +72,16 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
   const fetchNewWorkflowRunsCommand = new Command("fetch-new-runs")
     .description("Retrieve workflow runs data")
     .action(async (parsedOptions) => {
-      function onAbort() {
-        logger.warn("SIGINT signal received");
-        abortController.abort();
+      function onAbort(signal: string) {
+        logger.warn(`${signal} signal received`);
+        abortController.abort(`${signal} signal received`);
       }
       process.on("SIGINT", onAbort);
+      process.on("SIGTERM", onAbort);
       const abortController = new AbortController();
+
       const globalOptions = program.opts();
+      console.log(globalOptions);
       for (const option of getWorkflowRunsInstanceOptions) {
         if (
           option.required &&
@@ -127,13 +136,19 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
       logger.info(
         `New workflow runs count: ${newWorkflowRunsResponse.data.totalWorkflowRuns}`
       );
+
       process.removeListener("SIGINT", onAbort);
+      process.removeListener("SIGTERM", onAbort);
+
+      console.log("Done");
+      process.exit(0);
     });
 
   for (const option of getWorkflowRunsInstanceOptions) {
     if (option.required) {
       const { name, description, required, paramName } = option;
       const optionValueString = required ? `<${name}>` : `[${name}]`;
+      console.log(optionValueString);
 
       fetchNewWorkflowRunsCommand.requiredOption(
         `--${paramName ?? name} ${optionValueString}`,
