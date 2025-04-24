@@ -1,49 +1,62 @@
+import type { ServerType } from "@hono/node-server";
 import logger from "../lib/Logger/logger.js";
 import { beforeListen } from "./beforeListen.js";
 import { globalServerAbortController } from "./globalServerAbortController.js";
 import { createServer } from "./index.js";
 import { processWorkflowJobQueue } from "./queue.js";
+import { formatMs } from "../helpers/format/formatMs.js";
+
+const SIGNALS = ["SIGINT", "SIGTERM"];
+
+function handleSignal(params: {
+  abortController: AbortController;
+  server: ServerType;
+}) {
+  const { abortController, server } = params;
+
+  SIGNALS.forEach((signal) => {
+    process.on(signal, async () => {
+      logger.warn(`${signal} signal received`);
+      if (abortController.signal.aborted) return;
+
+      const start = performance.now();
+      logger.info(`Closing server...`);
+      await Promise.all([processWorkflowJobQueue.close()]);
+
+      abortController.abort(`${signal} signal received`);
+      if (!server.listening) {
+        logger.debug(
+          `Server wasn't listening ${formatMs(performance.now() - start)}`
+        );
+        process.exit(0);
+      }
+      server.close((error) => {
+        if (error) {
+          logger.error("Error closing server", error);
+          process.exit(1);
+        }
+        logger.info(`Server closed in ${formatMs(performance.now() - start)}`);
+        process.exit(0);
+      });
+    });
+    return;
+  });
+}
 
 async function main() {
-  await beforeListen();
   logger.info("Starting server...");
+  const start = performance.now();
+  await beforeListen();
   const server = await createServer();
+  logger.info(`Server started in ${formatMs(performance.now() - start)}`);
 
   server.on("error", (err) => {
     logger.error("Server error", err);
   });
 
-  process.on("SIGTERM", async () => {
-    globalServerAbortController.abort("SIGTERM");
-    await Promise.all([processWorkflowJobQueue.close()]);
-    if (!server.listening) {
-      logger.debug("Server wasn't listening");
-      process.exit(0);
-    }
-    logger.debug("Closing server");
-    server.close((error) => {
-      if (error) {
-        logger.error("Error closing server", error);
-        process.exit(1);
-      }
-      logger.info("Server closed");
-      process.exit(0);
-    });
-  });
-  process.on("SIGINT", () => {
-    if (!server.listening) {
-      logger.debug("Server wasn't listening");
-      process.exit(0);
-    }
-    logger.debug("Closing server");
-    server.close((error) => {
-      if (error) {
-        logger.error("Error closing server", error);
-        process.exit(1);
-      }
-      logger.info("Server closed");
-      process.exit(0);
-    });
+  handleSignal({
+    abortController: globalServerAbortController,
+    server,
   });
   process.on("uncaughtException", (err) => {
     console.error(err);

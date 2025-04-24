@@ -67,6 +67,8 @@ function buildFetchNewWorkflowRuns(dependencies: {
   ) {
     function onAbort(signal: string) {
       logger.warn(`${signal} signal received`);
+      if (abortController.signal.aborted) return;
+
       abortController.abort(`${signal} signal received`);
     }
     process.on("SIGINT", onAbort);

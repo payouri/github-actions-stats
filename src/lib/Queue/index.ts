@@ -1,4 +1,9 @@
-import { Queue as BullQueue, Worker as BullWorker } from "bullmq";
+import {
+  Queue as BullQueue,
+  Worker as BullWorker,
+  UnrecoverableError,
+} from "bullmq";
+import { formatMs } from "../../helpers/format/formatMs.js";
 import logger from "../Logger/logger.js";
 import type {
   CreateQueueParams,
@@ -35,10 +40,12 @@ export function createQueue<T extends DefaultJobsMap>(
     defaultJobOptions: {
       keepLogs: 10,
       attempts: 0,
+      removeOnComplete: true,
+      removeOnFail: true,
       sizeLimit: 1024 / 4,
       backoff: {
         type: "exponential",
-        delay: 5000,
+        delay: 1000,
       },
     },
   });
@@ -62,6 +69,7 @@ export function createQueue<T extends DefaultJobsMap>(
 
   async function init(): ReturnType<Queue<T>["init"]> {
     const client = await queue.client;
+
     if (client.status === "ready") {
       logger.debug(`Queue ${name} is already ready`);
       return {
@@ -130,6 +138,7 @@ export function createQueue<T extends DefaultJobsMap>(
 
       logger.debug(`Closing queue ${name}`);
       await queue.close();
+      logger.debug(`Queue ${name} has been closed`);
       return {
         hasFailed: false,
       };
@@ -180,17 +189,41 @@ export function createWorker<Job extends DefaultJobsMap>(
   const worker = new BullWorker(
     queue,
     async (job) => {
-      logger.debug(`[${queue}] Processing job ${job.id}, job name ${job.name}`);
-      const start = performance.now();
-      const result = await processJob(job, {
-        abortSignal,
-      });
-      const end = performance.now();
-      logger.debug(
-        `[${queue}] Job ${job.id} processed in ${
-          end - start
-        }ms, result: ${result}`
-      );
+      try {
+        logger.debug(
+          `[${queue}] Processing job ${job.id}, job name ${job.name}`
+        );
+        const start = performance.now();
+        const result = await processJob(job, {
+          abortSignal,
+        });
+        if (result.hasFailed) {
+          if (result.error.code === "job_aborted") {
+            throw new Error("Job aborted");
+          }
+          throw new Error(result.error.message);
+        } else if (abortSignal.aborted && job.token) {
+          throw new Error("Job aborted");
+        }
+        const end = performance.now();
+        logger.debug(
+          `[${queue}] Job ${job.id} processed in ${formatMs(end - start)}ms`
+        );
+      } catch (error) {
+        job.failedReason = JSON.stringify(error);
+        if (
+          error instanceof Error &&
+          error.message === "Job aborted" &&
+          job.token
+        ) {
+          logger.debug(`[${queue}] Job ${job.id} is aborted, moving to wait`);
+          await job.moveToWait(job.token);
+          return;
+        }
+
+        logger.error(`[${queue}] Job ${job.id} failed to process`, error);
+        throw new UnrecoverableError(String(error));
+      }
     },
     {
       connection: {

@@ -5,6 +5,7 @@ import { createEmptyWorkflowData } from "../helpers/createEmptyWorkflowData.js";
 import { buildGetRepoWorkflowDataRequest } from "../lib/RequestsManager/requests/getRepoWorkflowData.js";
 import type { ProcessResponse } from "../ProcessResponse.types.js";
 import type { MethodResult } from "../types/MethodResult.js";
+import logger from "../lib/Logger/logger.js";
 
 export type FetchWorkflowDataControllerDependencies = {
   githubClient: Octokit["rest"];
@@ -123,9 +124,8 @@ export function buildFetchWorkflowDataController(
         },
       }))
     ) {
-      console.log(
-        "Creating workflow data",
-        repoWorkflowDataResponse.data.workflows.workflow.id
+      logger.debug(
+        `Creating workflow data for workflow ${workflowName} in repository ${repositoryName} by ${repositoryOwner}`
       );
       const saveResultResponse = await saveRetrievedWorkflowData({
         repositoryName,

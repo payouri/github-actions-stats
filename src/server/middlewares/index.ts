@@ -3,6 +3,10 @@ import type { Hono } from "hono";
 import type { Logger } from "winston";
 import defaultLogger from "../../lib/Logger/logger.js";
 import type { HonoRequestContext } from "../types.js";
+import type { ZodSchema } from "zod";
+import { validator } from "hono/validator";
+import { HTTPException } from "hono/http-exception";
+import { formatMs } from "../../helpers/format/formatMs.js";
 
 const DefaultMethodColor = "grey";
 const MethodColorMap = {
@@ -12,19 +16,6 @@ const MethodColorMap = {
   DELETE: "red",
   PATCH: "magenta",
 } as const;
-const formatMs = (ms: number, fixed = 2) => {
-  if (ms < 100) {
-    return `${ms.toFixed(fixed)}ms`.green;
-  }
-  if (ms < 1000) {
-    return `${ms.toFixed(fixed)}ms`.yellow;
-  }
-  if (ms < 10000) {
-    return `${ms.toFixed(fixed)}ms`.magenta;
-  }
-
-  return `${ms.toFixed(fixed)}ms`.red;
-};
 
 export function requestTimeMiddleware(options?: {
   logger?: Logger;
@@ -56,4 +47,50 @@ export function requestTimeMiddleware(options?: {
       );
       c.res.headers.set("X-Response-Time", `${responseTimeMs.toFixed(2)}ms`);
     });
+}
+//     validator("json", (value) => {
+//       const parsedBody = schema.safeParse(value);
+//       if (!parsedBody.success) {
+//         throw new HTTPException(400, {
+//           message: "Validation Failed",
+//           res: new Response("Bad Request", {
+//             status: 400,
+//             statusText: "Validation Failed",
+//           }),
+//         });
+//       }
+
+//       return parsedBody.data;
+//     }),
+
+export function validateJsonRequestBodyMiddleware<Schema extends ZodSchema>(
+  path: string,
+  schema: Schema
+) {
+  return (app: Hono<HonoRequestContext>) =>
+    app.use(
+      path,
+      async (c, next) => {
+        if (c.req.method === "POST" || c.req.method === "PUT") {
+          if (c.req.header("content-type") !== "application/json") {
+            throw new Error("Content-Type header is not application/json");
+          }
+        }
+        next();
+      },
+      validator("json", (value) => {
+        const parsedBody = schema.safeParse(value);
+        if (!parsedBody.success) {
+          throw new HTTPException(400, {
+            message: "Validation Failed",
+            res: new Response("Bad Request", {
+              status: 400,
+              statusText: "Validation Failed",
+            }),
+          });
+        }
+
+        return parsedBody.data;
+      })
+    );
 }

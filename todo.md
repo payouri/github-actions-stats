@@ -5,22 +5,33 @@
 * ~~review data structure of workflow runs~~
     * run details are deeply nested
 * redo ReadMe
+* better identifiers for workflow and runs
+    * keys are case insensitive
+    * workflow keys use workflow id instead of name
+    * 
 
 # Server
 * rework workflow routes
-    * separate processing workflows and toute body
+    * ~~separate processing workflows and route body~~
 * stop using WorkflowInstance for data handling / allow to fecth workflows and runs independently
 * give options to protect api
-* implement workers to process workflow runs
+* ~~implement workers to process workflow runs~~
 
 # CLI
 * ~~use better storage implementaion~~
 * make interface more friendly
 * rework and re-enable cli
+    * ~~fetchNewWorkflowRunsCommand reimplemented~~
+    * generate StatsCommand reimplemented
 
 # Frontend
 * merge this repo with the stat viewer repo
 * connect api
+
+# Tools
+* ~~add fix local workflow runs ids array~~
+* add migration system
+* tool to import and export from a storage to another
 
 # Mongo
 * indexes

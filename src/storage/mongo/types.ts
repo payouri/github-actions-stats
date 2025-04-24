@@ -3,6 +3,7 @@ import type {
   Document,
   IndexDefinition,
   IndexOptions,
+  SortOrder,
 } from "mongoose";
 import type { OverrideMethods } from "../../types/OverrideMethods.js";
 import type { Storage } from "../types.js";
@@ -46,13 +47,17 @@ export type MongoStorageQueryMethod<Result> = (
     };
     status?: string;
   },
-  options?: { session?: ClientSession; limit?: number }
+  options?: {
+    session?: ClientSession;
+    limit?: number;
+    sort?: Record<string, SortOrder>;
+  }
 ) => Promise<Result[]>;
 
 export type CreateMongoStorageParams<
   Schema extends AnyZodObject,
   Result extends z.infer<Schema> = z.infer<Schema>,
-  Storage extends MongoStorage<Result> = MongoStorage<Result>
+  Storage extends MongoStorage<Schema, Result> = MongoStorage<Schema, Result>
 > = {
   collectionName: string;
   dbURI: string;
@@ -62,7 +67,10 @@ export type CreateMongoStorageParams<
   logger?: Logger;
 };
 
-export type MongoStorage<Result> = OverrideMethods<
+export type MongoStorage<
+  Schema extends AnyZodObject,
+  Result extends z.infer<Schema> = z.infer<Schema>
+> = OverrideMethods<
   Storage<Result>,
   {
     setMany: MongoStorageSetManyMethod<Result>;
@@ -76,4 +84,5 @@ export type MongoStorage<Result> = OverrideMethods<
   hasInit: boolean;
   init: () => Promise<void>;
   close: () => Promise<void>;
+  schema: Schema;
 };

@@ -23,7 +23,8 @@ export type DefaultJob<JobDefinition extends DefaultJobDefinition> = BullJob<
 
 export type MethodMap<T extends DefaultJobsMap> = {
   [JobName in DefaultJobKey<T>]: (
-    params: DefaultJob<T[JobName]>
+    params: DefaultJob<T[JobName]>,
+    options?: { abortSignal?: AbortSignal }
   ) => Promise<MethodResult<T[JobName]["jobResult"], string>>;
 };
 
@@ -61,7 +62,7 @@ export interface CreateWorkerParams<
   ) => Promise<
     MethodResult<
       JobDefinition extends { jobResult: infer Result } ? Result : void,
-      "failed_to_process_job"
+      "failed_to_process_job" | "job_aborted"
     >
   >;
 }

@@ -60,10 +60,8 @@ export const workflowRunsStorage = createMongoStorage({
   logger,
 });
 
-export type WorkflowStorage = MongoStorage<z.infer<typeof storedWorkflow>>;
-export type WorkflowRunsStorage = MongoStorage<
-  z.infer<typeof storedWorkflowRun>
->;
+export type WorkflowStorage = MongoStorage<typeof storedWorkflow>;
+export type WorkflowRunsStorage = MongoStorage<typeof storedWorkflowRun>;
 
 export const initFormattedWorkflowStorage = async () => {
   logger.debug("Initializing Workflows MongoDB storage");

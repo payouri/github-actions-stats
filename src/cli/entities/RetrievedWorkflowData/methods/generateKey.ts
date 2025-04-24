@@ -44,3 +44,30 @@ export const generateWorkflowRunKey = (params: {
 
   return replaceSpacesWithUnderscores(base);
 };
+
+export const getWorkflowParamsFromKey = (
+  key: string
+): {
+  repositoryName: string;
+  repositoryOwner: string;
+  workflowName: string;
+  branchName?: string;
+} => {
+  const [owner, repo, workflowName, branchName] = key.split("/");
+
+  if (!branchName) {
+    return {
+      repositoryOwner: owner,
+      repositoryName: repo,
+      workflowName: workflowName.replaceAll("_", " "),
+      branchName: undefined,
+    };
+  }
+
+  return {
+    repositoryOwner: owner,
+    repositoryName: repo,
+    workflowName,
+    branchName,
+  };
+};

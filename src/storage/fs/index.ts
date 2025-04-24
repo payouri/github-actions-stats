@@ -15,6 +15,7 @@ import type {
   FSStorageSetManyMethod,
   FSStorageSetMethod,
 } from "./types.js";
+import { formatMs } from "../../helpers/format/formatMs.js";
 
 function defaultGenerateFileName(params: { key: string; format: FileFormat }) {
   return `${params.key}.${params.format}`;
@@ -62,7 +63,9 @@ export function createFSStorage<
     const start = performance.now();
     const data = JSON.parse(await readFile(filePath, "utf-8"));
     const end = performance.now();
-    logger.debug(`Data for key ${key} has been fetched in ${end - start}ms`);
+    logger.debug(
+      `Data for key ${key} has been fetched in ${formatMs(end - start)}`
+    );
 
     return schema.parse(data) as Result;
   }
@@ -86,7 +89,9 @@ export function createFSStorage<
 
     await writeFile(filePath, data);
     const end = performance.now();
-    logger.debug(`Data for key ${key} has been set in ${end - start}ms`);
+    logger.debug(
+      `Data for key ${key} has been set in ${formatMs(end - start)}`
+    );
   }
 
   async function setMany(
@@ -116,7 +121,9 @@ export function createFSStorage<
     const start = performance.now();
     await unlink(filePath);
     const end = performance.now();
-    logger.debug(`Data for key ${key} has been deleted in ${end - start}ms`);
+    logger.debug(
+      `Data for key ${key} has been deleted in ${formatMs(end - start)}`
+    );
   }
 
   async function getMany(
@@ -140,7 +147,9 @@ export function createFSStorage<
       ])
     );
     const end = performance.now();
-    logger.debug(`Data for keys ${keys} has been fetched in ${end - start}ms`);
+    logger.debug(
+      `Data for keys ${keys} has been fetched in ${formatMs(end - start)}`
+    );
 
     return data.reduce<Record<string, Result | null>>((acc, [key, value]) => {
       if (value) acc[key] = value;

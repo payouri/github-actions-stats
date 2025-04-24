@@ -1,18 +1,24 @@
 import concurrently from "concurrently";
+import packageJson from "../package.json" with { type: "json" };
+
+const { scripts } = packageJson;
 
 concurrently(
   process.env.NODE_ENV === "production"
     ? []
     : [
         {
-          command: "yarn run dev:server",
+          command: scripts["dev:server"],
           prefixColor: "yellow",
           name: "server",
         },
         {
-          command: "yarn run dev:workers",
+          command: scripts["dev:workers"],
           prefixColor: "green",
           name: "worker",
         },
       ]
-);
+, {
+  killOthers: [],
+  killSignal: "SIGTERM",
+});

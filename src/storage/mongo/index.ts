@@ -11,6 +11,7 @@ import type {
   MongoStorageSetMethod,
 } from "./types.js";
 import { config } from "../../config/config.js";
+import { formatMs } from "../../helpers/format/formatMs.js";
 
 const { connection, ConnectionStates, Schema } = mongoose;
 mongoose.set("strictQuery", false);
@@ -18,21 +19,40 @@ mongoose.set("strict", false);
 
 function getSchemaFields<T extends AnyZodObject>(
   schema: T
-): Record<string, { type: typeof Schema.Types.Mixed }> {
+): Record<
+  string,
+  { type: typeof Schema.Types.Mixed | typeof Schema.Types.String }
+> {
   return Object.entries(schema.shape).reduce<
-    Record<string, { type: typeof Schema.Types.Mixed }>
-  >((acc, [fieldName]) => {
-    acc[fieldName] = {
-      type: Schema.Types.Mixed,
-    };
-    return acc;
-  }, {});
+    Record<
+      string,
+      {
+        type: typeof Schema.Types.Mixed | typeof Schema.Types.String;
+        required?: boolean;
+        unique?: boolean;
+      }
+    >
+  >(
+    (acc, [fieldName]) => {
+      acc[fieldName] = {
+        type: Schema.Types.Mixed,
+      };
+      return acc;
+    },
+    {
+      key: {
+        type: Schema.Types.String,
+        unique: true,
+        required: true,
+      },
+    }
+  );
 }
 
 export function createMongoStorage<
   Schema extends AnyZodObject,
   Result extends z.infer<Schema> = z.infer<Schema>,
-  Storage extends MongoStorage<Result> = MongoStorage<Result>
+  Storage extends MongoStorage<Schema, Result> = MongoStorage<Schema, Result>
 >(params: CreateMongoStorageParams<Schema, Result, Storage>): Storage {
   const {
     schema,
@@ -72,7 +92,9 @@ export function createMongoStorage<
       })
       .exec();
     const endTime = performance.now();
-    logger.debug(`Data for key ${key} has been fetched in ${endTime - time}ms`);
+    logger.debug(
+      `Data for key ${key} has been fetched in ${formatMs(endTime - time)}`
+    );
     if (!result) return null;
 
     return result;
@@ -94,9 +116,9 @@ export function createMongoStorage<
     }
     const afterValidation = performance.now();
     logger.debug(
-      `Data for key ${key} has been validated in ${
+      `Data for key ${key} has been validated in ${formatMs(
         afterValidation - beforeValidation
-      }ms`
+      )}`
     );
     logger.debug(`Setting data for key ${key}`);
     const time = performance.now();
@@ -111,7 +133,9 @@ export function createMongoStorage<
       { upsert: true, lean: true }
     );
     const endTime = performance.now();
-    logger.debug(`Data for key ${key} has been set in ${endTime - time}ms`);
+    logger.debug(
+      `Data for key ${key} has been set in ${formatMs(endTime - time)}`
+    );
   }
 
   async function setMany(
@@ -135,9 +159,9 @@ export function createMongoStorage<
         }
         const afterValidation = performance.now();
         logger.debug(
-          `Data for key ${key} has been validated in ${
+          `Data for key ${key} has been validated in ${formatMs(
             afterValidation - beforeValidation
-          }ms`
+          )}`
         );
         return {
           updateOne: {
@@ -159,9 +183,9 @@ export function createMongoStorage<
     );
     const endTime = performance.now();
     logger.debug(
-      `Data for keys ${Object.keys(data).join(", ")} has been set in ${
+      `Data for keys ${Object.keys(data).join(", ")} has been set in ${formatMs(
         endTime - time
-      }ms`
+      )}ms`
     );
   }
 
@@ -172,7 +196,9 @@ export function createMongoStorage<
     const time = performance.now();
     await model.deleteOne({ key });
     const endTime = performance.now();
-    logger.debug(`Data for key ${key} has been deleted in ${endTime - time}ms`);
+    logger.debug(
+      `Data for key ${key} has been deleted in ${formatMs(endTime - time)}`
+    );
   }
 
   async function close() {
@@ -182,6 +208,9 @@ export function createMongoStorage<
   }
 
   return {
+    get schema() {
+      return schema;
+    },
     get hasInit() {
       return connection.readyState !== ConnectionStates.disconnected;
     },

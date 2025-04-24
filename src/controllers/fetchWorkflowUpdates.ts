@@ -1,6 +1,9 @@
 import dayjs from "dayjs";
 import type { Octokit } from "octokit";
-import type { WorkFlowInstance } from "../cli/entities/RetrievedWorkflowData/types.js";
+import type {
+  RetrievedWorkflow,
+  WorkFlowInstance,
+} from "../cli/entities/RetrievedWorkflowData/types.js";
 import type { SaveWorkflowDataMethod } from "../features/getWorkflowInstance/methods/saveWorkflowData.js";
 import { getFormattedWorkflowRun } from "../helpers/getFormattedWorkflowRun.js";
 import { updateRunUsageWithJobs } from "../helpers/updateRunUsageWithJobs.js";
@@ -35,11 +38,16 @@ export type FetchWorkflowUpdatesControllerDependencies = {
     total: number;
   }) => Promise<void> | void;
   saveWorkflowData: SaveWorkflowDataMethod;
+  onSavedWorkflowData?: (params: {
+    workflowData: RetrievedWorkflow;
+    savedWorkflowCount: number;
+  }) => Promise<void> | void;
 };
 export type FetchWorkflowUpdatesControllerParams = {
   workflowInstance: WorkFlowInstance;
   updateType?: "oldest" | "newest" | "both";
   abortSignal?: AbortSignal;
+  alreadyFetchedCount?: number;
 };
 export type FetchWorkflowUpdatesControllerResponse = MethodResult<
   WorkFlowInstance,
@@ -57,6 +65,7 @@ export function buildFetchWorkflowUpdatesController(
     workflowPerPage = DEFAULT_WORKFLOW_PER_PAGE,
     onPage,
     saveWorkflowData,
+    onSavedWorkflowData,
   } = dependencies;
 
   const githubRequests = buildGithubRequests({
@@ -70,6 +79,7 @@ export function buildFetchWorkflowUpdatesController(
       workflowInstance,
       updateType = DEFAULT_UPDATE_TYPE,
       abortSignal,
+      alreadyFetchedCount = 0,
     } = params;
 
     if (updateType === "both") {
@@ -82,6 +92,7 @@ export function buildFetchWorkflowUpdatesController(
     let page = 1;
     let isDone = false;
     let totalCount = 0;
+    let savedWorkflow = alreadyFetchedCount;
     do {
       try {
         if (abortSignal?.aborted) {
@@ -115,6 +126,13 @@ export function buildFetchWorkflowUpdatesController(
         isDone = response.data.workflow_runs.length < workflowPerPage;
 
         for (const workflowRun of response.data.workflow_runs) {
+          if (abortSignal?.aborted) {
+            logger.warn(
+              `Fetching ${workflowInstance.repositoryOwner}/${workflowInstance.repositoryName}/${workflowInstance.workflowId} workflow runs aborted`
+            );
+            break;
+          }
+
           logger.debug(`Fetching workflow run ${workflowRun.id}`);
           const formattedWorkflowRun = getFormattedWorkflowRun(workflowRun);
 
@@ -222,6 +240,11 @@ export function buildFetchWorkflowUpdatesController(
               },
             };
           }
+          savedWorkflow += 1;
+          onSavedWorkflowData?.({
+            workflowData: saveResult.data,
+            savedWorkflowCount: savedWorkflow,
+          });
         }
       } catch (err) {
         return {
