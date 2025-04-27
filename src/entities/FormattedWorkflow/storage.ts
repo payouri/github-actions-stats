@@ -5,6 +5,7 @@ import { createMongoStorage } from "../../storage/mongo/index.js";
 import { formattedWorkflowRunSchema } from "./schemas/schema.js";
 import type { MongoStorage } from "../../storage/mongo/types.js";
 
+const STORED_WORKFLOW_VERSION = "1.0.0" as const;
 const storedWorkflow = z.object({
   workflowId: z.number(),
   workflowName: z.string(),
@@ -32,6 +33,8 @@ const storedWorkflow = z.object({
     return new Date(val);
   }),
 });
+
+const STORED_WORKFLOW_RUN_VERSION = "1.0.0" as const;
 const storedWorkflowRun = formattedWorkflowRunSchema.merge(
   z.object({
     workflowId: z.number(),
@@ -47,7 +50,7 @@ export const workflowStorage = createMongoStorage({
   dbURI: MONGO_CONFIG.dbURI,
   dbName: MONGO_CONFIG.databaseName,
   indexes: MONGO_CONFIG.indexes.workflows,
-  schema: storedWorkflow,
+  schema: { schema: storedWorkflow, version: STORED_WORKFLOW_VERSION },
   logger,
 });
 
@@ -55,7 +58,7 @@ export const workflowRunsStorage = createMongoStorage({
   collectionName: "workflow-runs",
   dbURI: MONGO_CONFIG.dbURI,
   dbName: MONGO_CONFIG.databaseName,
-  schema: storedWorkflowRun,
+  schema: { schema: storedWorkflowRun, version: STORED_WORKFLOW_RUN_VERSION },
   indexes: MONGO_CONFIG.indexes.workflowRuns,
   logger,
 });

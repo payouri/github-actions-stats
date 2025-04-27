@@ -1,0 +1,11 @@
+{
+    "patches": [
+        {
+            "version": "1.0.0",
+            "description": "Initial migration",
+            "scripts": [
+                "keys-case-insensitive"
+            ]
+        }
+    ]
+}

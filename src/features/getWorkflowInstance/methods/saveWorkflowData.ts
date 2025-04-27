@@ -1,3 +1,4 @@
+import { generateWorkflowRunKey } from "../../../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
 import type { RetrievedWorkflow } from "../../../cli/entities/RetrievedWorkflowData/types.js";
 import type {
   WorkflowRunsStorage,
@@ -89,14 +90,16 @@ export function buildSaveWorkflowData(
         >
       >((acc, runs) => {
         if (!Array.isArray(runs)) {
-          acc[`${runs.workflowId}_${runs.runId}`] = {
+          acc[
+            generateWorkflowRunKey({
+              repositoryName: restWorkFlowData.workflowParams.repo,
+              repositoryOwner: restWorkFlowData.workflowParams.owner,
+              workflowName: restWorkFlowData.workflowName,
+              runId: runs.runId,
+              branchName: restWorkFlowData.workflowParams.branchName,
+            })
+          ] = {
             ...runs,
-            status: runs.status,
-            conclusion: runs.conclusion,
-            usageData: runs.usageData,
-            name: runs.name,
-            runAt: runs.runAt,
-            runId: runs.runId,
             workflowId: restWorkFlowData.workflowId,
             week_year: runs.week_year,
             repositoryName: restWorkFlowData.workflowParams.repo,
@@ -107,14 +110,16 @@ export function buildSaveWorkflowData(
           return acc;
         }
         runs.forEach((run) => {
-          acc[`${run.workflowId}_${run.runId}`] = {
+          acc[
+            generateWorkflowRunKey({
+              repositoryName: restWorkFlowData.workflowParams.repo,
+              repositoryOwner: restWorkFlowData.workflowParams.owner,
+              workflowName: restWorkFlowData.workflowName,
+              runId: run.runId,
+              branchName: restWorkFlowData.workflowParams.branchName,
+            })
+          ] = {
             ...run,
-            status: run.status,
-            conclusion: run.conclusion,
-            usageData: run.usageData,
-            name: run.name,
-            runAt: run.runAt,
-            runId: run.runId,
             workflowId: restWorkFlowData.workflowId,
             week_year: run.week_year,
             repositoryName: restWorkFlowData.workflowParams.repo,

@@ -1,13 +1,14 @@
 import { join } from "node:path";
-import type { RetrievedWorkflow } from "../types.js";
+import type { RetrievedWorkflow } from "./snapshot.types.js";
 
 function replaceSpacesWithUnderscores(str: string) {
   return str.replaceAll(/\s/g, "_");
 }
 
-export function generateWorkflowKey(
+/** @deprecated do not use */
+export function generateOldWorkflowKey(
   params: Pick<RetrievedWorkflow, "workflowParams" | "workflowName">
-): string {
+) {
   const {
     workflowName,
     workflowParams: {
@@ -19,19 +20,20 @@ export function generateWorkflowKey(
 
   const base = `${repositoryOwner}/${repositoryName}/${workflowName}`;
   if (!branchName) {
-    return replaceSpacesWithUnderscores(base).toLowerCase();
+    return replaceSpacesWithUnderscores(base);
   }
 
-  return replaceSpacesWithUnderscores(`${base}/${branchName}`).toLowerCase();
+  return replaceSpacesWithUnderscores(`${base}/${branchName}`);
 }
 
-export const generateWorkflowRunKey = (params: {
+/** @deprecated do not use */
+export const generateOldWorkflowRunKey = (params: {
   workflowName: string;
   repositoryName: string;
   repositoryOwner: string;
   branchName?: string;
   runId: number;
-}): string => {
+}) => {
   const { workflowName, repositoryName, repositoryOwner, branchName, runId } =
     params;
 
@@ -42,7 +44,7 @@ export const generateWorkflowRunKey = (params: {
     runId.toString()
   );
 
-  return replaceSpacesWithUnderscores(base).toLowerCase();
+  return replaceSpacesWithUnderscores(base);
 };
 
 export const getWorkflowParamsFromKey = (

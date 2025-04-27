@@ -47,6 +47,7 @@
     "dev:server": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./src/server/start.ts",
     "dev:workers": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./src/workers/index.ts",
     "dev": "NODE_ENV=development node --loader ts-node/esm ./src/index.ts",
-    "start": "NODE_ENV=production node --loader ts-node/esm ./src/index.ts"
+    "start": "NODE_ENV=production node --loader ts-node/esm ./src/index.ts",
+    "migration:ui": "NODE_ENV=development node --loader ts-node/esm ./src/migrations/migrations.ts"
   }
 }

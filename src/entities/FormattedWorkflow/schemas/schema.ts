@@ -45,17 +45,21 @@ export const formattedWorkflowRunConclusionSchema = z.enum([
   "timed_out",
 ]);
 
-export const formattedWorkflowRunSchema = z.object({
-  name: z.string(),
-  status: formattedWorkflowRunStatusSchema,
-  conclusion: formattedWorkflowRunConclusionSchema.nullable(),
-  runAt: z.union([z.string(), z.date()]).transform((val) => {
-    if (val instanceof Date) return val;
+export const WORKFLOW_RUN_SCHEMA_VERSION = "1.0.0";
+export const formattedWorkflowRunSchema = Object.assign(
+  z.object({
+    name: z.string(),
+    status: formattedWorkflowRunStatusSchema,
+    conclusion: formattedWorkflowRunConclusionSchema.nullable(),
+    runAt: z.union([z.string(), z.date()]).transform((val) => {
+      if (val instanceof Date) return val;
 
-    return new Date(val);
+      return new Date(val);
+    }),
+    week_year: z.string(),
+    runId: workflowRunId,
+    workflowId: z.number(),
+    usageData: runUsageDataSchema.nullable(),
   }),
-  week_year: z.string(),
-  runId: workflowRunId,
-  workflowId: z.number(),
-  usageData: runUsageDataSchema.nullable(),
-});
+  { version: WORKFLOW_RUN_SCHEMA_VERSION }
+);

@@ -3,6 +3,9 @@ import type {
   Document,
   IndexDefinition,
   IndexOptions,
+  Model,
+  ObjectId,
+  ProjectionType,
   SortOrder,
 } from "mongoose";
 import type { OverrideMethods } from "../../types/OverrideMethods.js";
@@ -35,6 +38,26 @@ export type MongoStorageSetManyMethod<Result> = (
   options?: { session?: ClientSession }
 ) => Promise<void>;
 
+export type MongoStorageCountMethod<Result> = (params: {
+  repositoryName?: string;
+  repositoryOwner?: string;
+  status?: string;
+  runAt?: {
+    min: Date;
+    max: Date;
+  };
+}) => Promise<number>;
+
+export type MongoStorageIterateMethod<Result> = (
+  params: {
+    [Key in Extract<
+      keyof DocumentWithKey<Result>,
+      keyof Result | "key"
+    >]?: DocumentWithKey<Result>[Key];
+  },
+  options?: { projection?: ProjectionType<Result> }
+) => AsyncIterable<DocumentWithKey<Result>, void, undefined>;
+
 export type MongoStorageQueryMethod<Result> = (
   query: {
     workflowName: string;
@@ -63,7 +86,10 @@ export type CreateMongoStorageParams<
   dbURI: string;
   dbName?: string;
   indexes: [IndexDefinition, IndexOptions][];
-  schema: Schema;
+  schema: {
+    version: string;
+    schema: Schema;
+  };
   logger?: Logger;
 };
 
@@ -82,7 +108,10 @@ export type MongoStorage<
 > & {
   startTransaction: () => Promise<ClientSession | undefined>;
   hasInit: boolean;
+  count: MongoStorageCountMethod<Result>;
+  iterate: MongoStorageIterateMethod<Result>;
   init: () => Promise<void>;
   close: () => Promise<void>;
+  model: Model<DocumentWithKey<Result>>;
   schema: Schema;
 };

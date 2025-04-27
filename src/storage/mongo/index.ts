@@ -1,17 +1,19 @@
 import mongoose, { type ClientSession } from "mongoose";
 import type { AnyZodObject, z } from "zod";
+import { config } from "../../config/config.js";
+import { formatMs } from "../../helpers/format/formatMs.js";
 import defaultLogger from "../../lib/Logger/logger.js";
 import { buildQuery } from "./methods/query.js";
 import type {
   CreateMongoStorageParams,
   DocumentWithKey,
   MongoStorage,
+  MongoStorageCountMethod,
   MongoStorageDeleteMethod,
   MongoStorageGetMethod,
+  MongoStorageIterateMethod,
   MongoStorageSetMethod,
 } from "./types.js";
-import { config } from "../../config/config.js";
-import { formatMs } from "../../helpers/format/formatMs.js";
 
 const { connection, ConnectionStates, Schema } = mongoose;
 mongoose.set("strictQuery", false);
@@ -45,6 +47,10 @@ function getSchemaFields<T extends AnyZodObject>(
         unique: true,
         required: true,
       },
+      schemaVersion: {
+        type: Schema.Types.String,
+        required: true,
+      },
     }
   );
 }
@@ -55,7 +61,7 @@ export function createMongoStorage<
   Storage extends MongoStorage<Schema, Result> = MongoStorage<Schema, Result>
 >(params: CreateMongoStorageParams<Schema, Result, Storage>): Storage {
   const {
-    schema,
+    schema: { schema, version: schemaVersion },
     collectionName,
     dbURI,
     logger = defaultLogger,
@@ -128,6 +134,7 @@ export function createMongoStorage<
         $set: {
           ...value,
           key,
+          schemaVersion,
         },
       },
       { upsert: true, lean: true }
@@ -170,6 +177,7 @@ export function createMongoStorage<
               $set: {
                 ...value,
                 key,
+                schemaVersion,
               },
             },
             upsert: true,
@@ -201,6 +209,76 @@ export function createMongoStorage<
     );
   }
 
+  async function count(
+    query: Parameters<MongoStorageCountMethod<Result>>[0]
+  ): ReturnType<MongoStorageCountMethod<Result>> {
+    logger.debug(`Counting data for query ${JSON.stringify(query)}`);
+    const time = performance.now();
+    const result = await model.countDocuments(query);
+    const endTime = performance.now();
+    logger.debug(
+      `Data for query ${JSON.stringify(query)} has been counted in ${formatMs(
+        endTime - time
+      )}`
+    );
+
+    return result;
+  }
+
+  function iterate(
+    ...args: Parameters<MongoStorageIterateMethod<Result>>
+  ): ReturnType<MongoStorageIterateMethod<Result>> {
+    const [query, options = {}] = args;
+    return model.find(query).cursor({
+      ...options,
+      lean: true,
+    });
+  }
+
+  async function init() {
+    if (connection.readyState !== ConnectionStates.connected) {
+      if (connection.readyState === ConnectionStates.connecting) {
+        logger.debug("Waiting for MongoDB to connect");
+        await connection.asPromise();
+      } else if (
+        [
+          ConnectionStates.disconnected,
+          ConnectionStates.disconnecting,
+        ].includes(connection.readyState)
+      ) {
+        while (connection.readyState !== ConnectionStates.disconnected) {
+          logger.debug("Waiting for MongoDB to disconnect");
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        logger.debug("Opening MongoDB connection");
+        await connection.openUri(dbURI, {
+          dbName,
+        });
+      } else if (connection.readyState === ConnectionStates.uninitialized) {
+        logger.debug("Opening MongoDB connection");
+        await connection.openUri(dbURI, {
+          dbName,
+        });
+      }
+    }
+    logger.debug("MongoDB connection is open");
+
+    if (!connection.db) {
+      throw new Error("MongoDB connection is not open");
+    }
+
+    for (const [index, options] of params.indexes) {
+      mongooseSchema.index(index, options);
+    }
+    await model.syncIndexes(
+      connection.db.writeConcern
+        ? {
+            background: true,
+          }
+        : {}
+    );
+  }
+
   async function close() {
     logger.debug("Closing MongoDB connection");
     await connection.close();
@@ -208,6 +286,9 @@ export function createMongoStorage<
   }
 
   return {
+    get model() {
+      return model;
+    },
     get schema() {
       return schema;
     },
@@ -223,54 +304,14 @@ export function createMongoStorage<
     set,
     delete: deleteOne,
     close,
+    count,
+    iterate,
     startTransaction: () => {
       if (!connection.db?.writeConcern) {
         return Promise.resolve(undefined);
       }
       return model.startSession();
     },
-    init: async () => {
-      if (connection.readyState !== ConnectionStates.connected) {
-        if (connection.readyState === ConnectionStates.connecting) {
-          logger.debug("Waiting for MongoDB to connect");
-          await connection.asPromise();
-        } else if (
-          [
-            ConnectionStates.disconnected,
-            ConnectionStates.disconnecting,
-          ].includes(connection.readyState)
-        ) {
-          while (connection.readyState !== ConnectionStates.disconnected) {
-            logger.debug("Waiting for MongoDB to disconnect");
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          }
-          logger.debug("Opening MongoDB connection");
-          await connection.openUri(dbURI, {
-            dbName,
-          });
-        } else if (connection.readyState === ConnectionStates.uninitialized) {
-          logger.debug("Opening MongoDB connection");
-          await connection.openUri(dbURI, {
-            dbName,
-          });
-        }
-      }
-      logger.debug("MongoDB connection is open");
-
-      if (!connection.db) {
-        throw new Error("MongoDB connection is not open");
-      }
-
-      for (const [index, options] of params.indexes) {
-        mongooseSchema.index(index, options);
-      }
-      await model.syncIndexes(
-        connection.db.writeConcern
-          ? {
-              background: true,
-            }
-          : {}
-      );
-    },
+    init,
   } as Storage;
 }

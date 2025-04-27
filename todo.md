@@ -8,7 +8,7 @@
 * better identifiers for workflow and runs
     * keys are case insensitive
     * workflow keys use workflow id instead of name
-    * 
+* fix total count not updated
 
 # Server
 * rework workflow routes
