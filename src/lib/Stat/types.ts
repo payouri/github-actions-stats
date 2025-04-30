@@ -1,4 +1,5 @@
 import type { RunCompletionStatus } from "../../entities/FormattedWorkflow/types.js";
+import type { WantedStatus } from "./methods/types.js";
 
 export type StandardWorkflowStats = {
   total: number;
@@ -10,10 +11,7 @@ export type StandardWorkflowStats = {
   shortestDurationMs: number;
   longestDurationMs: number;
   durationByStatus: {
-    [Status in Extract<
-      RunCompletionStatus,
-      "success" | "failure" | "cancelled" | "skipped"
-    >]: {
+    [Status in WantedStatus]: {
       totalMs: number;
       shortestMs: number;
       longestMs: number;

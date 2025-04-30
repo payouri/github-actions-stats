@@ -1,25 +1,17 @@
 import type { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
 import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";
-import type { RunCompletionStatus } from "../../../entities/FormattedWorkflow/types.js";
 import type { StepStats, WorkflowsStats } from "../types.js";
+import type { WantedStatus } from "./types.js";
 
-const completionStatuses: Extract<
-  RunCompletionStatus,
-  "success" | "failure" | "cancelled" | "skipped"
->[] = ["success", "failure", "cancelled", "skipped"];
+const completionStatuses: WantedStatus[] = [
+  "success",
+  "failure",
+  "cancelled",
+  "skipped",
+];
 
-const isWantedStatus = (
-  status: string
-): status is Extract<
-  RunCompletionStatus,
-  "success" | "failure" | "cancelled" | "skipped"
-> =>
-  completionStatuses.includes(
-    status as Extract<
-      RunCompletionStatus,
-      "success" | "failure" | "cancelled" | "skipped"
-    >
-  );
+const isWantedStatus = (status: string): status is WantedStatus =>
+  completionStatuses.includes(status as WantedStatus);
 
 const emptyStepStats: StepStats["stats"] = {
   total: 0,
@@ -98,6 +90,7 @@ export const getWorkflowStats = (data: WorkFlowInstance): WorkflowsStats => {
 
       aggregatedStepData.total += 1;
       aggregatedStepData.totalDurationMs += durationMs;
+
       if (isWantedStatus(conclusion)) {
         currentStepData[conclusion] += 1;
         currentStepData.total += 1;

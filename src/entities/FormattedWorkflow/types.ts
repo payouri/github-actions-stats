@@ -1,13 +1,11 @@
 import type { z } from "zod";
+import type { runCompletionStatusSchema } from "../shared.schema.js";
+import type { runJobDataSchema } from "./schemas/formattedJob.schema.js";
 import type {
   formattedWorkflowRunSchema,
-  runUsageDataSchema,
   githubJobDataSchema,
+  runUsageDataSchema,
 } from "./schemas/schema.js";
-import type {
-  runCompletionStatusSchema,
-  runJobDataSchema,
-} from "./schemas/formattedJob.schema.js";
 
 export type RunCompletionStatus = z.infer<typeof runCompletionStatusSchema>;
 export type RunJobData = z.infer<typeof runJobDataSchema>;

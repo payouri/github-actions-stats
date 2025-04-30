@@ -6,9 +6,10 @@
     * run details are deeply nested
 * redo ReadMe
 * better identifiers for workflow and runs
-    * keys are case insensitive
+    * ~~keys are case insensitive~~
     * workflow keys use workflow id instead of name
-* fix total count not updated
+* add run start time and end time to workflow runs
+* ~~fix total count not being updated~~
 
 # Server
 * rework workflow routes
@@ -30,7 +31,11 @@
 
 # Tools
 * ~~add fix local workflow runs ids array~~
+* add script to fix runs total count in db
 * add migration system
+  * cli with ui ?
+  * version in storage (implemented on mongo)
+  * migrations json schema
 * tool to import and export from a storage to another
 
 # Mongo

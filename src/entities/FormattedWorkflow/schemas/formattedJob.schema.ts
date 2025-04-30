@@ -1,24 +1,10 @@
 import { z } from "zod";
+import {
+  runCompletionStatusSchema,
+  runStatus,
+  runStepStatus,
+} from "../../shared.schema.js";
 import { runDataJobIdSchema, workflowRunId } from "./shared.js";
-
-export const runCompletionStatusSchema = z.enum([
-  "success",
-  "failure",
-  "neutral",
-  "cancelled",
-  "skipped",
-  "timed_out",
-  "action_required",
-]);
-export const runStatus = z.enum([
-  "queued",
-  "in_progress",
-  "completed",
-  "waiting",
-  "requested",
-  "pending",
-]);
-export const stepStatus = z.enum(["queued", "in_progress", "completed"]);
 
 export const runJobDataSchema = z.object({
   id: runDataJobIdSchema,
@@ -60,7 +46,7 @@ export const runJobDataSchema = z.object({
   steps: z
     .array(
       z.object({
-        status: stepStatus,
+        status: runStepStatus,
         conclusion: z.string().nullable(),
         name: z.string(),
         number: z.number(),

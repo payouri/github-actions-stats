@@ -12,7 +12,9 @@ import type {
   MongoStorageDeleteMethod,
   MongoStorageGetMethod,
   MongoStorageIterateMethod,
+  MongoStoragePartialUpdateMethod,
   MongoStorageSetMethod,
+  MongoStorageUpdateWithMongoSyntaxMethod,
 } from "./types.js";
 
 const { connection, ConnectionStates, Schema } = mongoose;
@@ -235,6 +237,30 @@ export function createMongoStorage<
     });
   }
 
+  async function partialUpdate(
+    ...args: Parameters<MongoStoragePartialUpdateMethod<Result>>
+  ): ReturnType<MongoStoragePartialUpdateMethod<Result>> {
+    const [key, update, options] = args;
+
+    await model.updateOne(
+      {
+        key,
+      },
+      {
+        $set: update,
+      },
+      options
+    );
+  }
+
+  async function updateWithMongoSyntax(
+    ...args: Parameters<MongoStorageUpdateWithMongoSyntaxMethod<Result>>
+  ): ReturnType<MongoStorageUpdateWithMongoSyntaxMethod<Result>> {
+    const [query, update, options] = args;
+
+    await model.updateOne(query, update, options);
+  }
+
   async function init() {
     if (connection.readyState !== ConnectionStates.connected) {
       if (connection.readyState === ConnectionStates.connecting) {
@@ -299,6 +325,8 @@ export function createMongoStorage<
       model,
       logger,
     }),
+    partialUpdate,
+    updateWithMongoSyntax,
     setMany,
     get,
     set,

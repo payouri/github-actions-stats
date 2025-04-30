@@ -1,4 +1,7 @@
-import { generateWorkflowRunKey } from "../../../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
+import {
+  generateWorkflowKey,
+  generateWorkflowRunKey,
+} from "../../../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
 import type { RetrievedWorkflow } from "../../../cli/entities/RetrievedWorkflowData/types.js";
 import type {
   WorkflowRunsStorage,
@@ -40,9 +43,9 @@ export function buildSaveWorkflowData(
   ): Promise<SaveWorkflowDataResponse> {
     const {
       workflowName,
-      // repositoryName,
-      // repositoryOwner,
-      // branchName,
+      repositoryName,
+      repositoryOwner,
+      branchName,
       newOrUpdatedRuns,
       workflowData,
     } = params;
@@ -53,7 +56,14 @@ export function buildSaveWorkflowData(
     transaction?.startTransaction({});
     try {
       await workflowStorage.set(
-        workflowName,
+        generateWorkflowKey({
+          workflowName,
+          workflowParams: {
+            owner: repositoryOwner,
+            repo: repositoryName,
+            branchName,
+          },
+        }),
         {
           ...restWorkFlowData,
           workflowParams: {
@@ -131,7 +141,8 @@ export function buildSaveWorkflowData(
         return acc;
       }, {});
 
-      if (Object.keys(runs).length === 0) {
+      const runsCount = Object.keys(runs).length;
+      if (runsCount === 0) {
         logger.warn(
           `No runs found for workflow ${workflowData.workflowName.yellow}`
         );
@@ -141,9 +152,29 @@ export function buildSaveWorkflowData(
         };
       }
 
-      await workflowRunsStorage.setMany(runs, {
-        session: transaction,
-      });
+      await Promise.all([
+        workflowStorage.updateWithMongoSyntax(
+          {
+            key: generateWorkflowKey({
+              workflowName,
+              workflowParams: {
+                owner: repositoryOwner,
+                repo: repositoryName,
+                branchName,
+              },
+            }),
+          },
+          {
+            $inc: { totalWorkflowRuns: runsCount },
+          },
+          {
+            session: transaction,
+          }
+        ),
+        workflowRunsStorage.setMany(runs, {
+          session: transaction,
+        }),
+      ]);
     } catch (error) {
       logger.error("Failed to save workflow data", error);
       await transaction?.abortTransaction();

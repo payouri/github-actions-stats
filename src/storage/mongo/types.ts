@@ -1,17 +1,18 @@
 import type {
   ClientSession,
   Document,
+  FilterQuery,
   IndexDefinition,
   IndexOptions,
   Model,
-  ObjectId,
   ProjectionType,
   SortOrder,
+  UpdateQuery,
 } from "mongoose";
-import type { OverrideMethods } from "../../types/OverrideMethods.js";
-import type { Storage } from "../types.js";
 import type { Logger } from "winston";
 import type { AnyZodObject, z } from "zod";
+import type { OverrideMethods } from "../../types/OverrideMethods.js";
+import type { Storage } from "../types.js";
 
 export type DocumentWithKey<T> = T & {
   key: string;
@@ -47,6 +48,22 @@ export type MongoStorageCountMethod<Result> = (params: {
     max: Date;
   };
 }) => Promise<number>;
+
+export type MongoStoragePartialUpdateMethod<Result> = (
+  key: string,
+  update: Partial<Result>,
+  options?: {
+    session: ClientSession;
+  }
+) => Promise<void>;
+
+export type MongoStorageUpdateWithMongoSyntaxMethod<Result> = (
+  query: FilterQuery<DocumentWithKey<Result>>,
+  update: UpdateQuery<Result>,
+  options?: {
+    session?: ClientSession;
+  }
+) => Promise<void>;
 
 export type MongoStorageIterateMethod<Result> = (
   params: {
@@ -113,5 +130,7 @@ export type MongoStorage<
   init: () => Promise<void>;
   close: () => Promise<void>;
   model: Model<DocumentWithKey<Result>>;
+  partialUpdate: MongoStoragePartialUpdateMethod<Result>;
+  updateWithMongoSyntax: MongoStorageUpdateWithMongoSyntaxMethod<Result>;
   schema: Schema;
 };
