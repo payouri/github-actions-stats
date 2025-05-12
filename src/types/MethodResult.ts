@@ -1,4 +1,4 @@
-export type MethodSucessResult<Data = void> = Data extends undefined | void
+export type MethodSuccessResult<Data = void> = Data extends undefined | void
   ? {
       hasFailed: false;
     }
@@ -27,5 +27,12 @@ export type MethodResult<
   ErrorResult extends Error = Error,
   ErrorData = unknown
 > =
-  | MethodSucessResult<Data>
+  | MethodSuccessResult<Data>
   | MethodErrorResult<ErrorCode, ErrorResult, ErrorData>;
+
+export type ExtractMethodResult<
+  Result extends MethodResult<any, any, any, any>,
+  HasFailed extends boolean
+> = Result extends MethodResult<any, any, any, any>
+  ? Extract<Result, { hasFailed: HasFailed }>
+  : never;

@@ -5,6 +5,7 @@ export interface DefaultJobDefinition {
   jobName: string;
   jobData: unknown;
   jobResult?: unknown;
+  jobErrorCode?: string;
 }
 
 export type DefaultJobsMap = {

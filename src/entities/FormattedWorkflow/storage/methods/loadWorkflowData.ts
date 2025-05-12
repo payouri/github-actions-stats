@@ -1,16 +1,16 @@
 import dayjs from "dayjs";
-import { createWorkflowInstance } from "../../../cli/entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
-import type { WorkFlowInstance } from "../../../cli/entities/RetrievedWorkflowData/types.js";
+import { createWorkflowInstance } from "../../../../cli/entities/RetrievedWorkflowData/methods/createWorkflowInstance.js";
+import type { WorkFlowInstance } from "../../../../cli/entities/RetrievedWorkflowData/types.js";
 import type {
-  WorkflowRunsStorage,
-  WorkflowStorage,
-} from "../../../entities/FormattedWorkflow/storage.js";
-import logger from "../../../lib/Logger/logger.js";
-import type { MethodResult } from "../../../types/MethodResult.js";
+  WorkflowRunsMongoStorage,
+  WorkflowMongoStorage,
+} from "../mongo.js";
+import logger from "../../../../lib/Logger/logger.js";
+import type { MethodResult } from "../../../../types/MethodResult.js";
 import {
   generateWorkflowKey,
   getWorkflowParamsFromKey,
-} from "../../../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
+} from "../../../../helpers/generateWorkflowKey.js";
 
 export type LoadWorkflowDataResponse = Promise<
   MethodResult<WorkFlowInstance, "failed_to_load_workflow_data">
@@ -37,8 +37,8 @@ export type LoadWorkflowDataMethod = (
 ) => Promise<LoadWorkflowDataResponse>;
 
 export type LoadWorkflowDataDependencies = {
-  workflowStorage: WorkflowStorage;
-  workflowRunsStorage: WorkflowRunsStorage;
+  workflowStorage: WorkflowMongoStorage;
+  workflowRunsStorage: WorkflowRunsMongoStorage;
 };
 
 export function buildLoadWorkflowData(

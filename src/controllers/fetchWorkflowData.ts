@@ -1,6 +1,6 @@
 import type { Octokit } from "octokit";
 import type { RetrievedWorkflow } from "../cli/entities/RetrievedWorkflowData/types.js";
-import type { SaveWorkflowDataMethod } from "../features/getWorkflowInstance/methods/saveWorkflowData.js";
+import type { SaveWorkflowDataMethod } from "../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
 import { createEmptyWorkflowData } from "../helpers/createEmptyWorkflowData.js";
 import { buildGetRepoWorkflowDataRequest } from "../lib/RequestsManager/requests/getRepoWorkflowData.js";
 import type { ProcessResponse } from "../ProcessResponse.types.js";

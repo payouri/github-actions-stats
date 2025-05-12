@@ -59,6 +59,16 @@ export const formattedWorkflowRunSchema = Object.assign(
     week_year: z.string(),
     runId: workflowRunId,
     workflowId: z.number(),
+    startedAt: z.union([z.string(), z.date()]).transform((val) => {
+      if (val instanceof Date) return val;
+
+      return new Date(val);
+    }),
+    completedAt: z.union([z.string(), z.date()]).transform((val) => {
+      if (val instanceof Date) return val;
+
+      return new Date(val);
+    }),
     usageData: runUsageDataSchema.nullable(),
   }),
   { version: WORKFLOW_RUN_SCHEMA_VERSION }

@@ -2,6 +2,8 @@ import { z } from "zod";
 import {
   runCompletionStatusSchema,
   runDataJobIdSchema,
+  runStatus,
+  runStepStatus,
   workflowIdSchema,
 } from "../../shared.schema.js";
 
@@ -15,13 +17,13 @@ export const workflowStatSchema = z.object({
   startedAt: z.date(),
   completedAt: z.date(),
   durationMs: z.number(),
-  stepsDurationMs: z.record(z.string(), z.number()),
-  jobDurationMap: z.record(z.string(), z.record(z.string(), z.number())),
-  steps: z.array(
+  jobDurationMap: z.record(z.string(), z.number()),
+  stepsDurationMs: z.record(z.string(), z.record(z.string(), z.number())),
+  jobs: z.array(
     z.object({
       stepId: z.number(),
       durationMs: z.number(),
-      status: runCompletionStatusSchema,
+      status: runStatus,
       name: z.string(),
       stepStart: z.date(),
       stepEnd: z.date(),
@@ -29,7 +31,7 @@ export const workflowStatSchema = z.object({
         z.object({
           name: z.string(),
           jobId: runDataJobIdSchema,
-          status: runCompletionStatusSchema,
+          status: runStepStatus,
           jobStart: z.date(),
           jobEnd: z.date(),
           durationMs: z.number(),

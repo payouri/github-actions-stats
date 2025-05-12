@@ -30,5 +30,6 @@ export const MONGO_CONFIG = {
         {} satisfies IndexOptions,
       ],
     ] satisfies [IndexDefinition, IndexOptions][],
+    workflowStats: [] satisfies [IndexDefinition, IndexOptions][],
   },
 } as const;

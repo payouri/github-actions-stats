@@ -2,7 +2,10 @@ import type { FormattedWorkflowRun } from "../../../../entities/FormattedWorkflo
 import { ProcessResponse } from "../../../../ProcessResponse.types.js";
 import { workflowRunsStorage, workflowStorage } from "../storage.js";
 import { RetrievedWorkflow } from "../types.js";
-import { generateWorkflowKey, generateWorkflowRunKey } from "./generateKey.js";
+import {
+  generateWorkflowKey,
+  generateWorkflowRunKey,
+} from "../../../../helpers/generateWorkflowKey.js";
 
 function getRunsArrayAndMapToStore(
   runs: RetrievedWorkflow["workflowWeekRunsMap"],

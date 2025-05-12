@@ -19,6 +19,7 @@ export const getFormattedWorkflowRun = ({
   status,
   run_started_at,
   workflow_id,
+  updated_at,
   id,
   conclusion,
 }: components["schemas"]["workflow-run"]): FormattedWorkflowRun => ({
@@ -32,4 +33,6 @@ export const getFormattedWorkflowRun = ({
   runId: id,
   workflowId: workflow_id,
   usageData: null,
+  startedAt: dayjs(run_started_at).toDate(),
+  completedAt: dayjs(updated_at).toDate(),
 });

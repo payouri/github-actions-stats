@@ -2,7 +2,7 @@ import {
   initFormattedWorkflowStorage,
   workflowRunsStorage,
   workflowStorage,
-} from "../entities/FormattedWorkflow/storage.js";
+} from "../entities/FormattedWorkflow/storage/mongo.js";
 import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
 import { createProcessWorkflowJobWorker } from "../queues/index.js";

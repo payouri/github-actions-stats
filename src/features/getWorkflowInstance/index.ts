@@ -6,8 +6,8 @@ import { createWorkflowInstance } from "../../cli/entities/RetrievedWorkflowData
 import type { WorkFlowInstance } from "../../cli/entities/RetrievedWorkflowData/types.js";
 import logger from "../../lib/Logger/logger.js";
 import type { MethodResult } from "../../types/MethodResult.js";
-import type { LoadWorkflowDataMethod } from "./methods/loadWorkflowData.js";
-import type { SaveWorkflowDataMethod } from "./methods/saveWorkflowData.js";
+import type { LoadWorkflowDataMethod } from "../../entities/FormattedWorkflow/storage/methods/loadWorkflowData.js";
+import type { SaveWorkflowDataMethod } from "../../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
 
 export type BuildGetWorkflowInstaceDependencies = {
   githubClient: Octokit["rest"];

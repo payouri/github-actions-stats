@@ -2,11 +2,11 @@ import "colors";
 import {
   workflowRunsStorage,
   workflowStorage,
-} from "../entities/FormattedWorkflow/storage.js";
+} from "../entities/FormattedWorkflow/storage/mongo.js";
 import githubClient from "../lib/githubClient.js";
 import { buildGetWorkflowInstance } from "./getWorkflowInstance/index.js";
-import { buildLoadWorkflowData } from "./getWorkflowInstance/methods/loadWorkflowData.js";
-import { buildSaveWorkflowData } from "./getWorkflowInstance/methods/saveWorkflowData.js";
+import { buildLoadWorkflowData } from "../entities/FormattedWorkflow/storage/methods/loadWorkflowData.js";
+import { buildSaveWorkflowData } from "../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
 
 function buildFeaturesModule() {
   const saveWorkflowData = buildSaveWorkflowData({

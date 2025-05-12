@@ -1,11 +1,11 @@
 import {
   generateWorkflowKey,
   generateWorkflowRunKey,
-} from "../../../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
+} from "../../../helpers/generateWorkflowKey.js";
 import {
   workflowRunsStorage,
   workflowStorage,
-} from "../../../entities/FormattedWorkflow/storage.js";
+} from "../../../entities/FormattedWorkflow/storage/mongo.js";
 import logger from "../../../lib/Logger/logger.js";
 import {
   generateOldWorkflowKey,

@@ -1,15 +1,15 @@
 import {
   generateWorkflowKey,
   generateWorkflowRunKey,
-} from "../../../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
-import type { RetrievedWorkflow } from "../../../cli/entities/RetrievedWorkflowData/types.js";
+} from "../../../../helpers/generateWorkflowKey.js";
+import type { RetrievedWorkflow } from "../../../../cli/entities/RetrievedWorkflowData/types.js";
 import type {
-  WorkflowRunsStorage,
-  WorkflowStorage,
-} from "../../../entities/FormattedWorkflow/storage.js";
-import type { FormattedWorkflowRun } from "../../../entities/FormattedWorkflow/types.js";
-import logger from "../../../lib/Logger/logger.js";
-import type { MethodResult } from "../../../types/MethodResult.js";
+  WorkflowRunsMongoStorage,
+  WorkflowMongoStorage,
+} from "../mongo.js";
+import type { FormattedWorkflowRun } from "../../types.js";
+import logger from "../../../../lib/Logger/logger.js";
+import type { MethodResult } from "../../../../types/MethodResult.js";
 
 export type SaveWorkflowDataResponse = Promise<
   MethodResult<RetrievedWorkflow, "failed_to_save_workflow_data">
@@ -29,8 +29,8 @@ export type SaveWorkflowDataMethod = (
 ) => Promise<SaveWorkflowDataResponse>;
 
 export type SaveWorkflowDataDependencies = {
-  workflowStorage: WorkflowStorage;
-  workflowRunsStorage: WorkflowRunsStorage;
+  workflowStorage: WorkflowMongoStorage;
+  workflowRunsStorage: WorkflowRunsMongoStorage;
 };
 
 export function buildSaveWorkflowData(

@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { MONGO_CONFIG } from "../../config/mongo.js";
-import logger from "../../lib/Logger/logger.js";
-import { createMongoStorage } from "../../storage/mongo/index.js";
-import { formattedWorkflowRunSchema } from "./schemas/schema.js";
-import type { MongoStorage } from "../../storage/mongo/types.js";
+import { MONGO_CONFIG } from "../../../config/mongo.js";
+import logger from "../../../lib/Logger/logger.js";
+import { createMongoStorage } from "../../../storage/mongo/index.js";
+import { formattedWorkflowRunSchema } from "../schemas/schema.js";
+import type { MongoStorage } from "../../../storage/mongo/types.js";
 
 const STORED_WORKFLOW_VERSION = "1.0.0" as const;
-const storedWorkflow = z.object({
+export const storedWorkflow = z.object({
   workflowId: z.number(),
   workflowName: z.string(),
   workflowParams: z.object({
@@ -35,7 +35,7 @@ const storedWorkflow = z.object({
 });
 
 const STORED_WORKFLOW_RUN_VERSION = "1.0.0" as const;
-const storedWorkflowRun = formattedWorkflowRunSchema.merge(
+export const storedWorkflowRun = formattedWorkflowRunSchema.merge(
   z.object({
     workflowId: z.number(),
     workflowName: z.string(),
@@ -63,8 +63,8 @@ export const workflowRunsStorage = createMongoStorage({
   logger,
 });
 
-export type WorkflowStorage = MongoStorage<typeof storedWorkflow>;
-export type WorkflowRunsStorage = MongoStorage<typeof storedWorkflowRun>;
+export type WorkflowMongoStorage = MongoStorage<typeof storedWorkflow>;
+export type WorkflowRunsMongoStorage = MongoStorage<typeof storedWorkflowRun>;
 
 export const initFormattedWorkflowStorage = async () => {
   logger.debug("Initializing Workflows MongoDB storage");

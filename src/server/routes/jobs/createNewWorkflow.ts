@@ -1,9 +1,9 @@
 import type { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
-import { workflowStorage } from "../../../entities/FormattedWorkflow/storage.js";
+import { workflowStorage } from "../../../entities/FormattedWorkflow/storage/mongo.js";
 import type { z } from "zod";
-import { generateWorkflowKey } from "../../../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
+import { generateWorkflowKey } from "../../../helpers/generateWorkflowKey.js";
 import { createEmptyWorkflowData } from "../../../helpers/createEmptyWorkflowData.js";
 
 const ROUTE_PATH = "/jobs/workflows/create" as const;

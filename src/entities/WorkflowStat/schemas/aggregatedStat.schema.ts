@@ -23,7 +23,6 @@ export const defaultStatsRecord = baseStatsRecord.merge(
 );
 
 export const aggregatedStatSchema = z.object({
-  workflowKey: z.string(),
   workflowName: z.string(),
   workflowId: workflowIdSchema,
   periodStart: z.date(),

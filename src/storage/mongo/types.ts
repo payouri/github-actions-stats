@@ -13,6 +13,7 @@ import type { Logger } from "winston";
 import type { AnyZodObject, z } from "zod";
 import type { OverrideMethods } from "../../types/OverrideMethods.js";
 import type { Storage } from "../types.js";
+import type { MethodResult } from "../../types/MethodResult.js";
 
 export type DocumentWithKey<T> = T & {
   key: string;
@@ -22,7 +23,7 @@ export type MongoStorageSetMethod<Result> = (
   key: Parameters<Storage<Result>["set"]>[0],
   value: Parameters<Storage<Result>["set"]>[1],
   options?: { session?: ClientSession }
-) => Promise<void>;
+) => Promise<MethodResult<void, "failed_to_set_data" | "validation_failed">>;
 
 export type MongoStorageDeleteMethod<Result> = (
   key: Parameters<Storage<Result>["delete"]>[0],

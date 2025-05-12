@@ -1,6 +1,6 @@
 import type { FormattedWorkflowRun } from "../../../../entities/FormattedWorkflow/types.js";
-import type { SaveWorkflowDataMethod } from "../../../../features/getWorkflowInstance/methods/saveWorkflowData.js";
-import { generateWorkflowKey } from "../../../entities/RetrievedWorkflowData/methods/generateKey.js";
+import type { SaveWorkflowDataMethod } from "../../../../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
+import { generateWorkflowKey } from "../../../../helpers/generateWorkflowKey.js";
 import { isExistingWorkflowData } from "../../../entities/RetrievedWorkflowData/methods/isExistingWorkflowData.js";
 import { saveRetrivedWorkflowRuns } from "../../../entities/RetrievedWorkflowData/methods/saveRetrievedWorkDataFromDisk.js";
 import { workflowStorage } from "../../../entities/RetrievedWorkflowData/storage.js";

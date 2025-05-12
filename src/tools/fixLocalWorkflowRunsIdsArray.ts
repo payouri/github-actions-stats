@@ -4,7 +4,7 @@ import type { AnyZodObject } from "zod";
 import {
   generateWorkflowKey,
   generateWorkflowRunKey,
-} from "../cli/entities/RetrievedWorkflowData/methods/generateKey.js";
+} from "../helpers/generateWorkflowKey.js";
 import {
   workflowRunsStorage,
   workflowStorage,

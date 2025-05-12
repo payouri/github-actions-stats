@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
 import { processWorkflowJobQueue } from "../../queue.js";
+import { RETRIEVE_OLDER_RUNS_JOB_NAME } from "../../../queues/methods/retrieveOldRuns.js";
 
 const ROUTE_PATH = "/jobs/workflows/older" as const;
 
@@ -35,7 +36,7 @@ export function mountRetrieveOlderRunsRoute<
       const { workflowKey } = await c.req.json();
 
       const addJobResult = await processWorkflowJobQueue.addJob({
-        jobName: "retreive-older-runs",
+        jobName: RETRIEVE_OLDER_RUNS_JOB_NAME,
         jobData: {
           workflowKey,
         },

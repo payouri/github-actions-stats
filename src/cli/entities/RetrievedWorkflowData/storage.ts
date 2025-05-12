@@ -9,7 +9,7 @@ import type { FSStorage } from "../../../storage/fs/types.js";
 import {
   generateWorkflowKey,
   generateWorkflowRunKey,
-} from "./methods/generateKey.js";
+} from "../../../helpers/generateWorkflowKey.js";
 import { retrievedWorkflowSchema } from "./schemas.js";
 
 const storedWorkflow = retrievedWorkflowSchema

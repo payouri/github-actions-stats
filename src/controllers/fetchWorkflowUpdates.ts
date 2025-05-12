@@ -4,7 +4,7 @@ import type {
   RetrievedWorkflow,
   WorkFlowInstance,
 } from "../cli/entities/RetrievedWorkflowData/types.js";
-import type { SaveWorkflowDataMethod } from "../features/getWorkflowInstance/methods/saveWorkflowData.js";
+import type { SaveWorkflowDataMethod } from "../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
 import { getFormattedWorkflowRun } from "../helpers/getFormattedWorkflowRun.js";
 import { updateRunUsageWithJobs } from "../helpers/updateRunUsageWithJobs.js";
 import logger from "../lib/Logger/logger.js";

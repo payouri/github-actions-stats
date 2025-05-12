@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { RetrievedWorkflow } from "../types.js";
+import type { RetrievedWorkflow } from "../cli/entities/RetrievedWorkflowData/types.js";
 
 function replaceSpacesWithUnderscores(str: string) {
   return str.replaceAll(/\s/g, "_");
@@ -25,13 +25,24 @@ export function generateWorkflowKey(
   return replaceSpacesWithUnderscores(`${base}/${branchName}`).toLowerCase();
 }
 
-export const generateWorkflowRunKey = (params: {
-  workflowName: string;
-  repositoryName: string;
-  repositoryOwner: string;
-  branchName?: string;
-  runId: number;
-}): string => {
+export const generateWorkflowRunKey = (
+  params:
+    | {
+        workflowName: string;
+        repositoryName: string;
+        repositoryOwner: string;
+        branchName?: string;
+        runId: number;
+      }
+    | {
+        workflowKey: string;
+        runId: number;
+      }
+): string => {
+  if ("workflowKey" in params) {
+    return join(params.workflowKey, params.runId.toString());
+  }
+
   const { workflowName, repositoryName, repositoryOwner, branchName, runId } =
     params;
 

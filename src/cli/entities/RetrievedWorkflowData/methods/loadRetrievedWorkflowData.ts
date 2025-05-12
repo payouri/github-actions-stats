@@ -2,7 +2,10 @@ import { sortWorkflowMapKeys } from "../../../../entities/FormattedWorkflow/help
 import { ProcessResponse } from "../../../../ProcessResponse.types.js";
 import { workflowRunsStorage, workflowStorage } from "../storage.js";
 import type { RetrievedWorkflow } from "../types.js";
-import { generateWorkflowKey, generateWorkflowRunKey } from "./generateKey.js";
+import {
+  generateWorkflowKey,
+  generateWorkflowRunKey,
+} from "../../../../helpers/generateWorkflowKey.js";
 
 export const loadRetrievedWorkflowData = async (
   params: Pick<RetrievedWorkflow, "workflowName" | "workflowParams">

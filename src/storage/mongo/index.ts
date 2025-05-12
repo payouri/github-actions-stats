@@ -113,38 +113,61 @@ export function createMongoStorage<
   ): ReturnType<MongoStorageSetMethod<Result>> {
     const [key, value] = args;
 
-    const beforeValidation = performance.now();
-    const validationResult = schema.safeParse(value);
-    if (!validationResult.success) {
-      logger.error(
-        `Failed to validate data for key ${key}`,
-        validationResult.error
+    try {
+      const beforeValidation = performance.now();
+      const validationResult = schema.safeParse(value);
+      if (!validationResult.success) {
+        logger.error(
+          `Failed to validate data for key ${key}`,
+          validationResult.error
+        );
+        return {
+          hasFailed: true,
+          error: {
+            code: "validation_failed",
+            message: "Failed to validate data",
+            error: validationResult.error,
+            data: undefined,
+          },
+        };
+      }
+      const afterValidation = performance.now();
+      logger.debug(
+        `Data for key ${key} has been validated in ${formatMs(
+          afterValidation - beforeValidation
+        )}`
       );
-      return;
-    }
-    const afterValidation = performance.now();
-    logger.debug(
-      `Data for key ${key} has been validated in ${formatMs(
-        afterValidation - beforeValidation
-      )}`
-    );
-    logger.debug(`Setting data for key ${key}`);
-    const time = performance.now();
-    await model.updateOne(
-      { key },
-      {
-        $set: {
-          ...value,
-          key,
-          schemaVersion,
+      logger.debug(`Setting data for key ${key}`);
+      const time = performance.now();
+      await model.updateOne(
+        { key },
+        {
+          $set: {
+            ...value,
+            key,
+            schemaVersion,
+          },
         },
-      },
-      { upsert: true, lean: true }
-    );
-    const endTime = performance.now();
-    logger.debug(
-      `Data for key ${key} has been set in ${formatMs(endTime - time)}`
-    );
+        { upsert: true, lean: true }
+      );
+      const endTime = performance.now();
+      logger.debug(
+        `Data for key ${key} has been set in ${formatMs(endTime - time)}`
+      );
+      return {
+        hasFailed: false,
+      };
+    } catch (error) {
+      return {
+        hasFailed: true,
+        error: {
+          code: "failed_to_set_data",
+          message: "Failed to set data",
+          error: error instanceof Error ? error : new Error(String(error)),
+          data: undefined,
+        },
+      };
+    }
   }
 
   async function setMany(

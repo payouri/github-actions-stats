@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
 import { processWorkflowJobQueue } from "../../queue.js";
+import { RETRIEVE_WORKFLOW_UPDATES_JOB_NAME } from "../../../queues/methods/retrieveWorkflowUpdates.js";
 
 const ROUTE_PATH = "/jobs/workflows/new" as const;
 
@@ -35,7 +36,7 @@ export function mountRetrieveNewWorkflowsRoute<
       const { workflowKey } = await c.req.json();
 
       const addJobResult = await processWorkflowJobQueue.addJob({
-        jobName: "retrieve-workflow-updates",
+        jobName: RETRIEVE_WORKFLOW_UPDATES_JOB_NAME,
         jobData: {
           workflowKey,
         },
