@@ -12,9 +12,9 @@ export function buildQuery<Result>(dependencies: {
   const { logger = defaultLogger, model } = dependencies;
 
   return async function query(
-    params: Parameters<MongoStorageQueryMethod<Result>>[0],
-    options?: Parameters<MongoStorageQueryMethod<Result>>[1]
+    ...args: Parameters<MongoStorageQueryMethod<Result>>
   ): ReturnType<MongoStorageQueryMethod<Result>> {
+    const [params, options] = args;
     const {
       workflowName,
       repositoryName,

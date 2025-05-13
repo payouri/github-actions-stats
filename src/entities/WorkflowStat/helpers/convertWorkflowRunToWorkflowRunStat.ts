@@ -1,12 +1,11 @@
 import dayjs from "dayjs";
-import { getRunStartAndEnd } from "../../FormattedWorkflow/helpers/getRunStartAndEnd.js";
-import type { WorkflowRunsMongoStorage } from "../../FormattedWorkflow/storage/mongo.js";
-import type { FormattedWorkflowRun } from "../../FormattedWorkflow/types.js";
-import type { WorkflowRunStat } from "../types.js";
 import {
   generateWorkflowKey,
   generateWorkflowRunKey,
 } from "../../../helpers/generateWorkflowKey.js";
+import { getRunStartAndEnd } from "../../FormattedWorkflow/helpers/getRunStartAndEnd.js";
+import type { FormattedWorkflowRun } from "../../FormattedWorkflow/types.js";
+import type { WorkflowRunStat } from "../types.js";
 
 type InputRun = FormattedWorkflowRun & {
   workflowName: string;
@@ -29,16 +28,17 @@ function getMaps(params: InputRun) {
   for (const job of params.usageData?.billable.jobRuns) {
     const formattedJob: WorkflowRunStat["jobs"][number] = {
       durationMs: job.duration_ms,
-      jobs: [],
+      steps: [],
       name: job.data?.name || "unknown",
-      status: job.data?.status || "requested",
-      stepEnd:
+      status: job.data?.status || "unknown",
+      conclusion: job.data?.conclusion || "unknown",
+      jobEnd:
         job.data?.completed_at ||
         job.data?.started_at ||
         job.data?.created_at ||
         new Date(),
-      stepId: job.data?.id || -1,
-      stepStart: job.data?.started_at || job.data?.created_at || new Date(),
+      jobId: job.data?.id || -1,
+      jobStart: job.data?.started_at || job.data?.created_at || new Date(),
     };
 
     state.jobDurationMap[job.job_id] = job.duration_ms;
@@ -50,19 +50,19 @@ function getMaps(params: InputRun) {
     if (!job.data.steps?.length) {
       continue;
     }
-    for (const jobStep of job.data.steps) {
-      const durationMs = dayjs(jobStep.completed_at).diff(
-        jobStep.started_at,
+    for (const stepData of job.data.steps) {
+      const durationMs = dayjs(stepData.completed_at).diff(
+        stepData.started_at,
         "milliseconds"
       );
-      state.stepsDurationMs[job.job_id][jobStep.name] = durationMs;
-      formattedJob.jobs.push({
-        jobId: jobStep.number,
+      state.stepsDurationMs[job.job_id][stepData.name] = durationMs ?? 0;
+      formattedJob.steps.push({
+        jobId: stepData.number,
         durationMs,
-        jobEnd: jobStep.completed_at || new Date(),
-        jobStart: jobStep.started_at || new Date(),
-        name: jobStep.name,
-        status: jobStep.status,
+        jobEnd: stepData.completed_at || new Date(),
+        jobStart: stepData.started_at || new Date(),
+        name: stepData.name,
+        status: stepData.status,
       });
     }
   }

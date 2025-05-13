@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   runCompletionStatusSchema,
   runDataJobIdSchema,
+  runStatus,
   runStepStatus,
   workflowIdSchema,
   workflowRunId,
@@ -17,14 +18,18 @@ export const baseStatsRecord = z.object({
 
 export const defaultStatsRecord = baseStatsRecord.merge(
   z.object({
-    byConclusion: z.record(runCompletionStatusSchema, baseStatsRecord),
-    byStatus: z.record(runStepStatus, baseStatsRecord),
+    byConclusion: z.record(
+      runCompletionStatusSchema.or(z.literal("unknown")),
+      baseStatsRecord
+    ),
+    byStatus: z.record(runStatus.or(z.literal("unknown")), baseStatsRecord),
   })
 );
 
 export const aggregatedStatSchema = z.object({
   workflowName: z.string(),
   workflowId: workflowIdSchema,
+  workflowKey: z.string(),
   periodStart: z.date(),
   periodEnd: z.date(),
   period: aggregatePeriodSchema,
@@ -38,13 +43,14 @@ export const aggregatedStatSchema = z.object({
   totalDurationMsByStatus: z.record(runCompletionStatusSchema, z.number()),
   totalDurationMsByStepsName: z.record(z.string(), z.number()),
   totalDurationMsByJobName: z.record(z.string(), z.number()),
+  statusCount: z.record(runCompletionStatusSchema, z.number()),
   aggregatedJobsStats: z.record(
     z.string(),
     defaultStatsRecord.merge(
       z.object({
         name: z.string(),
         durationMs: durationMsField,
-        aggregatedSteps: z.record(z.string(), defaultStatsRecord),
+        aggregatedSteps: z.record(z.string(), baseStatsRecord),
       })
     )
   ),
@@ -59,7 +65,7 @@ export const aggregatedStatSchema = z.object({
         z.object({
           name: z.string(),
           jobId: runDataJobIdSchema,
-          status: runCompletionStatusSchema,
+          status: runStatus.or(z.literal("unknown")),
           jobStart: z.date(),
           jobEnd: z.date(),
           durationMs: durationMsField,

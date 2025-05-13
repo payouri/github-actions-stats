@@ -1,8 +1,7 @@
-import { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
-import { components } from "@octokit/openapi-types";
 import type { Octokit } from "octokit";
 import type { MethodResult } from "../../types/MethodResult.js";
 import type { GetRateLimitRequest } from "./requests/getRateLimit.js";
+import type { WorkFlowInstance } from "../../cli/entities/RetrievedWorkflowData/types.js";
 
 export type RequestsManagerParams = {
   octokit: Octokit;

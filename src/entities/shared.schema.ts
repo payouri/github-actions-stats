@@ -22,4 +22,6 @@ export const runStatus = z.enum([
   "pending",
 ]);
 
+// export const runCompletionStatus
+
 export const runStepStatus = z.enum(["queued", "in_progress", "completed"]);

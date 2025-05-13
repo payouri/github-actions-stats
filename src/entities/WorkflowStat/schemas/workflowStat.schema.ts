@@ -21,13 +21,14 @@ export const workflowStatSchema = z.object({
   stepsDurationMs: z.record(z.string(), z.record(z.string(), z.number())),
   jobs: z.array(
     z.object({
-      stepId: z.number(),
+      jobId: z.number(),
       durationMs: z.number(),
-      status: runStatus,
+      status: runStatus.or(z.literal("unknown")),
+      conclusion: runCompletionStatusSchema.or(z.literal("unknown")),
       name: z.string(),
-      stepStart: z.date(),
-      stepEnd: z.date(),
-      jobs: z.array(
+      jobStart: z.date(),
+      jobEnd: z.date(),
+      steps: z.array(
         z.object({
           name: z.string(),
           jobId: runDataJobIdSchema,

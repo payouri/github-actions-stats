@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import {
   FormattedWorkflowRun,
   RunUsageData,
-} from "entities/FormattedWorkflow/types.js";
+} from "../../../../entities/FormattedWorkflow/types.js";
 import logger from "../../../../lib/Logger/logger.js";
 import { createDurationMap } from "../internals/durationMap.js";
 import { createWorkflowsMaps } from "../internals/workflowMaps.js";

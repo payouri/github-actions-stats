@@ -2,7 +2,7 @@ import {
   FormattedWorkflowRun,
   GithubJobData,
   RunUsageData,
-} from "entities/FormattedWorkflow/types.js";
+} from "../../../../entities/FormattedWorkflow/types.js";
 import { RetrievedWorkflow } from "../types.js";
 
 const buildFormatJobRun = (dependencies: {

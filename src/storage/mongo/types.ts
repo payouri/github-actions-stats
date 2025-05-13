@@ -14,10 +14,13 @@ import type { AnyZodObject, z } from "zod";
 import type { OverrideMethods } from "../../types/OverrideMethods.js";
 import type { Storage } from "../types.js";
 import type { MethodResult } from "../../types/MethodResult.js";
+import type { WorkflowRunId } from "../../cli/entities/RetrievedWorkflowData/types.js";
 
 export type DocumentWithKey<T> = T & {
   key: string;
 } & Document;
+
+export type EntityWithKey<T> = T & { key: string };
 
 export type MongoStorageSetMethod<Result> = (
   key: Parameters<Storage<Result>["set"]>[0],
@@ -77,17 +80,25 @@ export type MongoStorageIterateMethod<Result> = (
 ) => AsyncIterable<DocumentWithKey<Result>, void, undefined>;
 
 export type MongoStorageQueryMethod<Result> = (
-  query: {
+  query: Result extends {
+    workflowId: WorkflowRunId;
     workflowName: string;
     repositoryName: string;
     repositoryOwner: string;
     branchName?: string;
-    ranAt?: {
-      min: Date;
-      max: Date;
-    };
-    status?: string;
-  },
+  }
+    ? {
+        workflowName: string;
+        repositoryName: string;
+        repositoryOwner: string;
+        branchName?: string;
+        ranAt?: {
+          min: Date;
+          max: Date;
+        };
+        status?: string;
+      }
+    : FilterQuery<EntityWithKey<Result>>,
   options?: {
     session?: ClientSession;
     limit?: number;

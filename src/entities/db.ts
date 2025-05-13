@@ -5,8 +5,12 @@ import {
   workflowRunsStorage,
   workflowStorage,
 } from "./FormattedWorkflow/storage/mongo.js";
+import { buildAggregateStatsOnPeriodAndSave } from "./WorkflowStat/methods/aggregateStatsOnPeriod.js";
 import { buildUpsertWorkflowRunStat } from "./WorkflowStat/storage/createWorkflowStat.js";
-import { workflowRunStatsMongoStorage } from "./WorkflowStat/storage/mongo.js";
+import {
+  aggregatedWorkflowStatsMongoStorage,
+  workflowRunStatsMongoStorage,
+} from "./WorkflowStat/storage/mongo.js";
 
 const loadWorkflowData = buildLoadWorkflowData({
   workflowRunsStorage,
@@ -18,6 +22,10 @@ const saveWorkflowData = buildSaveWorkflowData({
 });
 const upsertWorkflowRunStat = buildUpsertWorkflowRunStat({
   workflowRunStatsStorage: workflowRunStatsMongoStorage,
+});
+const aggregateAndSaveStats = buildAggregateStatsOnPeriodAndSave({
+  aggregatedWorkflowStatsMongoStorage,
+  workflowRunStatsMongoStorage,
 });
 
 export const DB = {
@@ -50,6 +58,7 @@ export const DB = {
       ),
   },
   mutations: {
+    aggregateAndSaveStats,
     saveWorkflowData,
     upsertWorkflowRunStat,
   },

@@ -1,5 +1,5 @@
-import type { WorkFlowInstance } from "cli/entities/RetrievedWorkflowData/types.js";
-import { getJobsArray } from "entities/FormattedWorkflow/helpers/getJobsArray.js";
+import type { WorkFlowInstance } from "../../../cli/entities/RetrievedWorkflowData/types.js";
+import { getJobsArray } from "../../../entities/FormattedWorkflow/helpers/getJobsArray.js";
 import type { StepStats, WorkflowsStats } from "../types.js";
 import type { WantedStatus } from "./types.js";
 
