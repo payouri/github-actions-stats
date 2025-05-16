@@ -1,7 +1,7 @@
-import { initFormattedWorkflowStorage } from "../entities/FormattedWorkflow/storage/mongo.js";
+import { initMongoStorages } from "../entities/initMongoStorages.js";
 import { processWorkflowJobQueue } from "./queue.js";
 
 export async function beforeListen() {
-  await initFormattedWorkflowStorage();
+  await initMongoStorages();
   await processWorkflowJobQueue.init();
 }

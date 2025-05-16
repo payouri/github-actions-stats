@@ -1,8 +1,11 @@
+import { closeMongoStorages } from "../entities/closeMongoStorages.js";
 import {
   initFormattedWorkflowStorage,
   workflowRunsStorage,
   workflowStorage,
 } from "../entities/FormattedWorkflow/storage/mongo.js";
+import { initMongoStorages } from "../entities/initMongoStorages.js";
+import { closeWorkflowStatsMongoStorage } from "../entities/WorkflowStat/storage/mongo.js";
 import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
 import { createProcessWorkflowJobWorker } from "../queues/index.js";
@@ -12,7 +15,7 @@ const processWorkflowJobWorker = createProcessWorkflowJobWorker({
   abortSignal: globalWorkerAbortController.signal,
 });
 
-const SIGNALS = ["SIGINT", "SIGTERM"];
+const SIGNALS = ["SIGINT", "SIGTERM"] as const;
 
 function handleSignal(params: { abortController: AbortController }) {
   const { abortController } = params;
@@ -25,13 +28,12 @@ function handleSignal(params: { abortController: AbortController }) {
         const start = performance.now();
         logger.info(`Closing workers...`);
 
-        abortController.abort(signal);
+        if (!abortController.signal.aborted) {
+          abortController.abort(signal);
+        }
 
         await Promise.all([processWorkflowJobWorker.close()]);
-        await Promise.all([
-          workflowStorage.close(),
-          workflowRunsStorage.close(),
-        ]);
+        await closeMongoStorages();
         logger.info(`Workers closed in ${formatMs(performance.now() - start)}`);
 
         process.exit(0);
@@ -47,7 +49,7 @@ function handleSignal(params: { abortController: AbortController }) {
 export const initWorkers = async () => {
   logger.info("Initializing workers...");
   const start = performance.now();
-  await initFormattedWorkflowStorage();
+  await initMongoStorages();
   await processWorkflowJobWorker.init();
   logger.info(`Workers initialized in ${formatMs(performance.now() - start)}`);
 };

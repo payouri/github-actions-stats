@@ -25,7 +25,7 @@ const MethodsMap: MethodMap<JobsMap> = {
 const PROCESS_WORKFLOW_JOB_QUEUE_NAME = "process-workflow-job" as const;
 const PROCESS_WORKFLOW_JOB_QUEUE_WORKER_CONCURRENCY = 1 as const;
 
-export function createProcessWorfklowJobQueue(params?: {
+export function createProcessWorkflowJobQueue(params?: {
   abortSignal?: AbortSignal;
 }) {
   const { abortSignal } = params ?? {};

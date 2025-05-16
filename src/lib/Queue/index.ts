@@ -71,17 +71,17 @@ export function createQueue<T extends DefaultJobsMap>(
     const client = await queue.client;
 
     if (client.status === "ready") {
-      logger.debug(`Queue ${name} is already ready`);
+      logger.debug(`[${name}] Queue is ready`);
       return {
         hasFailed: false,
       };
     }
 
-    logger.debug(`Connecting to queue ${name}`);
+    logger.debug(`[${name}] Connecting to queue`);
     const start = Date.now();
     client.connect();
     while (["connecting", "reconnecting", "connect"].includes(client.status)) {
-      logger.debug(`Waiting for queue ${name} to be ready`);
+      logger.debug(`[${name}] Waiting for queue to be ready`);
       await new Promise((resolve) => {
         setTimeout(resolve, 100);
       });
@@ -90,8 +90,8 @@ export function createQueue<T extends DefaultJobsMap>(
           hasFailed: true,
           error: {
             code: "failed_to_init_queue",
-            message: `RedisClient of queue ${name} failed to connect`,
-            error: new Error(`RedisClient of queue ${name} is not ready`),
+            message: `[${name}] RedisClient of queue failed to connect`,
+            error: new Error(`[${name}] RedisClient of queue is not ready`),
             data: client,
           },
         };
@@ -103,8 +103,8 @@ export function createQueue<T extends DefaultJobsMap>(
         hasFailed: true,
         error: {
           code: "failed_to_init_queue",
-          message: `RedisClient of queue ${name} failed to connect`,
-          error: new Error(`RedisClient of queue ${name} is closed`),
+          message: `[${name}] RedisClient of queue failed to connect`,
+          error: new Error(`[${name}] RedisClient of queue is closed`),
           data: client,
         },
       };
@@ -113,7 +113,7 @@ export function createQueue<T extends DefaultJobsMap>(
     abortSignal.addEventListener(
       "abort",
       () => {
-        logger.debug(`Aborting queue ${name}`);
+        logger.debug(`[${name}] Aborting queue`);
         close();
       },
       {
@@ -129,16 +129,16 @@ export function createQueue<T extends DefaultJobsMap>(
   async function close(): ReturnType<Queue<T>["close"]> {
     try {
       if (queue.closing) {
-        logger.debug(`Queue ${name} is already closing`);
+        logger.debug(`[${name}] Queue is already closing`);
         await queue.closing;
         return {
           hasFailed: false,
         };
       }
 
-      logger.debug(`Closing queue ${name}`);
+      logger.debug(`[${name}] Closing queue`);
       await queue.close();
-      logger.debug(`Queue ${name} has been closed`);
+      logger.debug(`[${name}] Queue has been closed`);
       return {
         hasFailed: false,
       };
@@ -239,15 +239,15 @@ export function createWorker<Job extends DefaultJobsMap>(
   async function close(): ReturnType<Worker["close"]> {
     try {
       if (worker.closing) {
-        logger.debug(`Worker ${name}:${worker.id} is closing`);
+        logger.debug(`[${name}:${worker.id}] Worker is already closing`);
         await worker.closing;
         return {
           hasFailed: false,
         };
       }
-      logger.debug(`Closing worker ${name}:${worker.id}`);
+      logger.debug(`[${name}:${worker.id}] Closing worker`);
       await worker.close();
-      logger.debug(`Worker ${name}:${worker.id} has been closed`);
+      logger.debug(`[${name}:${worker.id}] Worker has been closed`);
       return {
         hasFailed: false,
       };
@@ -274,13 +274,13 @@ export function createWorker<Job extends DefaultJobsMap>(
 
   async function init(): ReturnType<Worker["init"]> {
     if (worker.closing) {
-      logger.debug(`Worker ${name} is closing`);
+      logger.debug(`[${name}] Worker is closing`);
       return {
         hasFailed: true,
         error: {
           code: "failed_to_init_worker",
-          message: `Worker ${name} is closing`,
-          error: new Error(`Worker ${name} is closing`),
+          message: `[${name}] Worker is closing`,
+          error: new Error(`[${name}] Worker is closing`),
           data: undefined,
         },
       };
@@ -288,22 +288,22 @@ export function createWorker<Job extends DefaultJobsMap>(
 
     if (worker.isRunning()) {
       if (worker.isPaused()) {
-        logger.debug(`Worker ${name} is already paused`);
+        logger.debug(`[${name}] Worker is already paused`);
         return {
           hasFailed: false,
         };
       }
-      logger.debug(`Worker ${name} is already running`);
+      logger.debug(`[${name}] Worker is already running`);
       return {
         hasFailed: false,
       };
     }
 
     const start = Date.now();
-    logger.debug(`Starting worker ${name}:${worker.id}`);
+    logger.debug(`[${name}:${worker.id}] Starting worker`);
     worker.run();
     while (!worker.isRunning()) {
-      logger.debug(`Waiting for worker ${name}:${worker.id} to be ready`);
+      logger.debug(`[${name}:${worker.id}] Waiting for worker to be ready`);
       await new Promise((resolve) => {
         setTimeout(resolve, 100);
       });
@@ -312,9 +312,9 @@ export function createWorker<Job extends DefaultJobsMap>(
           hasFailed: true,
           error: {
             code: "failed_to_init_worker",
-            message: `RedisClient of worker ${name}:${worker.id} failed to connect`,
+            message: ` [${name}:${worker.id}] RedisClient of worker failed to connect`,
             error: new Error(
-              `RedisClient of worker ${name}:${worker.id} is not ready`
+              `[${name}:${worker.id}] RedisClient of worker is not ready`
             ),
             data: undefined,
           },
@@ -322,11 +322,11 @@ export function createWorker<Job extends DefaultJobsMap>(
       }
     }
     if (worker.isPaused()) {
-      logger.debug(`Worker ${name}:${worker.id} is paused`);
+      logger.debug(`[${name}:${worker.id}] Worker is paused`);
       worker.resume();
     }
 
-    logger.debug(`Worker ${name}:${worker.id} initialized`);
+    logger.debug(`[${name}:${worker.id}] Worker initialized`);
 
     return {
       hasFailed: false,
@@ -336,7 +336,7 @@ export function createWorker<Job extends DefaultJobsMap>(
   abortSignal.addEventListener(
     "abort",
     () => {
-      logger.debug(`Aborting worker ${name}:${worker.id}`);
+      logger.debug(`[${name}:${worker.id}] Aborting worker`);
       close();
     },
     { once: true }

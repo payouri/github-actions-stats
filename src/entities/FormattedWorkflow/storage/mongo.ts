@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { MONGO_CONFIG } from "../../../config/mongo.js";
+import { formatMs } from "../../../helpers/format/formatMs.js";
 import logger from "../../../lib/Logger/logger.js";
 import { createMongoStorage } from "../../../storage/mongo/index.js";
-import { formattedWorkflowRunSchema } from "../schemas/schema.js";
 import type { MongoStorage } from "../../../storage/mongo/types.js";
+import { formattedWorkflowRunSchema } from "../schemas/schema.js";
 
 const STORED_WORKFLOW_VERSION = "1.0.0" as const;
 export const storedWorkflow = z.object({
@@ -68,5 +69,22 @@ export type WorkflowRunsMongoStorage = MongoStorage<typeof storedWorkflowRun>;
 
 export const initFormattedWorkflowStorage = async () => {
   logger.debug("Initializing Workflows MongoDB storage");
+  const start = performance.now();
   await Promise.all([workflowStorage.init(), workflowRunsStorage.init()]);
+  logger.debug(
+    `Workflows MongoDB storage has been initialized in ${formatMs(
+      performance.now() - start
+    )}`
+  );
+};
+
+export const closeFormattedWorkflowStorage = async () => {
+  logger.debug("Closing Workflows MongoDB storage");
+  const start = performance.now();
+  await Promise.all([workflowStorage.close(), workflowRunsStorage.close()]);
+  logger.debug(
+    `Workflows MongoDB storage has been closed in ${formatMs(
+      performance.now() - start
+    )}`
+  );
 };

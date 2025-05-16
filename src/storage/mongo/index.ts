@@ -287,7 +287,7 @@ export function createMongoStorage<
   async function init() {
     if (connection.readyState !== ConnectionStates.connected) {
       if (connection.readyState === ConnectionStates.connecting) {
-        logger.debug("Waiting for MongoDB to connect");
+        logger.debug(`[${collectionName}] Waiting for MongoDB to connect`);
         await connection.asPromise();
       } else if (
         [
@@ -296,24 +296,24 @@ export function createMongoStorage<
         ].includes(connection.readyState)
       ) {
         while (connection.readyState !== ConnectionStates.disconnected) {
-          logger.debug("Waiting for MongoDB to disconnect");
+          logger.debug(`[${collectionName}] Waiting for MongoDB to disconnect`);
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        logger.debug("Opening MongoDB connection");
+        logger.debug(`[${collectionName}] Opening MongoDB connection`);
         await connection.openUri(dbURI, {
           dbName,
         });
       } else if (connection.readyState === ConnectionStates.uninitialized) {
-        logger.debug("Opening MongoDB connection");
+        logger.debug(`[${collectionName}] Opening MongoDB connection`);
         await connection.openUri(dbURI, {
           dbName,
         });
       }
     }
-    logger.debug("MongoDB connection is open");
+    logger.debug(`[${collectionName}] MongoDB connection is open`);
 
     if (!connection.db) {
-      throw new Error("MongoDB connection is not open");
+      throw new Error(`[${collectionName}] MongoDB connection is not open`);
     }
 
     for (const [index, options] of params.indexes) {
@@ -329,9 +329,27 @@ export function createMongoStorage<
   }
 
   async function close() {
-    logger.debug("Closing MongoDB connection");
+    if (
+      connection.readyState === ConnectionStates.disconnected ||
+      connection.readyState === ConnectionStates.uninitialized
+    ) {
+      logger.debug(`[${collectionName}] MongoDB connection is not open`);
+      return;
+    }
+    if (connection.readyState === ConnectionStates.connecting) {
+      logger.debug(
+        `Waiting for [${collectionName}] MongoDB connection to open before closing`
+      );
+      await connection.asPromise();
+    } else if (connection.readyState === ConnectionStates.disconnecting) {
+      logger.debug(
+        `[${collectionName}] MongoDB is already closing, waiting for it to finish`
+      );
+    } else {
+      logger.debug(`Closing [${collectionName}] MongoDB connection`);
+    }
     await connection.close();
-    logger.debug("MongoDB connection has been closed");
+    logger.debug(`MongoDB connection has been closed`);
   }
 
   return {
