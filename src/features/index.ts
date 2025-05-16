@@ -1,7 +1,7 @@
 import "colors";
 import {
-  workflowRunsStorage,
-  workflowStorage,
+  workflowRunsMongoStorage,
+  workflowMongoStorage,
 } from "../entities/FormattedWorkflow/storage/mongo.js";
 import githubClient from "../lib/githubClient.js";
 import { buildGetWorkflowInstance } from "./getWorkflowInstance/index.js";
@@ -10,12 +10,12 @@ import { buildSaveWorkflowData } from "../entities/FormattedWorkflow/storage/met
 
 function buildFeaturesModule() {
   const saveWorkflowData = buildSaveWorkflowData({
-    workflowRunsStorage,
-    workflowStorage,
+    workflowRunsStorage: workflowRunsMongoStorage,
+    workflowStorage: workflowMongoStorage,
   });
   const loadWorkflowData = buildLoadWorkflowData({
-    workflowRunsStorage,
-    workflowStorage,
+    workflowRunsStorage: workflowRunsMongoStorage,
+    workflowStorage: workflowMongoStorage,
   });
 
   const getWorkflowInstance = buildGetWorkflowInstance({

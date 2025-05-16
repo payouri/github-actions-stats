@@ -47,6 +47,7 @@ export type MongoStorageCountMethod<Result> = (params: {
   repositoryName?: string;
   repositoryOwner?: string;
   status?: string;
+  version?: string;
   runAt?: {
     min: Date;
     max: Date;

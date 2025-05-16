@@ -1,14 +1,14 @@
 import type { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
-import { workflowStorage } from "../../../entities/FormattedWorkflow/storage/mongo.js";
+import { workflowMongoStorage } from "../../../entities/FormattedWorkflow/storage/mongo.js";
 import type { z } from "zod";
 import { generateWorkflowKey } from "../../../helpers/generateWorkflowKey.js";
 import { createEmptyWorkflowData } from "../../../helpers/createEmptyWorkflowData.js";
 
 const ROUTE_PATH = "/jobs/workflows/create" as const;
 
-const schema = workflowStorage.schema.omit({
+const schema = workflowMongoStorage.schema.omit({
   lastRunAt: true,
   oldestRunAt: true,
   totalWorkflowRuns: true,
@@ -49,7 +49,7 @@ export function mountCreateNewWorkflowRoute<
         },
       });
 
-      await workflowStorage.set(
+      await workflowMongoStorage.set(
         workflowKey,
         createEmptyWorkflowData({
           workflowId,
@@ -59,7 +59,7 @@ export function mountCreateNewWorkflowRoute<
         })
       );
 
-      const data = await workflowStorage.get(workflowKey);
+      const data = await workflowMongoStorage.get(workflowKey);
       if (!data) {
         throw new HTTPException(404, {
           message: "Workflow not found",

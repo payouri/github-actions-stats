@@ -46,7 +46,7 @@ export const storedWorkflowRun = formattedWorkflowRunSchema.merge(
   })
 );
 
-export const workflowStorage = createMongoStorage({
+export const workflowMongoStorage = createMongoStorage({
   collectionName: "workflow-data",
   dbURI: MONGO_CONFIG.dbURI,
   dbName: MONGO_CONFIG.databaseName,
@@ -55,7 +55,7 @@ export const workflowStorage = createMongoStorage({
   logger,
 });
 
-export const workflowRunsStorage = createMongoStorage({
+export const workflowRunsMongoStorage = createMongoStorage({
   collectionName: "workflow-runs",
   dbURI: MONGO_CONFIG.dbURI,
   dbName: MONGO_CONFIG.databaseName,
@@ -70,7 +70,10 @@ export type WorkflowRunsMongoStorage = MongoStorage<typeof storedWorkflowRun>;
 export const initFormattedWorkflowStorage = async () => {
   logger.debug("Initializing Workflows MongoDB storage");
   const start = performance.now();
-  await Promise.all([workflowStorage.init(), workflowRunsStorage.init()]);
+  await Promise.all([
+    workflowMongoStorage.init(),
+    workflowRunsMongoStorage.init(),
+  ]);
   logger.debug(
     `Workflows MongoDB storage has been initialized in ${formatMs(
       performance.now() - start
@@ -81,7 +84,10 @@ export const initFormattedWorkflowStorage = async () => {
 export const closeFormattedWorkflowStorage = async () => {
   logger.debug("Closing Workflows MongoDB storage");
   const start = performance.now();
-  await Promise.all([workflowStorage.close(), workflowRunsStorage.close()]);
+  await Promise.all([
+    workflowMongoStorage.close(),
+    workflowRunsMongoStorage.close(),
+  ]);
   logger.debug(
     `Workflows MongoDB storage has been closed in ${formatMs(
       performance.now() - start

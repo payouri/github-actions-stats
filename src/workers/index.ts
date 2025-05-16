@@ -1,13 +1,8 @@
 import { closeMongoStorages } from "../entities/closeMongoStorages.js";
-import {
-  initFormattedWorkflowStorage,
-  workflowRunsStorage,
-  workflowStorage,
-} from "../entities/FormattedWorkflow/storage/mongo.js";
 import { initMongoStorages } from "../entities/initMongoStorages.js";
-import { closeWorkflowStatsMongoStorage } from "../entities/WorkflowStat/storage/mongo.js";
 import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
+import { initMigrations } from "../lib/Migrations/migrations.js";
 import { createProcessWorkflowJobWorker } from "../queues/index.js";
 import globalWorkerAbortController from "./globalWorkerAbortController.js";
 
@@ -51,6 +46,7 @@ export const initWorkers = async () => {
   const start = performance.now();
   await initMongoStorages();
   await processWorkflowJobWorker.init();
+  await initMigrations();
   logger.info(`Workers initialized in ${formatMs(performance.now() - start)}`);
 };
 

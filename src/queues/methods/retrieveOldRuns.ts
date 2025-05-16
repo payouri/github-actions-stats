@@ -1,8 +1,8 @@
 import { buildFetchWorkflowUpdatesController } from "../../controllers/fetchWorkflowUpdates.js";
 import { DB } from "../../entities/db.js";
 import {
-  workflowRunsStorage,
-  workflowStorage,
+  workflowRunsMongoStorage,
+  workflowMongoStorage,
 } from "../../entities/FormattedWorkflow/storage/mongo.js";
 import { buildLoadWorkflowData } from "../../entities/FormattedWorkflow/storage/methods/loadWorkflowData.js";
 import { buildSaveWorkflowData } from "../../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
