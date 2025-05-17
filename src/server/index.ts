@@ -1,11 +1,12 @@
 import { serve } from "@hono/node-server";
+import { otel } from "@hono/otel";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { SERVER_CONFIG } from "../config/server.js";
 import logger from "../lib/Logger/logger.js";
+import { requestTimeMiddleware } from "./middlewares/index.js";
 import { buildRoutes } from "./routes/index.js";
 import type { HonoRequestContext } from "./types.js";
-import { requestTimeMiddleware } from "./middlewares/index.js";
-import { HTTPException } from "hono/http-exception";
 
 export async function createServer() {
   const app = new Hono<HonoRequestContext>({});
@@ -29,6 +30,7 @@ export async function createServer() {
     });
   });
 
+  app.use("*", otel());
   requestTimeMiddleware({ logger })(app);
   buildRoutes({ app });
 

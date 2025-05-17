@@ -84,18 +84,6 @@ export async function retrieveOldRuns(
         }
       },
       async onSavedWorkflowData({ savedWorkflowCount, workflowData }) {
-        if (savedWorkflowCount >= maxJobsToFetch) {
-          logger.debug(
-            `Saved workflow data ${savedWorkflowCount} workflow runs stopping fetching more runs`
-          );
-          abortController.abort("Enough data fetched");
-          return;
-        }
-        logger.debug(`Saved workflow data ${savedWorkflowCount} workflow runs`);
-        await jobParams.updateData({
-          workflowKey,
-          fetchedCount: savedWorkflowCount,
-        });
         for (const runKey of workflowData.savedRunsKeys) {
           const runData = await DB.queries.getRunData({
             workflowKey: workflowData.workflowKey,
@@ -111,6 +99,18 @@ export async function retrieveOldRuns(
           }
           logger.debug(`Upserted workflow run stat for run ${runKey}`);
         }
+        if (savedWorkflowCount >= maxJobsToFetch) {
+          logger.debug(
+            `Saved workflow data ${savedWorkflowCount} workflow runs stopping fetching more runs`
+          );
+          abortController.abort("Enough data fetched");
+          return;
+        }
+        logger.debug(`Saved workflow data ${savedWorkflowCount} workflow runs`);
+        await jobParams.updateData({
+          workflowKey,
+          fetchedCount: savedWorkflowCount,
+        });
       },
     })({
       workflowInstance: workflowDataResponse.data,

@@ -1,8 +1,10 @@
+import { initTelemetry } from "../lib/Telemetry/initTelemetry.js";
+initTelemetry();
+
 import { closeMongoStorages } from "../entities/closeMongoStorages.js";
 import { initMongoStorages } from "../entities/initMongoStorages.js";
 import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
-import { initMigrations } from "../lib/Migrations/migrations.js";
 import { createProcessWorkflowJobWorker } from "../queues/index.js";
 import globalWorkerAbortController from "./globalWorkerAbortController.js";
 

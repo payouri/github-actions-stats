@@ -268,7 +268,7 @@ export function buildFetchWorkflowUpdatesController(
             };
           }
           savedWorkflow += 1;
-          onSavedWorkflowData?.({
+          await onSavedWorkflowData?.({
             workflowData: saveResult.data,
             savedWorkflowCount: savedWorkflow,
           });

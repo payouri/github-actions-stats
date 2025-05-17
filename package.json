@@ -19,7 +19,11 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
+    "@hono/otel": "^0.2.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.59.0",
     "bullmq": "^5.49.2",
+    "bullmq-otel": "^1.0.1",
     "chalk": "^5.4.1",
     "colors": "^1.4.0",
     "commander": "^12.1.0",

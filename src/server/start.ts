@@ -1,10 +1,16 @@
+import {
+  closeTelemetry,
+  initTelemetry,
+} from "../lib/Telemetry/initTelemetry.js";
+initTelemetry();
+
 import type { ServerType } from "@hono/node-server";
+import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
 import { beforeListen } from "./beforeListen.js";
 import { globalServerAbortController } from "./globalServerAbortController.js";
 import { createServer } from "./index.js";
 import { processWorkflowJobQueue } from "./queue.js";
-import { formatMs } from "../helpers/format/formatMs.js";
 
 const SIGNALS = ["SIGINT", "SIGTERM"];
 
@@ -22,6 +28,7 @@ function handleSignal(params: {
       const start = performance.now();
       logger.info(`Closing server...`);
       await Promise.all([processWorkflowJobQueue.close()]);
+      await closeTelemetry();
 
       abortController.abort(`${signal} signal received`);
       if (!server.listening) {

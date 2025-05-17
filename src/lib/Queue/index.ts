@@ -5,6 +5,7 @@ import {
 } from "bullmq";
 import { formatMs } from "../../helpers/format/formatMs.js";
 import logger from "../Logger/logger.js";
+import { BullMQOtel } from "bullmq-otel";
 import type {
   CreateQueueParams,
   CreateWorkerParams,
@@ -13,6 +14,7 @@ import type {
   Worker,
 } from "./types.js";
 import dayjs from "dayjs";
+import { config } from "../../config/config.js";
 
 const PREFIX = "github-actions-stats-queues";
 const INIT_TIMEOUT = 10_000;
@@ -38,6 +40,7 @@ export function createQueue<T extends DefaultJobsMap>(
         maxLen: 5000,
       },
     },
+    telemetry: new BullMQOtel("stats-queue", config.OTEL.serviceVersion),
     defaultJobOptions: {
       keepLogs: 10,
       attempts: 0,
@@ -234,6 +237,7 @@ export function createWorker<Job extends DefaultJobsMap>(
       }
     },
     {
+      telemetry: new BullMQOtel("stats-worker", config.OTEL.serviceVersion),
       connection: {
         lazyConnect: true,
         url: redisUrl,
