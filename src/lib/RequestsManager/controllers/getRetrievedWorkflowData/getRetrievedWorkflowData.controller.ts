@@ -115,7 +115,7 @@ export const buildGetRetrievedWorkflowDataController: BuildGetRetrievedWorkflowD
               workflowParams: {
                 owner,
                 repo,
-                branchName,
+                ...(branchName ? { branchName } : {}),
               },
               workflowWeekRunsMap: {},
             }

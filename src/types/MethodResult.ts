@@ -1,4 +1,4 @@
-export type MethodSuccessResult<Data = void> = Data extends undefined | void
+export type MethodSuccessResult<Data> = Data extends undefined | void
   ? {
       hasFailed: false;
     }

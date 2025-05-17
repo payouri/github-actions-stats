@@ -12,7 +12,13 @@ import logger from "../../../../lib/Logger/logger.js";
 import type { MethodResult } from "../../../../types/MethodResult.js";
 
 export type SaveWorkflowDataResponse = Promise<
-  MethodResult<RetrievedWorkflow, "failed_to_save_workflow_data">
+  MethodResult<
+    {
+      savedRunsKeys: string[];
+      workflowKey: string;
+    },
+    "failed_to_save_workflow_data"
+  >
 >;
 
 export type SaveWorkflowDataParams = {
@@ -51,25 +57,28 @@ export function buildSaveWorkflowData(
     } = params;
 
     const { workflowWeekRunsMap, ...restWorkFlowData } = workflowData;
+    const workflowKey = generateWorkflowKey({
+      workflowName,
+      workflowParams: {
+        owner: repositoryOwner,
+        repo: repositoryName,
+        branchName,
+      },
+    });
 
     const transaction = await workflowStorage.startTransaction();
     transaction?.startTransaction({});
     try {
       await workflowStorage.set(
-        generateWorkflowKey({
-          workflowName,
-          workflowParams: {
-            owner: repositoryOwner,
-            repo: repositoryName,
-            branchName,
-          },
-        }),
+        workflowKey,
         {
           ...restWorkFlowData,
           workflowParams: {
             owner: restWorkFlowData.workflowParams.owner,
             repo: restWorkFlowData.workflowParams.repo,
-            branchName: restWorkFlowData.workflowParams.branchName,
+            ...(restWorkFlowData.workflowParams.branchName
+              ? { branchName: restWorkFlowData.workflowParams.branchName }
+              : {}),
           },
         },
         {
@@ -83,7 +92,10 @@ export function buildSaveWorkflowData(
         );
         return {
           hasFailed: false,
-          data: workflowData,
+          data: {
+            savedRunsKeys: [],
+            workflowKey,
+          },
         };
       }
 
@@ -148,24 +160,27 @@ export function buildSaveWorkflowData(
         );
         return {
           hasFailed: false,
-          data: workflowData,
+          data: {
+            savedRunsKeys: [],
+            workflowKey,
+          },
         };
       }
 
       await Promise.all([
         workflowStorage.updateWithMongoSyntax(
           {
-            key: generateWorkflowKey({
-              workflowName,
-              workflowParams: {
-                owner: repositoryOwner,
-                repo: repositoryName,
-                branchName,
-              },
-            }),
+            key: workflowKey,
           },
           {
-            $inc: { totalWorkflowRuns: runsCount },
+            $set: {
+              totalWorkflowRuns:
+                (await workflowRunsStorage.count({
+                  repositoryName,
+                  repositoryOwner,
+                  workflowId: workflowData.workflowId,
+                })) + runsCount,
+            },
           },
           {
             session: transaction,
@@ -175,16 +190,19 @@ export function buildSaveWorkflowData(
           session: transaction,
         }),
       ]);
+      return {
+        hasFailed: false,
+        data: {
+          savedRunsKeys: Object.keys(runs),
+          workflowKey,
+        },
+      };
     } catch (error) {
       logger.error("Failed to save workflow data", error);
       await transaction?.abortTransaction();
+      throw error;
     } finally {
       await transaction?.commitTransaction();
     }
-
-    return {
-      hasFailed: false,
-      data: workflowData,
-    };
   };
 }

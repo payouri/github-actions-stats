@@ -212,6 +212,7 @@ export function createMongoStorage<
       {
         session: options.session,
         checkKeys: false,
+        ordered: true,
       }
     );
     const endTime = performance.now();
@@ -382,5 +383,5 @@ export function createMongoStorage<
       return model.startSession();
     },
     init,
-  } as Storage;
+  } as unknown as Storage;
 }

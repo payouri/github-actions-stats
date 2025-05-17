@@ -54,6 +54,9 @@ export function buildGetWorkflowInstance(
             ).toFixed(2)}%)`
       );
     },
+    onSavedWorkflowData: async ({ savedWorkflowCount, workflowData: _ }) => {
+      logger.debug(`Saved workflow data ${savedWorkflowCount} workflow runs`);
+    },
   });
 
   return async function getWorkflowInstance(

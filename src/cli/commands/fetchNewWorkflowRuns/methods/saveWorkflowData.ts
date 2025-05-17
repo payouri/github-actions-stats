@@ -1,8 +1,11 @@
 import type { FormattedWorkflowRun } from "../../../../entities/FormattedWorkflow/types.js";
 import type { SaveWorkflowDataMethod } from "../../../../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
-import { generateWorkflowKey } from "../../../../helpers/generateWorkflowKey.js";
+import {
+  generateWorkflowKey,
+  generateWorkflowRunKey,
+} from "../../../../helpers/generateWorkflowKey.js";
 import { isExistingWorkflowData } from "../../../entities/RetrievedWorkflowData/methods/isExistingWorkflowData.js";
-import { saveRetrivedWorkflowRuns } from "../../../entities/RetrievedWorkflowData/methods/saveRetrievedWorkDataFromDisk.js";
+import { saveRetrivedWorkflowRuns as saveRetrievedWorkflowRuns } from "../../../entities/RetrievedWorkflowData/methods/saveRetrievedWorkDataFromDisk.js";
 import { workflowStorage } from "../../../entities/RetrievedWorkflowData/storage.js";
 
 export async function saveWorkflowData(
@@ -19,6 +22,15 @@ export async function saveWorkflowData(
     },
   ] = args;
 
+  const workflowKey = generateWorkflowKey({
+    workflowName,
+    workflowParams: {
+      owner: repositoryOwner,
+      repo: repositoryName,
+      branchName,
+    },
+  });
+
   if (
     !(await isExistingWorkflowData({
       workflowName,
@@ -29,29 +41,19 @@ export async function saveWorkflowData(
       },
     }))
   ) {
-    await workflowStorage.set(
-      generateWorkflowKey({
-        workflowName,
-        workflowParams: {
-          owner: repositoryOwner,
-          repo: repositoryName,
-          branchName,
-        },
-      }),
-      {
-        ...workflowData,
-        workflowParams: {
-          owner: repositoryOwner,
-          repo: repositoryName,
-          branchName,
-        },
-        workflowsList: [],
-      }
-    );
+    await workflowStorage.set(workflowKey, {
+      ...workflowData,
+      workflowParams: {
+        owner: repositoryOwner,
+        repo: repositoryName,
+        branchName,
+      },
+      workflowsList: [],
+    });
   }
 
   if (newOrUpdatedRuns?.length) {
-    const saveResponse = await saveRetrivedWorkflowRuns({
+    const saveResponse = await saveRetrievedWorkflowRuns({
       repositoryName,
       repositoryOwner,
       workflowName,
@@ -74,22 +76,38 @@ export async function saveWorkflowData(
           data: args[0],
         },
       };
-    return { hasFailed: false, data: workflowData };
+    return {
+      hasFailed: false,
+      data: {
+        workflowKey,
+        savedRunsKeys: newOrUpdatedRuns.map((run) =>
+          generateWorkflowRunKey({
+            repositoryName,
+            repositoryOwner,
+            workflowName,
+            runId: run.runId,
+            branchName,
+          })
+        ),
+      },
+    };
   }
 
-  const saveResponse = await saveRetrivedWorkflowRuns({
+  const runs = Object.values(workflowData.workflowWeekRunsMap).reduce<
+    Record<number, FormattedWorkflowRun>
+  >((acc, runs) => {
+    runs.forEach((run) => {
+      acc[run.runId] = run;
+    });
+    return acc;
+  }, {});
+
+  const saveResponse = await saveRetrievedWorkflowRuns({
     repositoryName,
     repositoryOwner,
     workflowName,
     branchName,
-    runs: Object.values(workflowData.workflowWeekRunsMap).reduce<
-      Record<number, FormattedWorkflowRun>
-    >((acc, runs) => {
-      runs.forEach((run) => {
-        acc[run.runId] = run;
-      });
-      return acc;
-    }, {}),
+    runs,
   });
 
   if (saveResponse.hasFailed) {
@@ -104,5 +122,19 @@ export async function saveWorkflowData(
     };
   }
 
-  return { hasFailed: false, data: workflowData };
+  return {
+    hasFailed: false,
+    data: {
+      workflowKey,
+      savedRunsKeys: Object.keys(runs).map((runId) =>
+        generateWorkflowRunKey({
+          repositoryName,
+          repositoryOwner,
+          workflowName,
+          runId: Number(runId),
+          branchName,
+        })
+      ),
+    },
+  };
 }

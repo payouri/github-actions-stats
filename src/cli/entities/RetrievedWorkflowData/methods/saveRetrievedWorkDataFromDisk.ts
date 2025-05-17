@@ -176,6 +176,9 @@ export const saveRetrievedWorkflowData = async (
       branchName: data.workflowParams.branchName,
     }
   );
+  if (!workflowData.workflowParams.branchName) {
+    delete workflowData.workflowParams.branchName;
+  }
   await Promise.all([
     workflowStorage.set(workflowKey, {
       ...workflowData,

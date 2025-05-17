@@ -155,6 +155,9 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
     githubClient: githubClient.rest,
     workflowPerPage: 1,
     saveWorkflowData,
+    onSavedWorkflowData: async ({ workflowData }) => {
+      logger.info(`Saved ${workflowData.savedRunsKeys.length} workflow runs`);
+    },
   });
   const fetchWorkflowData = buildFetchWorkflowDataController({
     githubClient: githubClient.rest,

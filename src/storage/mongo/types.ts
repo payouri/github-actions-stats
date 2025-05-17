@@ -5,6 +5,7 @@ import type {
   IndexDefinition,
   IndexOptions,
   Model,
+  ObjectId,
   ProjectionType,
   SortOrder,
   UpdateQuery,
@@ -15,12 +16,15 @@ import type { OverrideMethods } from "../../types/OverrideMethods.js";
 import type { Storage } from "../types.js";
 import type { MethodResult } from "../../types/MethodResult.js";
 import type { WorkflowRunId } from "../../cli/entities/RetrievedWorkflowData/types.js";
+import type { Prettify } from "../../types/Prettify.js";
 
-export type DocumentWithKey<T> = T & {
-  key: string;
-} & Document;
-
-export type EntityWithKey<T> = T & { key: string };
+export type EntityWithKey<T> = Prettify<T & { key: string }>;
+export type DocumentWithKey<T> = Prettify<EntityWithKey<T> & Document>;
+export type LeanDocumentWithKey<T> = Prettify<
+  EntityWithKey<T> & {
+    _id: ObjectId;
+  }
+>;
 
 export type MongoStorageSetMethod<Result> = (
   key: Parameters<Storage<Result>["set"]>[0],
@@ -43,16 +47,9 @@ export type MongoStorageSetManyMethod<Result> = (
   options?: { session?: ClientSession }
 ) => Promise<void>;
 
-export type MongoStorageCountMethod<Result> = (params: {
-  repositoryName?: string;
-  repositoryOwner?: string;
-  status?: string;
-  version?: string;
-  runAt?: {
-    min: Date;
-    max: Date;
-  };
-}) => Promise<number>;
+export type MongoStorageCountMethod<Result> = (
+  params: FilterQuery<LeanDocumentWithKey<Result>>
+) => Promise<number>;
 
 export type MongoStoragePartialUpdateMethod<Result> = (
   key: string,

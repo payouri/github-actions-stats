@@ -45,12 +45,20 @@ export const DB = {
         workflowRunCount,
       };
     },
-    getRunData(params: { runId: number; workflowKey: string }) {
+    getRunData(
+      params:
+        | { runId: number; workflowKey: string }
+        | {
+            runKey: string;
+          }
+    ) {
       return workflowRunsMongoStorage.get(
-        generateWorkflowRunKey({
-          runId: params.runId,
-          workflowKey: params.workflowKey,
-        })
+        "runKey" in params
+          ? params.runKey
+          : generateWorkflowRunKey({
+              runId: params.runId,
+              workflowKey: params.workflowKey,
+            })
       );
     },
     fetchWorkflowDataWithOldestRun(params: { workflowKey: string }) {

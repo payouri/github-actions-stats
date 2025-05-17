@@ -12,6 +12,7 @@ import type {
   Queue,
   Worker,
 } from "./types.js";
+import dayjs from "dayjs";
 
 const PREFIX = "github-actions-stats-queues";
 const INIT_TIMEOUT = 10_000;
@@ -179,6 +180,7 @@ export function createWorker<Job extends DefaultJobsMap>(
     concurrency,
     redisUrl,
     abortSignal: abortSignalParam,
+    onJobEnd,
     processJob,
   } = params;
   const abortController = new AbortController();
@@ -209,6 +211,7 @@ export function createWorker<Job extends DefaultJobsMap>(
         logger.debug(
           `[${queue}] Job ${job.id} processed in ${formatMs(end - start)}ms`
         );
+        return result;
       } catch (error) {
         job.failedReason = JSON.stringify(error);
         if (
@@ -216,12 +219,17 @@ export function createWorker<Job extends DefaultJobsMap>(
           error.message === "Job aborted" &&
           job.token
         ) {
-          logger.debug(`[${queue}] Job ${job.id} is aborted, moving to wait`);
+          logger.debug(
+            `[${queue}][${worker.id}][${job.id}] Job is aborted, moving to wait`
+          );
           await job.moveToWait(job.token);
           return;
         }
 
-        logger.error(`[${queue}] Job ${job.id} failed to process`, error);
+        logger.error(
+          `[${queue}][${worker.id}][${job.id}] Job failed to process`,
+          error
+        );
         throw new UnrecoverableError(String(error));
       }
     },
@@ -235,6 +243,45 @@ export function createWorker<Job extends DefaultJobsMap>(
       prefix: PREFIX,
     }
   );
+  worker.on("error", (error) => {
+    logger.error(`[${name}:${worker.id}] Worker error`, error);
+  });
+  worker.on("completed", (job) => {
+    onJobEnd?.({
+      name: job.name,
+      data: job.data,
+      startTime: dayjs(job.processedOn).toDate(),
+      endTime: dayjs(job.finishedOn).toDate(),
+      createdTime: dayjs(job.timestamp).toDate(),
+      status:
+        job.returnvalue !== undefined &&
+        Reflect.has(job.returnvalue, "hasFailed") &&
+        Reflect.get(job.returnvalue, "hasFailed") === false
+          ? "success"
+          : "failed",
+      result: job.returnvalue,
+      jobId: job.id ?? "unknown",
+    });
+  });
+  worker.on("failed", (job) => {
+    if (!job) {
+      logger.error(`[${name}:${worker.id}] Failed job is undefined`);
+      return;
+    }
+
+    onJobEnd?.({
+      name: job.name,
+      data: job.data,
+      startTime: dayjs(job.processedOn).toDate(),
+      endTime: dayjs(job.finishedOn).toDate(),
+      createdTime: dayjs(job.timestamp).toDate(),
+      jobId: job.id ?? "unknown",
+      status: "failed",
+      result: job.returnvalue
+        ? job.returnvalue
+        : { reason: job.failedReason, errorCode: "unknown" },
+    });
+  });
 
   async function close(): ReturnType<Worker["close"]> {
     try {

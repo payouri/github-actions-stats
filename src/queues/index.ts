@@ -1,4 +1,6 @@
+import dayjs from "dayjs";
 import { config } from "../config/config.js";
+import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
 import { createQueue, createWorker } from "../lib/Queue/index.js";
 import type { MethodMap } from "../lib/Queue/types.js";
@@ -15,6 +17,7 @@ import {
   retrieveWorkflowUpdates,
 } from "./methods/retrieveWorkflowUpdates.js";
 import type { JobsMap } from "./methods/types.js";
+import { queueJobExecutionReportsMongoStorage } from "../entities/QueueJobExecutionReport/storage.js";
 
 const MethodsMap: MethodMap<JobsMap> = {
   [RETRIEVE_OLDER_RUNS_JOB_NAME]: retrieveOldRuns,
@@ -48,7 +51,18 @@ export function createProcessWorkflowJobWorker(params?: {
     name: "process-workflow-job-worker",
     concurrency: PROCESS_WORKFLOW_JOB_QUEUE_WORKER_CONCURRENCY,
     redisUrl: config.REDIS.uri,
-    processJob: async (job, { abortSignal }) => {
+    async onJobEnd(endedJob) {
+      logger.debug(
+        `[${PROCESS_WORKFLOW_JOB_QUEUE_NAME}][${endedJob.name}] Ended job ${
+          endedJob.status
+        } in ${formatMs(dayjs(endedJob.endTime).diff(endedJob.startTime))}`
+      );
+      await queueJobExecutionReportsMongoStorage.set(
+        `${endedJob.name}/${endedJob.jobId}`,
+        endedJob
+      );
+    },
+    async processJob(job, { abortSignal }) {
       logger.debug(`Processing job ${job.id}, job name ${job.name}`);
 
       if (!(job.name in MethodsMap)) {

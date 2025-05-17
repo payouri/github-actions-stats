@@ -1,11 +1,5 @@
 import { buildFetchWorkflowUpdatesController } from "../../controllers/fetchWorkflowUpdates.js";
 import { DB } from "../../entities/db.js";
-import {
-  workflowRunsMongoStorage,
-  workflowMongoStorage,
-} from "../../entities/FormattedWorkflow/storage/mongo.js";
-import { buildLoadWorkflowData } from "../../entities/FormattedWorkflow/storage/methods/loadWorkflowData.js";
-import { buildSaveWorkflowData } from "../../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
 import { formatMs } from "../../helpers/format/formatMs.js";
 import githubClient from "../../lib/githubClient.js";
 import logger from "../../lib/Logger/logger.js";
@@ -30,13 +24,13 @@ export interface RetrieveOldRuns extends DefaultJobDefinition {
 }
 
 export async function retrieveOldRuns(
-  params: DefaultJob<RetrieveOldRuns>,
+  jobParams: DefaultJob<RetrieveOldRuns>,
   options?: { abortSignal?: AbortSignal }
 ): Promise<
   MethodResult<RetrieveOldRuns["jobResult"], RetrieveOldRuns["jobErrorCode"]>
 > {
   const { abortSignal } = options ?? {};
-  const { workflowKey, fetchedCount = 0 } = params.data;
+  const { workflowKey, fetchedCount = 0 } = jobParams.data;
 
   const workflowPerPage = 1;
   const start = Date.now();
@@ -89,7 +83,7 @@ export async function retrieveOldRuns(
           abortController.abort("Max job duration reached");
         }
       },
-      async onSavedWorkflowData({ savedWorkflowCount }) {
+      async onSavedWorkflowData({ savedWorkflowCount, workflowData }) {
         if (savedWorkflowCount >= maxJobsToFetch) {
           logger.debug(
             `Saved workflow data ${savedWorkflowCount} workflow runs stopping fetching more runs`
@@ -98,10 +92,25 @@ export async function retrieveOldRuns(
           return;
         }
         logger.debug(`Saved workflow data ${savedWorkflowCount} workflow runs`);
-        await params.updateData({
+        await jobParams.updateData({
           workflowKey,
           fetchedCount: savedWorkflowCount,
         });
+        for (const runKey of workflowData.savedRunsKeys) {
+          const runData = await DB.queries.getRunData({
+            workflowKey: workflowData.workflowKey,
+            runKey,
+          });
+          if (!runData) {
+            logger.warn(`Run data for run ${runKey} not found`);
+            continue;
+          }
+          const res = await DB.mutations.upsertWorkflowRunStat(runData);
+          if (res.hasFailed) {
+            logger.warn(`Failed to upsert workflow run stat for run ${runKey}`);
+          }
+          logger.debug(`Upserted workflow run stat for run ${runKey}`);
+        }
       },
     })({
       workflowInstance: workflowDataResponse.data,

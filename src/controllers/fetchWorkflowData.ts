@@ -127,22 +127,23 @@ export function buildFetchWorkflowDataController(
       logger.debug(
         `Creating workflow data for workflow ${workflowName} in repository ${repositoryName} by ${repositoryOwner}`
       );
+      const workflowData = createEmptyWorkflowData({
+        workflowId: repoWorkflowDataResponse.data.workflows.workflow.id,
+        workflowName,
+        workflowRepository: repositoryName,
+        workflowOwner: repositoryOwner,
+      });
       const saveResultResponse = await saveRetrievedWorkflowData({
         repositoryName,
         repositoryOwner,
         workflowName,
-        workflowData: createEmptyWorkflowData({
-          workflowId: repoWorkflowDataResponse.data.workflows.workflow.id,
-          workflowName,
-          workflowRepository: repositoryName,
-          workflowOwner: repositoryOwner,
-        }),
+        workflowData,
       });
 
       if (!saveResultResponse.hasFailed) {
         return {
           hasFailed: false,
-          data: saveResultResponse.data,
+          data: workflowData,
         };
       }
     }

@@ -1,6 +1,7 @@
 import { buildFetchWorkflowUpdatesController } from "../../controllers/fetchWorkflowUpdates.js";
 import { DB } from "../../entities/db.js";
 import githubClient from "../../lib/githubClient.js";
+import logger from "../../lib/Logger/logger.js";
 import type {
   DefaultJob,
   DefaultJobDefinition,
@@ -52,6 +53,23 @@ export async function retrieveWorkflowUpdates(
     await buildFetchWorkflowUpdatesController({
       saveWorkflowData: DB.mutations.saveWorkflowData,
       githubClient: githubClient.rest,
+      onSavedWorkflowData: async ({ workflowData }) => {
+        for (const runKey of workflowData.savedRunsKeys) {
+          const runData = await DB.queries.getRunData({
+            workflowKey: workflowData.workflowKey,
+            runKey,
+          });
+          if (!runData) {
+            logger.warn(`Run data for run ${runKey} not found`);
+            continue;
+          }
+          const res = await DB.mutations.upsertWorkflowRunStat(runData);
+          if (res.hasFailed) {
+            logger.warn(`Failed to upsert workflow run stat for run ${runKey}`);
+          }
+          logger.debug(`Upserted workflow run stat for run ${runKey}`);
+        }
+      },
     })({
       workflowInstance: workflowDataResponse.data,
       abortSignal,

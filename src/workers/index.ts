@@ -46,7 +46,7 @@ export const initWorkers = async () => {
   const start = performance.now();
   await initMongoStorages();
   await processWorkflowJobWorker.init();
-  await initMigrations();
+  // await initMigrations();
   logger.info(`Workers initialized in ${formatMs(performance.now() - start)}`);
 };
 

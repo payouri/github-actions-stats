@@ -1,6 +1,22 @@
 import type { MethodResult } from "../../types/MethodResult.js";
 import type { Job as BullJob } from "bullmq";
 
+export interface EndedJob<Job extends DefaultJobDefinition> {
+  jobId: string;
+  status: "success" | "failed";
+  startTime: Date;
+  endTime: Date;
+  createdTime: Date;
+  data: Job["jobData"];
+  name: Job["jobName"];
+  result:
+    | Job["jobResult"]
+    | {
+        reason: string;
+        errorCode: string;
+      };
+}
+
 export interface DefaultJobDefinition {
   jobName: string;
   jobData: unknown;
@@ -55,6 +71,7 @@ export interface CreateWorkerParams<
   concurrency: number;
   redisUrl: string;
   abortSignal?: AbortSignal;
+  onJobEnd?: (job: EndedJob<JobDefinition>) => Promise<void> | void;
   processJob: (
     job: Job,
     options: {

@@ -1,9 +1,6 @@
 import dayjs from "dayjs";
 import type { Octokit } from "octokit";
-import type {
-  RetrievedWorkflow,
-  WorkFlowInstance,
-} from "../cli/entities/RetrievedWorkflowData/types.js";
+import type { WorkFlowInstance } from "../cli/entities/RetrievedWorkflowData/types.js";
 import type { SaveWorkflowDataMethod } from "../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
 import { getFormattedWorkflowRun } from "../helpers/getFormattedWorkflowRun.js";
 import { updateRunUsageWithJobs } from "../helpers/updateRunUsageWithJobs.js";
@@ -38,8 +35,11 @@ export type FetchWorkflowUpdatesControllerDependencies = {
     total: number;
   }) => Promise<void> | void;
   saveWorkflowData: SaveWorkflowDataMethod;
-  onSavedWorkflowData?: (params: {
-    workflowData: RetrievedWorkflow;
+  onSavedWorkflowData: (params: {
+    workflowData: {
+      savedRunsKeys: string[];
+      workflowKey: string;
+    };
     savedWorkflowCount: number;
   }) => Promise<void> | void;
 };
@@ -247,6 +247,7 @@ export function buildFetchWorkflowUpdatesController(
           });
         }
       } catch (err) {
+        logger.error("Failed to fetch workflow updates", err);
         return {
           hasFailed: true,
           error: {

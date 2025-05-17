@@ -2,6 +2,7 @@ import type {
   ExtractMethodResult,
   MethodResult,
 } from "../../../types/MethodResult.js";
+import type { Prettify } from "../../../types/Prettify.js";
 import type { FormattedWorkflowRun } from "../../FormattedWorkflow/types.js";
 import { convertWorkflowRunToWorkflowRunStat } from "../helpers/convertWorkflowRunToWorkflowRunStat.js";
 import type { WorkflowRunStatsMongoStorage } from "./mongo.js";
@@ -23,11 +24,13 @@ export function buildUpsertWorkflowRunStat(dependencies: {
 }) {
   const { workflowRunStatsStorage } = dependencies;
   return async function upsertWorkflowRunStat(
-    params: FormattedWorkflowRun & {
-      workflowName: string;
-      repositoryName: string;
-      repositoryOwner: string;
-    }
+    params: Prettify<
+      FormattedWorkflowRun & {
+        workflowName: string;
+        repositoryName: string;
+        repositoryOwner: string;
+      }
+    >
   ): Promise<UpsertWorkflowRunStatResponse> {
     const statToInsert = convertWorkflowRunToWorkflowRunStat(params);
 
