@@ -12,7 +12,6 @@
   },
   "devDependencies": {
     "@types/node": "20.14.8",
-    "redis-memory-server": "^0.12.1",
     "tsc-alias": "^1.8.10",
     "typescript": "^5.6.3",
     "vite": "^6.3.5",
