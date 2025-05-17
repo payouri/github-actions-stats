@@ -65,7 +65,10 @@ export async function retrieveWorkflowUpdates(
           }
           const res = await DB.mutations.upsertWorkflowRunStat(runData);
           if (res.hasFailed) {
-            logger.warn(`Failed to upsert workflow run stat for run ${runKey}`);
+            logger.error(
+              `Failed to upsert workflow run stat for run ${runKey}`,
+              res.error
+            );
           }
           logger.debug(`Upserted workflow run stat for run ${runKey}`);
         }

@@ -6,7 +6,7 @@ import {
   workflowMongoStorage,
 } from "./FormattedWorkflow/storage/mongo.js";
 import { buildAggregateStatsOnPeriodAndSave } from "./WorkflowStat/methods/aggregateStatsOnPeriod.js";
-import { buildUpsertWorkflowRunStat } from "./WorkflowStat/storage/createWorkflowStat.js";
+import { buildUpsertWorkflowRunStat } from "./WorkflowStat/methods/createWorkflowStat.js";
 import {
   aggregatedWorkflowStatsMongoStorage,
   workflowRunStatsMongoStorage,

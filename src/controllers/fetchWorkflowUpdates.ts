@@ -7,6 +7,7 @@ import { updateRunUsageWithJobs } from "../helpers/updateRunUsageWithJobs.js";
 import logger from "../lib/Logger/logger.js";
 import { buildGithubRequests } from "../lib/RequestsManager/requests/buildRequests.js";
 import type { MethodResult } from "../types/MethodResult.js";
+import { AbortError } from "../errors/AbortError.js";
 
 const DEFAULT_WORKFLOW_PER_PAGE = 100 as const;
 const DEFAULT_UPDATE_TYPE = "newest" as const;
@@ -51,7 +52,9 @@ export type FetchWorkflowUpdatesControllerParams = {
 };
 export type FetchWorkflowUpdatesControllerResponse = MethodResult<
   WorkFlowInstance,
-  "failed_to_fetch_workflow_updates" | "failed_to_save_workflow_data"
+  | "failed_to_fetch_workflow_updates"
+  | "failed_to_save_workflow_data"
+  | "aborted"
 >;
 export type FetchWorkflowUpdatesController = (
   params: FetchWorkflowUpdatesControllerParams
@@ -99,7 +102,19 @@ export function buildFetchWorkflowUpdatesController(
           logger.warn(
             `Fetching ${workflowInstance.repositoryOwner}/${workflowInstance.repositoryName}/${workflowInstance.workflowId} workflow runs aborted`
           );
-          break;
+          return {
+            hasFailed: true,
+            error: {
+              code: "aborted",
+              message: "Aborted",
+              error: new AbortError({
+                message: "Fetch workflow updates aborted",
+                signal: abortSignal,
+                abortReason: JSON.stringify(abortSignal.reason),
+              }),
+              data: undefined,
+            },
+          };
         }
 
         const response = await githubClient.actions.listWorkflowRuns({
@@ -130,7 +145,19 @@ export function buildFetchWorkflowUpdatesController(
             logger.warn(
               `Fetching ${workflowInstance.repositoryOwner}/${workflowInstance.repositoryName}/${workflowInstance.workflowId} workflow runs aborted`
             );
-            break;
+            return {
+              hasFailed: true,
+              error: {
+                code: "aborted",
+                message: "Aborted",
+                error: new AbortError({
+                  message: "Fetch workflow updates aborted",
+                  signal: abortSignal,
+                  abortReason: JSON.stringify(abortSignal.reason),
+                }),
+                data: undefined,
+              },
+            };
           }
 
           logger.debug(`Fetching workflow run ${workflowRun.id}`);

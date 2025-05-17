@@ -1,3 +1,4 @@
+import { generateWorkflowRunKey } from "../../../helpers/generateWorkflowKey.js";
 import type {
   ExtractMethodResult,
   MethodResult,
@@ -5,7 +6,7 @@ import type {
 import type { Prettify } from "../../../types/Prettify.js";
 import type { FormattedWorkflowRun } from "../../FormattedWorkflow/types.js";
 import { convertWorkflowRunToWorkflowRunStat } from "../helpers/convertWorkflowRunToWorkflowRunStat.js";
-import type { WorkflowRunStatsMongoStorage } from "./mongo.js";
+import type { WorkflowRunStatsMongoStorage } from "../storage/mongo.js";
 
 export type UpsertWorkflowRunStatResponse = MethodResult<
   void,
@@ -35,7 +36,12 @@ export function buildUpsertWorkflowRunStat(dependencies: {
     const statToInsert = convertWorkflowRunToWorkflowRunStat(params);
 
     const setResult = await workflowRunStatsStorage.set(
-      `${params.repositoryOwner}/${params.repositoryName}/${params.workflowName}/${params.runId}`,
+      generateWorkflowRunKey({
+        repositoryName: params.repositoryName,
+        repositoryOwner: params.repositoryOwner,
+        workflowName: params.workflowName,
+        runId: params.runId,
+      }),
       statToInsert
     );
     if (setResult.hasFailed) {

@@ -8,6 +8,7 @@ import type {
   WorkflowRunStatsMongoStorage,
 } from "../storage/mongo.js";
 import type { AggregatedWorkflowStat, WorkflowRunStat } from "../types.js";
+import { AbortError } from "../../../errors/AbortError.js";
 
 const limit = 100;
 
@@ -45,7 +46,11 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
           error: {
             code: "aborted",
             message: "Aborted",
-            error: new Error("Aborted"),
+            error: new AbortError({
+              message: "Aggregation aborted",
+              signal: abortSignal,
+              abortReason: JSON.stringify(abortSignal.reason),
+            }),
             data: undefined,
           },
         };
@@ -76,6 +81,21 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
       let current: WorkflowRunStat[] | null = null;
       let total = 0;
       while (current !== null && current.length > 0) {
+        if (abortSignal?.aborted) {
+          return {
+            hasFailed: true,
+            error: {
+              code: "aborted",
+              message: "Aborted",
+              error: new AbortError({
+                message: "Batch aggregation aborted",
+                signal: abortSignal,
+                abortReason: JSON.stringify(abortSignal.reason),
+              }),
+              data: undefined,
+            },
+          };
+        }
         current = await workflowRunStatsMongoStorage.query(
           {
             workflowKey,

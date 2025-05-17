@@ -9,7 +9,7 @@ import type { MethodResult } from "../../types/MethodResult.js";
 import type { LoadWorkflowDataMethod } from "../../entities/FormattedWorkflow/storage/methods/loadWorkflowData.js";
 import type { SaveWorkflowDataMethod } from "../../entities/FormattedWorkflow/storage/methods/saveWorkflowData.js";
 
-export type BuildGetWorkflowInstaceDependencies = {
+export type BuildGetWorkflowInstanceDependencies = {
   githubClient: Octokit["rest"];
   loadWorkflowData: LoadWorkflowDataMethod;
   saveWorkflowData: SaveWorkflowDataMethod;
@@ -36,7 +36,7 @@ export type GetWorkflowInstanceResponse = Promise<
 >;
 
 export function buildGetWorkflowInstance(
-  dependencies: BuildGetWorkflowInstaceDependencies
+  dependencies: BuildGetWorkflowInstanceDependencies
 ) {
   const { loadWorkflowData, saveWorkflowData, githubClient } = dependencies;
 
