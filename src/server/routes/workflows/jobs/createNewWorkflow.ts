@@ -1,12 +1,12 @@
 import type { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
-import { workflowMongoStorage } from "../../../entities/FormattedWorkflow/storage/mongo.js";
+import { workflowMongoStorage } from "../../../../entities/FormattedWorkflow/storage/mongo.js";
 import type { z } from "zod";
-import { generateWorkflowKey } from "../../../helpers/generateWorkflowKey.js";
-import { createEmptyWorkflowData } from "../../../helpers/createEmptyWorkflowData.js";
+import { generateWorkflowKey } from "../../../../helpers/generateWorkflowKey.js";
+import { createEmptyWorkflowData } from "../../../../helpers/createEmptyWorkflowData.js";
 
-const ROUTE_PATH = "/jobs/workflows/create" as const;
+const ROUTE_PATH = "/create" as const;
 
 const schema = workflowMongoStorage.schema.omit({
   lastRunAt: true,

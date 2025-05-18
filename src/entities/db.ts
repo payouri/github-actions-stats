@@ -61,6 +61,9 @@ export const DB = {
             })
       );
     },
+    getWorkflowData(params: { workflowKey: string }) {
+      return workflowMongoStorage.get(params.workflowKey);
+    },
     fetchWorkflowDataWithOldestRun(params: { workflowKey: string }) {
       return loadWorkflowData(
         {

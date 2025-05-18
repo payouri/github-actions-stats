@@ -2,16 +2,16 @@ import type { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
-import { processWorkflowJobQueue } from "../../queue.js";
-import { RETRIEVE_OLDER_RUNS_JOB_NAME } from "../../../queues/methods/retrieveOldRuns.js";
+import { processWorkflowJobQueue } from "../../../queue.js";
+import { RETRIEVE_WORKFLOW_UPDATES_JOB_NAME } from "../../../../queues/methods/retrieveWorkflowUpdates.js";
 
-const ROUTE_PATH = "/jobs/workflows/older" as const;
+const ROUTE_PATH = "/new" as const;
 
 const schema = z.object({
   workflowKey: z.string(),
 });
 
-export function mountRetrieveOlderRunsRoute<
+export function mountRetrieveNewWorkflowsRoute<
   Env extends Record<string, unknown>
 >(dependencies: { app: Hono<Env> }) {
   const { app } = dependencies;
@@ -36,7 +36,7 @@ export function mountRetrieveOlderRunsRoute<
       const { workflowKey } = await c.req.json();
 
       const addJobResult = await processWorkflowJobQueue.addJob({
-        jobName: RETRIEVE_OLDER_RUNS_JOB_NAME,
+        jobName: RETRIEVE_WORKFLOW_UPDATES_JOB_NAME,
         jobData: {
           workflowKey,
         },

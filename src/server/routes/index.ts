@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { buildGithubWebhooksRoutes } from "./github/webhooks.js";
-import { buildJobsWorkflowsRoutes } from "./jobs/workflows.js";
+import { mountWorkflowsRoutes } from "./workflows/workflows.js";
 import type { BlankEnv } from "hono/types";
 
 export function buildRoutes<Env extends BlankEnv>(dependencies: {
@@ -9,7 +9,7 @@ export function buildRoutes<Env extends BlankEnv>(dependencies: {
   const { app } = dependencies;
 
   buildGithubWebhooksRoutes(dependencies);
-  buildJobsWorkflowsRoutes(dependencies);
+  mountWorkflowsRoutes(dependencies);
 
   app.get("/healthcheck", async (c) => {
     return c.text("OK");

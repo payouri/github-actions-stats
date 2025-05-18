@@ -6,9 +6,9 @@ export function buildGithubWebhooksRoutes<Env extends BlankEnv>(dependencies: {
 }) {
   const { app } = dependencies;
 
-  app.post("/github/webhooks", async (c) => {
+  app.post("/webhooks", async (c) => {
     return c.json({ message: "Hello World" });
   });
-
+  0;
   return {};
 }

@@ -78,7 +78,7 @@ export function initTelemetry() {
     return;
   }
   if (config.ENV.NODE_ENV !== "production") {
-    logger.warn("Telemetry is enabled in development mode");
+    logger.warn("Telemetry is only enabled in development mode");
     return;
   }
   if (!config.OTEL.endpoint) {
