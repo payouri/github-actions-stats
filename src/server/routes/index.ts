@@ -1,9 +1,9 @@
 import type { Hono } from "hono";
+import type { HonoRequestContext } from "../types.js";
 import { mountGithubRoutes } from "./github/github.router.js";
 import { mountWorkflowsRoutes } from "./workflows/workflows.js";
-import type { BlankEnv } from "hono/types";
 
-export function buildRoutes<Env extends BlankEnv>(dependencies: {
+export function buildRoutes<Env extends HonoRequestContext>(dependencies: {
   app: Hono<Env>;
 }) {
   const { app } = dependencies;
