@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { JOBS_ROUTE_PATH, WORKFLOWS_ROUTE_PATH } from "./constants.js";
+import { WORKFLOWS_ROUTE_PATH } from "./constants.js";
 import { mountGetWorkflowByKeyRoute } from "./getWorkflowByKey.js";
 import { mountJobsWorkflowsRoutes } from "./jobs/jobs.routes.js";
 
