@@ -2,6 +2,7 @@ import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentation
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-proto";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-proto";
+import { OTLPExporterNodeConfigBase } from "@opentelemetry/otlp-exporter-base";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import {
   LoggerProvider,
@@ -18,7 +19,7 @@ import { config } from "../../config/config.js";
 import { join } from "node:path";
 import logger from "../Logger/logger.js";
 
-const collectorOptions = {
+const collectorOptions: OTLPExporterNodeConfigBase = {
   url: config.OTEL.endpoint ? join(config.OTEL.endpoint, "v1/logs") : undefined, // url is optional and can be omitted - default is http://localhost:4318/v1/logs
   headers: {}, // an optional object containing custom headers to be sent with each request
   concurrencyLimit: 1, // an optional limit on pending requests
@@ -26,6 +27,10 @@ const collectorOptions = {
 const logExporter = new OTLPLogExporter(collectorOptions);
 // const logConsoleExporter = new ConsoleLogRecordExporter();
 const loggerProvider = new LoggerProvider({
+  resource: resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: config.OTEL.serviceName,
+    [ATTR_SERVICE_VERSION]: config.OTEL.serviceVersion,
+  }),
   processors: [
     // new BatchLogRecordProcessor(logConsoleExporter),
     new BatchLogRecordProcessor(logExporter),

@@ -24,6 +24,7 @@ export async function createServer() {
       );
     }
 
+    logger.error("Unhandled error", err);
     return new Response("Internal Server Error", {
       status: 500,
       statusText: "Internal Server Error",

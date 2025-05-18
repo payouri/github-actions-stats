@@ -17,6 +17,7 @@ function createLoggerInstance() {
       format.json({}),
       format.colorize(),
       format.printf((info) => {
+        console.log(info);
         if (isTelemetryEnabled) {
           const data: { level: string; message: any; timestamp: string } = info[
             Symbol.for("message")
