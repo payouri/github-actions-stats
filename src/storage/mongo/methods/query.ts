@@ -15,38 +15,45 @@ export function buildQuery<Result>(dependencies: {
     ...args: Parameters<MongoStorageQueryMethod<Result>>
   ): ReturnType<MongoStorageQueryMethod<Result>> {
     const [params, options] = args;
-    const {
-      workflowName,
-      repositoryName,
-      repositoryOwner,
-      branchName,
-      status,
-    } = params;
     const { min = dayjs().subtract(1, "year").toDate(), max = new Date() } =
       params.ranAt ?? {};
-    const { limit, sort } = options ?? {};
+    const { limit, sort, projection, session } = options ?? {};
     logger.debug(
-      `Querying data for workflow ${workflowName} in repository ${repositoryName} by ${repositoryOwner}`
+      "workflowName" in params
+        ? `Querying data for workflow ${params.workflowName} in repository ${params.repositoryName} by ${params.repositoryOwner}`
+        : `Querying data in collection ${params.collectionName}`
     );
     const time = performance.now();
 
     const result = await model
-      .find({
-        workflowName,
-        repositoryName,
-        repositoryOwner,
-        ...(status ? { status } : {}),
-        ...(min || max ? { runAt: { $gte: min, $lte: max } } : {}),
-        ...(branchName ? { branchName } : {}),
-      })
-      .setOptions({ limit, sort })
+      .find(
+        "workflowName" in params &&
+          "repositoryName" in params &&
+          "repositoryOwner" in params
+          ? {
+              workflowName: params.workflowName,
+              repositoryName: params.repositoryName,
+              repositoryOwner: params.repositoryOwner,
+              ...(params.status ? { status: params.status } : {}),
+              ...(min || max ? { runAt: { $gte: min, $lte: max } } : {}),
+              ...(params.branchName ? { branchName: params.branchName } : {}),
+            }
+          : params
+      )
+      .setOptions({ limit, sort, session, projection })
       .lean()
       .exec();
     const endTime = performance.now();
     logger.debug(
-      `Data for workflow ${workflowName} in repository ${repositoryName} by ${repositoryOwner} has been queried in ${formatMs(
-        endTime - time
-      )}ms`
+      "workflowName" in params
+        ? `Data for workflow ${params.workflowName} in repository ${
+            params.repositoryName
+          } by ${params.repositoryOwner} has been queried in ${formatMs(
+            endTime - time
+          )}ms`
+        : `Data for collection ${
+            params.collectionName
+          } has been queried in ${formatMs(endTime - time)}ms`
     );
 
     return result as Awaited<ReturnType<MongoStorageQueryMethod<Result>>>;

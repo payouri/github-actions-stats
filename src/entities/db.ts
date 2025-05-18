@@ -5,6 +5,7 @@ import {
   workflowRunsMongoStorage,
   workflowMongoStorage,
 } from "./FormattedWorkflow/storage/mongo.js";
+import type { FormattedWorkflowRun } from "./FormattedWorkflow/types.js";
 import { buildAggregateStatsOnPeriodAndSave } from "./WorkflowStat/methods/aggregateStatsOnPeriod.js";
 import { buildUpsertWorkflowRunStat } from "./WorkflowStat/methods/createWorkflowStat.js";
 import {
@@ -64,6 +65,23 @@ export const DB = {
     getWorkflowData(params: { workflowKey: string }) {
       return workflowMongoStorage.get(params.workflowKey);
     },
+    async isExistingWorkflow(params: {
+      workflowKey: string;
+    }): Promise<boolean> {
+      return (
+        (
+          await workflowMongoStorage.query(
+            {
+              key: params.workflowKey,
+            },
+            {
+              limit: 1,
+              projection: { key: 1, _id: 0 },
+            }
+          )
+        ).length > 0
+      );
+    },
     fetchWorkflowDataWithOldestRun(params: { workflowKey: string }) {
       return loadWorkflowData(
         {
@@ -86,6 +104,56 @@ export const DB = {
     },
   },
   mutations: {
+    async addWorkflowRun(params: {
+      workflowKey: string;
+      workflowRun: FormattedWorkflowRun & {
+        workflowId: number;
+        workflowName: string;
+        repositoryName: string;
+        repositoryOwner: string;
+        branchName?: string;
+      };
+    }) {
+      const clientSession = await workflowRunsMongoStorage.startTransaction();
+      try {
+        const setResult = await workflowRunsMongoStorage.set(
+          generateWorkflowRunKey({
+            workflowKey: params.workflowKey,
+            runId: params.workflowRun.runId,
+          }),
+          params.workflowRun,
+          {
+            session: clientSession,
+          }
+        );
+        if (setResult.hasFailed) {
+          await clientSession?.abortTransaction();
+          return setResult;
+        }
+        if (setResult.data.wasExistingKey) {
+          return {
+            hasFailed: false,
+          } as const;
+        }
+        await workflowMongoStorage.updateWithMongoSyntax(
+          {
+            key: params.workflowKey,
+          },
+          {
+            $inc: {
+              totalWorkflowRuns: 1,
+            },
+          }
+        );
+        await clientSession?.commitTransaction();
+        return {
+          hasFailed: false,
+        } as const;
+      } catch (error) {
+        await clientSession?.abortTransaction();
+        throw error;
+      }
+    },
     aggregateAndSaveStats,
     saveWorkflowData,
     upsertWorkflowRunStat,

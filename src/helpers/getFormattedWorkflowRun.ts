@@ -8,6 +8,11 @@ import {
 } from "../entities/FormattedWorkflow/schemas/schema.js";
 import { FormattedWorkflowRun } from "../entities/FormattedWorkflow/types.js";
 
+type WorkflowRunEvent =
+  | components["schemas"]["webhook-workflow-run-in-progress"]
+  | components["schemas"]["webhook-workflow-run-completed"]
+  | components["schemas"]["webhook-workflow-run-requested"];
+
 dayjs.extend(weekOfYear);
 dayjs.extend(durationPlugin);
 
@@ -22,7 +27,9 @@ export const getFormattedWorkflowRun = ({
   updated_at,
   id,
   conclusion,
-}: components["schemas"]["workflow-run"]): FormattedWorkflowRun => ({
+}:
+  | components["schemas"]["workflow-run"]
+  | WorkflowRunEvent["workflow_run"]): FormattedWorkflowRun => ({
   name: name ?? "unknown",
   status: formattedWorkflowRunStatusSchema.parse(status ?? "unknown"),
   conclusion: formattedWorkflowRunConclusionSchema.parse(conclusion),

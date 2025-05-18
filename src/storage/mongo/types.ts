@@ -5,6 +5,7 @@ import type {
   IndexDefinition,
   IndexOptions,
   Model,
+  mongo,
   ObjectId,
   ProjectionType,
   SortOrder,
@@ -30,7 +31,15 @@ export type MongoStorageSetMethod<Result> = (
   key: Parameters<Storage<Result>["set"]>[0],
   value: Parameters<Storage<Result>["set"]>[1],
   options?: { session?: ClientSession }
-) => Promise<MethodResult<void, "failed_to_set_data" | "validation_failed">>;
+) => Promise<
+  MethodResult<
+    {
+      wasExistingKey: boolean;
+      upsertedId?: mongo.ObjectId | null;
+    },
+    "failed_to_set_data" | "validation_failed"
+  >
+>;
 
 export type MongoStorageDeleteMethod<Result> = (
   key: Parameters<Storage<Result>["delete"]>[0],
@@ -101,6 +110,7 @@ export type MongoStorageQueryMethod<Result> = (
     session?: ClientSession;
     limit?: number;
     sort?: Record<string, SortOrder>;
+    projection?: ProjectionType<Result>;
   }
 ) => Promise<Result[]>;
 

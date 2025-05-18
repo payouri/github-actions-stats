@@ -139,7 +139,7 @@ export function createMongoStorage<
       );
       logger.debug(`Setting data for key ${key}`);
       const time = performance.now();
-      await model.updateOne(
+      const updateResult = await model.updateOne(
         { key },
         {
           $set: {
@@ -156,6 +156,10 @@ export function createMongoStorage<
       );
       return {
         hasFailed: false,
+        data: {
+          wasExistingKey: !updateResult.upsertedId,
+          upsertedId: updateResult.upsertedId,
+        },
       };
     } catch (error) {
       return {
