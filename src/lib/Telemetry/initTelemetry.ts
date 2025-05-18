@@ -1,22 +1,25 @@
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-proto";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-proto";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-proto";
 import { OTLPExporterNodeConfigBase } from "@opentelemetry/otlp-exporter-base";
-import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
+import { resourceFromAttributes } from "@opentelemetry/resources";
 import {
-  LoggerProvider,
   BatchLogRecordProcessor,
-  ConsoleLogRecordExporter,
+  LoggerProvider,
 } from "@opentelemetry/sdk-logs";
+import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
+import {
+  SamplingDecision,
+  TraceIdRatioBasedSampler,
+} from "@opentelemetry/sdk-trace-node";
 import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
 } from "@opentelemetry/semantic-conventions";
-import { resourceFromAttributes } from "@opentelemetry/resources";
-import { config } from "../../config/config.js";
 import { join } from "node:path";
+import { config } from "../../config/config.js";
 import logger from "../Logger/logger.js";
 
 const collectorOptions: OTLPExporterNodeConfigBase = {
@@ -42,6 +45,8 @@ export const isTelemetryEnabled =
 
 export const telemetryLogger = loggerProvider.getLogger("telemetry");
 
+const traceSampler = new TraceIdRatioBasedSampler(0.1);
+
 const sdk = new NodeSDK({
   autoDetectResources: true,
   // sampler: {
@@ -51,6 +56,20 @@ const sdk = new NodeSDK({
   //     };
   //   },
   // },
+  sampler: {
+    shouldSample: (context, traceId, spanName, spanKind, attributes) => {
+      if (
+        "http.url" in attributes &&
+        attributes["http.target"] === "/healthcheck"
+      ) {
+        return traceSampler.shouldSample(context, traceId);
+      }
+
+      return {
+        decision: SamplingDecision.RECORD,
+      };
+    },
+  },
   logRecordProcessors: [
     new BatchLogRecordProcessor(logExporter),
     // new BatchLogRecordProcessor(logConsoleExporter),
