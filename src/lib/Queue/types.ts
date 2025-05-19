@@ -54,7 +54,11 @@ export interface CreateQueueParams {
 }
 export interface Queue<Job extends DefaultJobsMap> {
   addJob: (
-    job: Omit<Job[DefaultJobKey<Job>], "jobResult">
+    job: Omit<Job[DefaultJobKey<Job>], "jobResult">,
+    options?: {
+      jobId?: string;
+      delayMs?: number;
+    }
   ) => Promise<MethodResult<void, "failed_to_add_job">>;
   init: () => Promise<MethodResult<void, "failed_to_init_queue">>;
   close: () => Promise<MethodResult<void, "failed_to_close_queue">>;

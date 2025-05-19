@@ -1,14 +1,11 @@
-import Transport from "winston-transport";
-import { createLogger, format, transports, transport } from "winston";
-import { config } from "../../config/config.js";
-import {
-  isTelemetryEnabled,
-  telemetryLogger,
-} from "../Telemetry/initTelemetry.js";
-import dayjs from "dayjs";
-import type { LoggerOptions, Logger, LogEntry } from "winston";
 import { context } from "@opentelemetry/api";
 import logsAPI from "@opentelemetry/api-logs";
+import dayjs from "dayjs";
+import type { LogEntry, Logger, LoggerOptions } from "winston";
+import { createLogger, format, transports } from "winston";
+import Transport from "winston-transport";
+import { config } from "../../config/config.js";
+import { telemetryLogger } from "../Telemetry/initTelemetry.js";
 
 const SeverityMap = {
   fatal: {

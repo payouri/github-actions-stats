@@ -58,13 +58,16 @@ export function createQueue<T extends DefaultJobsMap>(
   async function addJob(
     ...data: Parameters<Queue<T>["addJob"]>
   ): ReturnType<Queue<T>["addJob"]> {
-    const [{ jobName, jobData }] = data;
+    const [{ jobName, jobData }, options] = data;
 
     await queue.add(jobName, jobData, {
       // deduplication: {
       //   id: jobName,
       //   ttl: 2000,
       // },
+      telemetry: {},
+      ...(options?.jobId ? { deduplication: { id: options.jobId } } : {}),
+      ...(options?.delayMs ? { delay: options.delayMs } : {}),
     });
 
     return {
