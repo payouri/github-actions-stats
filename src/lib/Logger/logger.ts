@@ -80,16 +80,20 @@ class CustomTelemetryTransport extends Transport {
       console.warn("Invalid timestamp", rawTimestamp);
       timestamp = dayjs();
     }
+    const stringMessage =
+      typeof message === "string"
+        ? message
+        : Reflect.get(message, "message") || JSON.stringify(message);
 
     telemetryLogger.emit({
       severityNumber: SeverityMap[level].severityNumber,
       severityText: SeverityMap[level].severityText,
       timestamp: timestamp.toDate(),
-      body: typeof message === "string" ? message : JSON.stringify(message),
+      body: stringMessage,
       context: context.active(),
       attributes: {
         ...rest,
-        ...(CustomTelemetryTransport.parseAttributes(message) ?? {}),
+        ...CustomTelemetryTransport.parseAttributes(stringMessage),
       },
     });
 
