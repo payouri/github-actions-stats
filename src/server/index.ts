@@ -1,4 +1,5 @@
 import { serve } from "@hono/node-server";
+import { trace } from "@opentelemetry/api";
 import { otel } from "@hono/otel";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -31,7 +32,13 @@ export async function createServer() {
     });
   });
 
-  app.use("*", otel());
+  app.use(
+    "*",
+    otel({
+      augmentSpan: false,
+      tracerProvider: trace.getTracerProvider(),
+    })
+  );
   requestTimeMiddleware({ logger })(app);
   buildRoutes({ app });
 

@@ -13,6 +13,7 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   SamplingDecision,
   TraceIdRatioBasedSampler,
+  type SamplingResult,
 } from "@opentelemetry/sdk-trace-node";
 import {
   ATTR_SERVICE_NAME,
@@ -49,15 +50,8 @@ const traceSampler = new TraceIdRatioBasedSampler(0.1);
 
 const sdk = new NodeSDK({
   autoDetectResources: true,
-  // sampler: {
-  //   shouldSample() {
-  //     return {
-  //       decision: 2,
-  //     };
-  //   },
-  // },
   sampler: {
-    shouldSample: (context, traceId, spanName, spanKind, attributes) => {
+    shouldSample: (context, traceId, __, _, attributes): SamplingResult => {
       if (
         "http.url" in attributes &&
         attributes["http.target"] === "/healthcheck"
@@ -65,8 +59,18 @@ const sdk = new NodeSDK({
         return traceSampler.shouldSample(context, traceId);
       }
 
+      console.log("#######", {
+        traceId,
+        __,
+        _,
+        context,
+        attributes,
+      });
+
       return {
         decision: SamplingDecision.RECORD,
+        attributes,
+        // traceState: ,
       };
     },
   },

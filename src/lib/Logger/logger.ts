@@ -1,60 +1,131 @@
-import { createLogger, format, transports } from "winston";
+import Transport from "winston-transport";
+import { createLogger, format, transports, transport } from "winston";
 import { config } from "../../config/config.js";
 import {
   isTelemetryEnabled,
   telemetryLogger,
 } from "../Telemetry/initTelemetry.js";
 import dayjs from "dayjs";
+import type { LoggerOptions, Logger, LogEntry } from "winston";
+import { context } from "@opentelemetry/api";
+import logsAPI from "@opentelemetry/api-logs";
 
-function createLoggerInstance() {
-  return createLogger({
+const SeverityMap = {
+  fatal: {
+    severityText: "FATAL",
+    severityNumber: logsAPI.SeverityNumber.FATAL,
+  },
+  error: {
+    severityText: "ERROR",
+    severityNumber: logsAPI.SeverityNumber.ERROR,
+  },
+  warn: {
+    severityText: "WARN",
+    severityNumber: logsAPI.SeverityNumber.WARN,
+  },
+  info: {
+    severityText: "INFO",
+    severityNumber: logsAPI.SeverityNumber.INFO,
+  },
+  debug: {
+    severityText: "DEBUG",
+    severityNumber: logsAPI.SeverityNumber.DEBUG,
+  },
+  trace: {
+    severityText: "TRACE",
+    severityNumber: logsAPI.SeverityNumber.TRACE,
+  },
+} as const;
+function isKnownLevel(level: string): level is keyof typeof SeverityMap {
+  return level in SeverityMap;
+}
+
+class CustomTelemetryTransport extends Transport {
+  static parseAttributes(message: string) {
+    const match = message.match(/\[(.*?)\]/);
+    if (!match) {
+      return null;
+    }
+    if (match.includes(":")) {
+      const [name, id] = match[1].split(":");
+
+      return {
+        name,
+        id,
+      };
+    }
+
+    return {
+      name: match[1],
+    };
+  }
+  constructor(opts: Transport.TransportStreamOptions) {
+    super(opts);
+  }
+
+  log(info: LogEntry, callback: () => void | Promise<void>) {
+    setImmediate(() => {
+      this.emit("logged", info);
+    });
+
+    const { level, message, ...rest } = info;
+    if (!isKnownLevel(level)) {
+      console.log("Unknown level", level);
+      return;
+    }
+
+    const timestamp = dayjs(rest.timestamp);
+
+    telemetryLogger.emit({
+      severityNumber: SeverityMap[level].severityNumber,
+      severityText: SeverityMap[level].severityText,
+      timestamp: timestamp.isValid() ? timestamp.toDate() : new Date(),
+      body: message,
+      context: context.active(),
+      attributes: CustomTelemetryTransport.parseAttributes(message) ?? {},
+    });
+
+    callback();
+  }
+}
+
+function createLoggerInstance(): Logger {
+  const sharedLoggerConfig: Partial<LoggerOptions> = {
     level:
       config.ENV.DEBUG || config.ENV.NODE_ENV === "development"
         ? "debug"
         : "info",
-    format: format.combine(
-      format.timestamp({}),
-      format.json({}),
-      format.colorize(),
-      format.printf((info) => {
-        console.log(info);
-        if (isTelemetryEnabled) {
-          const data: { level: string; message: any; timestamp: string } = info[
-            Symbol.for("message")
-          ] as any;
-          telemetryLogger.emit({
-            severityText: data.level,
-            timestamp: dayjs(
-              (data.timestamp && typeof data.timestamp === "number") ||
-                typeof data.timestamp === "string"
-                ? data.timestamp
-                : data instanceof Date
-                ? data.getTime()
-                : Date.now()
-            ).toDate(),
-            attributes:
-              typeof data.message === "object" && data.message !== null
-                ? (data.message as Record<string, any>)
-                : {
-                    message: info.message,
-                  },
-          });
-        }
+  };
 
-        return `${dayjs(info.timestamp as string).format(
-          "YYYY-MM-DD HH:mm:ss"
-        )} ${info.level}: ${
-          typeof info.message === "string" ||
-          typeof info.message === "number" ||
-          typeof info.message === "boolean" ||
-          info.message === null ||
-          info.message === undefined
-            ? info.message
-            : JSON.stringify(info.message)
-        }`;
-      })
-    ),
-    transports: [new transports.Console()],
+  return createLogger({
+    ...sharedLoggerConfig,
+    format: format.combine(format.timestamp({}), format.json({})),
+    transports: [
+      // isTelemetryEnabled?
+      new CustomTelemetryTransport({
+        ...sharedLoggerConfig,
+      }),
+      // : new transports.Console()
+      new transports.Console({
+        ...sharedLoggerConfig,
+        format: format.combine(
+          format.colorize(),
+          format.printf((info) => {
+            return `${dayjs(info.timestamp as string).format(
+              "YYYY-MM-DD HH:mm:ss"
+            )} ${info.level}: ${
+              typeof info.message === "string" ||
+              typeof info.message === "number" ||
+              typeof info.message === "boolean" ||
+              info.message === null ||
+              info.message === undefined
+                ? info.message
+                : JSON.stringify(info.message)
+            }`;
+          })
+        ),
+      }),
+    ],
   });
 }
 
