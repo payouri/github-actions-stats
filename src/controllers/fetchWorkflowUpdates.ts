@@ -110,7 +110,10 @@ export function buildFetchWorkflowUpdatesController(
               error: new AbortError({
                 message: "Fetch workflow updates aborted",
                 signal: abortSignal,
-                abortReason: JSON.stringify(abortSignal.reason),
+                abortReason:
+                  typeof abortSignal.reason === "string"
+                    ? abortSignal.reason
+                    : JSON.stringify(abortSignal.reason),
               }),
               data: undefined,
             },
@@ -153,7 +156,10 @@ export function buildFetchWorkflowUpdatesController(
                 error: new AbortError({
                   message: "Fetch workflow updates aborted",
                   signal: abortSignal,
-                  abortReason: JSON.stringify(abortSignal.reason),
+                  abortReason:
+                    typeof abortSignal.reason === "string"
+                      ? abortSignal.reason
+                      : JSON.stringify(abortSignal.reason),
                 }),
                 data: undefined,
               },

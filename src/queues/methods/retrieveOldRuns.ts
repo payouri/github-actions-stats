@@ -80,7 +80,7 @@ export async function retrieveOldRuns(
               convertToSeconds: true,
             })}`
           );
-          abortController.abort("Max job duration reached");
+          abortController.abort("max_duration_reached");
         }
       },
       async onSavedWorkflowData({ savedWorkflowCount, workflowData }) {
@@ -103,7 +103,7 @@ export async function retrieveOldRuns(
           logger.debug(
             `Saved workflow data ${savedWorkflowCount} workflow runs stopping fetching more runs`
           );
-          abortController.abort("Enough data fetched");
+          abortController.abort("max_data_reached");
           return;
         }
         logger.debug(`Saved workflow data ${savedWorkflowCount} workflow runs`);

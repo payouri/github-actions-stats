@@ -44,12 +44,15 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
         return {
           hasFailed: true,
           error: {
-            code: "aborted",
+            code: "abort_signal_aborted",
             message: "Aborted",
             error: new AbortError({
-              message: "Aggregation aborted",
+              message: "Batch iteration aborted",
               signal: abortSignal,
-              abortReason: JSON.stringify(abortSignal.reason),
+              abortReason:
+                typeof abortSignal.reason === "string"
+                  ? abortSignal.reason
+                  : JSON.stringify(abortSignal.reason),
             }),
             data: undefined,
           },
@@ -85,12 +88,15 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
           return {
             hasFailed: true,
             error: {
-              code: "aborted",
+              code: "abort_signal_aborted",
               message: "Aborted",
               error: new AbortError({
                 message: "Batch aggregation aborted",
                 signal: abortSignal,
-                abortReason: JSON.stringify(abortSignal.reason),
+                abortReason:
+                  typeof abortSignal.reason === "string"
+                    ? abortSignal.reason
+                    : JSON.stringify(abortSignal.reason),
               }),
               data: undefined,
             },

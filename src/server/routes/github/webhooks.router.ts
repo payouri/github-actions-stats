@@ -146,7 +146,7 @@ export function mountGithubWebhooksRoutes<
   const { app } = dependencies;
 
   if (!GITHUB_CONFIG.webhookSecret) {
-    logger.warn("GITHUB_WEBHOOK_SECRET is not set");
+    logger.warn("[env] GITHUB_WEBHOOK_SECRET is not set");
   } else {
     mountGithubWebhookValidationMiddleware({
       app,

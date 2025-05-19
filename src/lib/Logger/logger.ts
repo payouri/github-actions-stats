@@ -42,12 +42,12 @@ function isKnownLevel(level: string): level is keyof typeof SeverityMap {
 
 class CustomTelemetryTransport extends Transport {
   static parseAttributes(message: string) {
-    const match = message.match(/\[(.*?)\]/);
+    const [, match] = message.match(/\[(.*?)\]/) ?? [];
     if (!match) {
       return null;
     }
     if (match.includes(":")) {
-      const [name, id] = match[1].split(":");
+      const [name, id] = match.split(":");
 
       return {
         name,
@@ -56,7 +56,7 @@ class CustomTelemetryTransport extends Transport {
     }
 
     return {
-      name: match[1],
+      name: match,
     };
   }
   constructor(opts: Transport.TransportStreamOptions) {
@@ -68,21 +68,29 @@ class CustomTelemetryTransport extends Transport {
       this.emit("logged", info);
     });
 
-    const { level, message, ...rest } = info;
+    const { level, message, timestamp: rawTimestamp, ...rest } = info;
+
     if (!isKnownLevel(level)) {
-      console.log("Unknown level", level);
+      console.warn("Unknown level", level);
       return;
     }
 
-    const timestamp = dayjs(rest.timestamp);
+    let timestamp = dayjs(rawTimestamp);
+    if (!timestamp.isValid()) {
+      console.warn("Invalid timestamp", rawTimestamp);
+      timestamp = dayjs();
+    }
 
     telemetryLogger.emit({
       severityNumber: SeverityMap[level].severityNumber,
       severityText: SeverityMap[level].severityText,
-      timestamp: timestamp.isValid() ? timestamp.toDate() : new Date(),
-      body: message,
+      timestamp: timestamp.toDate(),
+      body: typeof message === "string" ? message : JSON.stringify(message),
       context: context.active(),
-      attributes: CustomTelemetryTransport.parseAttributes(message) ?? {},
+      attributes: {
+        ...rest,
+        ...(CustomTelemetryTransport.parseAttributes(message) ?? {}),
+      },
     });
 
     callback();

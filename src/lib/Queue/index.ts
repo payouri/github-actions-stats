@@ -3,9 +3,12 @@ import {
   Worker as BullWorker,
   UnrecoverableError,
 } from "bullmq";
+import { BullMQOtel } from "bullmq-otel";
+import dayjs from "dayjs";
+import { config } from "../../config/config.js";
+import { AbortError } from "../../errors/AbortError.js";
 import { formatMs } from "../../helpers/format/formatMs.js";
 import logger from "../Logger/logger.js";
-import { BullMQOtel } from "bullmq-otel";
 import type {
   CreateQueueParams,
   CreateWorkerParams,
@@ -13,8 +16,6 @@ import type {
   Queue,
   Worker,
 } from "./types.js";
-import dayjs from "dayjs";
-import { config } from "../../config/config.js";
 
 const PREFIX = "github-actions-stats-queues";
 const INIT_TIMEOUT = 10_000;
@@ -203,12 +204,23 @@ export function createWorker<Job extends DefaultJobsMap>(
           abortSignal,
         });
         if (result.hasFailed) {
-          if (result.error.code === "job_aborted") {
-            throw new Error("Job aborted");
+          if (result.error.error instanceof AbortError) {
+            if (
+              ["max_duration_reached", "max_data_reached"].includes(
+                result.error.error.abortReason
+              )
+            ) {
+              return {
+                hasFailed: false,
+              };
+            }
+
+            throw result.error.error;
           }
-          throw new Error(result.error.message);
-        } else if (abortSignal.aborted && job.token) {
-          throw new Error("Job aborted");
+
+          throw result.error instanceof Error
+            ? result.error
+            : new Error(result.error.message);
         }
         const end = performance.now();
         logger.debug(
@@ -216,10 +228,11 @@ export function createWorker<Job extends DefaultJobsMap>(
         );
         return result;
       } catch (error) {
-        job.failedReason = JSON.stringify(error);
         if (
-          error instanceof Error &&
-          error.message === "Job aborted" &&
+          error instanceof AbortError &&
+          ["SIGTERM", "SIGINT", "abort_signal_aborted"].includes(
+            error.abortReason
+          ) &&
           job.token
         ) {
           logger.debug(
@@ -229,6 +242,7 @@ export function createWorker<Job extends DefaultJobsMap>(
           return;
         }
 
+        job.failedReason = JSON.stringify(error);
         logger.error(
           `[${queue}][${worker.id}][${job.id}] Job failed to process`,
           error

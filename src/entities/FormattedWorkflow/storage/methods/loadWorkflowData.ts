@@ -116,7 +116,7 @@ export function buildLoadWorkflowData(
       }, {}),
     });
 
-    logger.debug({
+    logger.debug("Loaded workflow data", {
       workflowId: data.workflowId,
       workflowName: data.workflowName,
     });

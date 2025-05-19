@@ -53,4 +53,5 @@ export const initWorkers = async () => {
 };
 
 handleSignal({ abortController: globalWorkerAbortController });
+
 initWorkers();

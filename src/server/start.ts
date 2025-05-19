@@ -12,7 +12,7 @@ import { globalServerAbortController } from "./globalServerAbortController.js";
 import { createServer } from "./index.js";
 import { processWorkflowJobQueue } from "./queue.js";
 
-const SIGNALS = ["SIGINT", "SIGTERM"];
+const SIGNALS = ["SIGINT", "SIGTERM"] as const;
 
 function handleSignal(params: {
   abortController: AbortController;
