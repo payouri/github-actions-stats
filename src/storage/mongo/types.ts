@@ -19,6 +19,10 @@ import type { MethodResult } from "../../types/MethodResult.js";
 import type { WorkflowRunId } from "../../cli/entities/RetrievedWorkflowData/types.js";
 import type { Prettify } from "../../types/Prettify.js";
 
+export type MongoSortOptions<Result> = {
+  [Key in keyof LeanDocumentWithKey<Result> | (string & {})]?: SortOrder;
+};
+
 export type EntityWithKey<T> = Prettify<T & { key: string }>;
 export type DocumentWithKey<T> = Prettify<EntityWithKey<T> & Document>;
 export type LeanDocumentWithKey<T> = Prettify<
@@ -109,7 +113,10 @@ export type MongoStorageQueryMethod<Result> = (
   options?: {
     session?: ClientSession;
     limit?: number;
-    sort?: Record<string, SortOrder>;
+    start?: number;
+    sort?: {
+      [Key in keyof LeanDocumentWithKey<Result> | (string & {})]?: SortOrder;
+    };
     projection?: ProjectionType<Result>;
   }
 ) => Promise<Result[]>;

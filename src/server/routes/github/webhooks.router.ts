@@ -94,6 +94,7 @@ async function handleWorkflowRunEvent<Env extends HonoRequestContext>(
         workflowName: workflow.name,
         repositoryName: repository.name,
         repositoryOwner: repository.owner.login,
+        workflowKey,
       },
     });
 

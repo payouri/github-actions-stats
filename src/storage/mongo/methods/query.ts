@@ -4,6 +4,7 @@ import defaultLogger from "../../../lib/Logger/logger.js";
 import dayjs from "dayjs";
 import type { Document, Model } from "mongoose";
 import { formatMs } from "../../../helpers/format/formatMs.js";
+import { generateWorkflowKey } from "../../../helpers/generateWorkflowKey.js";
 
 export function buildQuery<Result>(dependencies: {
   logger?: Logger;
@@ -17,7 +18,7 @@ export function buildQuery<Result>(dependencies: {
     const [params, options] = args;
     const { min = dayjs().subtract(1, "year").toDate(), max = new Date() } =
       params.ranAt ?? {};
-    const { limit, sort, projection, session } = options ?? {};
+    const { limit, sort, projection, session, start } = options ?? {};
     logger.debug(
       "workflowName" in params
         ? `Querying data for workflow ${params.workflowName} in repository ${params.repositoryName} by ${params.repositoryOwner}`
@@ -31,16 +32,20 @@ export function buildQuery<Result>(dependencies: {
           "repositoryName" in params &&
           "repositoryOwner" in params
           ? {
-              workflowName: params.workflowName,
-              repositoryName: params.repositoryName,
-              repositoryOwner: params.repositoryOwner,
+              workflowKey: generateWorkflowKey({
+                workflowName: params.workflowName,
+                workflowParams: {
+                  owner: params.repositoryOwner,
+                  repo: params.repositoryName,
+                },
+              }),
               ...(params.status ? { status: params.status } : {}),
               ...(min || max ? { runAt: { $gte: min, $lte: max } } : {}),
               ...(params.branchName ? { branchName: params.branchName } : {}),
             }
           : params
       )
-      .setOptions({ limit, sort, session, projection })
+      .setOptions({ skip: start, limit, sort, session, projection })
       .lean()
       .exec();
     const endTime = performance.now();

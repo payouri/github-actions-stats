@@ -42,6 +42,7 @@ export const storedWorkflowRun = formattedWorkflowRunSchema.merge(
     workflowName: z.string(),
     repositoryName: z.string(),
     repositoryOwner: z.string(),
+    workflowKey: z.string(),
     branchName: z.string().optional(),
   })
 );

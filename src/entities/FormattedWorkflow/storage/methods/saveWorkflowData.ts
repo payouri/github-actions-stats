@@ -107,6 +107,7 @@ export function buildSaveWorkflowData(
             workflowName: string;
             repositoryName: string;
             repositoryOwner: string;
+            workflowKey: string;
             branchName?: string;
           }
         >
@@ -128,6 +129,7 @@ export function buildSaveWorkflowData(
             repositoryOwner: restWorkFlowData.workflowParams.owner,
             branchName: restWorkFlowData.workflowParams.branchName,
             workflowName: restWorkFlowData.workflowName,
+            workflowKey,
           };
           return acc;
         }
@@ -148,6 +150,7 @@ export function buildSaveWorkflowData(
             repositoryOwner: restWorkFlowData.workflowParams.owner,
             branchName: restWorkFlowData.workflowParams.branchName,
             workflowName: restWorkFlowData.workflowName,
+            workflowKey,
           };
         });
         return acc;

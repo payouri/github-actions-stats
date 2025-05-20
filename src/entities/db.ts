@@ -1,17 +1,26 @@
-import { generateWorkflowRunKey } from "../helpers/generateWorkflowKey.js";
+import type { ProjectionType, SortValues } from "mongoose";
+import {
+  generateWorkflowRunKey,
+  getWorkflowParamsFromKey,
+} from "../helpers/generateWorkflowKey.js";
 import { buildLoadWorkflowData } from "./FormattedWorkflow/storage/methods/loadWorkflowData.js";
 import { buildSaveWorkflowData } from "./FormattedWorkflow/storage/methods/saveWorkflowData.js";
 import {
   workflowRunsMongoStorage,
   workflowMongoStorage,
 } from "./FormattedWorkflow/storage/mongo.js";
-import type { FormattedWorkflowRun } from "./FormattedWorkflow/types.js";
+import type {
+  FormattedWorkflowRun,
+  RunCompletionStatus,
+  StoredFormattedWorkflowRunDocument,
+} from "./FormattedWorkflow/types.js";
 import { buildAggregateStatsOnPeriodAndSave } from "./WorkflowStat/methods/aggregateStatsOnPeriod.js";
 import { buildUpsertWorkflowRunStat } from "./WorkflowStat/methods/createWorkflowStat.js";
 import {
   aggregatedWorkflowStatsMongoStorage,
   workflowRunStatsMongoStorage,
 } from "./WorkflowStat/storage/mongo.js";
+import type { MongoSortOptions } from "../storage/mongo/types.js";
 
 const loadWorkflowData = buildLoadWorkflowData({
   workflowRunsStorage: workflowRunsMongoStorage,
@@ -29,8 +38,63 @@ const aggregateAndSaveStats = buildAggregateStatsOnPeriodAndSave({
   workflowRunStatsMongoStorage,
 });
 
+function getMongoSort(
+  params:
+    | {
+        type: "startedAt";
+        order: "asc" | "desc";
+      }
+    | {
+        type: "completedAt";
+        order: "asc" | "desc";
+      }
+): MongoSortOptions<StoredFormattedWorkflowRunDocument> {
+  if (params.type === "startedAt") {
+    return {
+      startedAt: params.order === "asc" ? 1 : -1,
+    };
+  }
+  return {
+    completedAt: params.order === "asc" ? 1 : -1,
+  };
+}
+
 export const DB = {
   queries: {
+    getRuns(
+      params: {
+        workflowKey: string;
+        status?: RunCompletionStatus;
+      },
+      options?: {
+        start?: number;
+        count?: number;
+        sort?:
+          | {
+              type: "startedAt";
+              order: "asc" | "desc";
+            }
+          | {
+              type: "completedAt";
+              order: "asc" | "desc";
+            };
+      }
+    ) {
+      const { status, workflowKey } = params;
+      const {
+        count = 20,
+        sort = { type: "completedAt", order: "desc" },
+        start = 0,
+      } = options ?? {};
+      return workflowRunsMongoStorage.query(
+        { ...getWorkflowParamsFromKey(workflowKey), status },
+        {
+          sort: getMongoSort(sort),
+          limit: count,
+          start,
+        }
+      );
+    },
     async countDocumentsOnVersion(params: { version: string }) {
       const [workflowCount, workflowRunCount] = await Promise.all([
         workflowMongoStorage.count({
@@ -111,6 +175,7 @@ export const DB = {
         workflowName: string;
         repositoryName: string;
         repositoryOwner: string;
+        workflowKey: string;
         branchName?: string;
       };
     }) {
