@@ -3,7 +3,7 @@ import { config } from "../config/config.js";
 import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
 import { createQueue, createWorker } from "../lib/Queue/index.js";
-import type { MethodMap } from "../lib/Queue/types.js";
+import type { DefaultJobDefinition, MethodMap } from "../lib/Queue/types.js";
 import {
   RETRIEVE_NEW_RUN_JOB_NAME,
   retrieveNewRuns,
@@ -18,6 +18,10 @@ import {
 } from "./methods/retrieveWorkflowUpdates.js";
 import type { JobsMap } from "./methods/types.js";
 import { queueJobExecutionReportsMongoStorage } from "../entities/QueueJobExecutionReport/storage.js";
+import {
+  UniqueJobsMap,
+  type UniqueJobsMapType,
+} from "./uniqueJobs/initUniqueJobs.js";
 
 const MethodsMap: MethodMap<JobsMap> = {
   [RETRIEVE_OLDER_RUNS_JOB_NAME]: retrieveOldRuns,
@@ -45,7 +49,11 @@ export function createProcessWorkflowJobWorker(params?: {
 }) {
   const { abortSignal } = params ?? {};
 
-  return createWorker<JobsMap>({
+  return createWorker<
+    JobsMap & {
+      [Key in keyof UniqueJobsMapType]: DefaultJobDefinition;
+    }
+  >({
     queue: PROCESS_WORKFLOW_JOB_QUEUE_NAME,
     abortSignal,
     name: "process-workflow-job-worker",
@@ -62,21 +70,39 @@ export function createProcessWorkflowJobWorker(params?: {
         endedJob
       );
     },
-    async processJob(job, { abortSignal }) {
+    async processJob(job, { abortSignal, queueInstance }) {
       logger.debug(`Processing job ${job.id}, job name ${job.name}`);
 
-      if (!(job.name in MethodsMap)) {
-        throw new Error(`Job ${job.name} is not supported`);
-      }
       const start = performance.now();
-      const methodResult = await Reflect.apply(
-        MethodsMap[job.name],
-        undefined,
-        [job, { abortSignal }]
-      );
-      const end = performance.now();
-      logger.debug(`Job ${job.name} processed in ${end - start}ms`);
-      return methodResult;
+      try {
+        if (job.name in UniqueJobsMap) {
+          const methodResult = await Reflect.apply(
+            UniqueJobsMap[job.name as keyof UniqueJobsMapType].processJob,
+            undefined,
+            [
+              job,
+              {
+                abortSignal,
+                queueInstance,
+              },
+            ]
+          );
+          return methodResult;
+        }
+        if (job.name in MethodsMap) {
+          const methodResult = await Reflect.apply(
+            MethodsMap[job.name as keyof typeof MethodsMap],
+            undefined,
+            [job, { abortSignal, queueInstance }]
+          );
+          return methodResult;
+        }
+
+        throw new Error(`Job ${job.name} is not supported`);
+      } finally {
+        const end = performance.now();
+        logger.debug(`Job ${job.name} processed in ${end - start}ms`);
+      }
     },
   });
 }

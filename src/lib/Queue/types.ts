@@ -38,14 +38,37 @@ export type DefaultJob<JobDefinition extends DefaultJobDefinition> = BullJob<
   JobDefinition["jobName"]
 >;
 
+export type JobMethodResult<JobDefinition extends DefaultJobDefinition> =
+  MethodResult<
+    JobDefinition extends { jobResult: infer Result }
+      ? Result extends undefined | void
+        ? void
+        : Result
+      : void,
+    | "failed_to_process_job"
+    | "job_aborted"
+    | Exclude<JobDefinition["jobErrorCode"], undefined>
+  >;
+
+export type JobProcessMethod<JobDefinition extends DefaultJobDefinition> = (
+  job: DefaultJob<JobDefinition>,
+  options: { abortSignal?: AbortSignal; queueInstance: Queue<DefaultJobsMap> }
+) => JobMethodResult<JobDefinition> | Promise<JobMethodResult<JobDefinition>>;
+
 export type MethodMap<T extends DefaultJobsMap> = {
-  [JobName in DefaultJobKey<T>]: (
-    params: DefaultJob<T[JobName]>,
-    options?: { abortSignal?: AbortSignal }
-  ) => Promise<MethodResult<T[JobName]["jobResult"], string>>;
+  [JobName in DefaultJobKey<T>]: JobProcessMethod<T[JobName]>;
 };
 
 export type DefaultJobKey<T extends DefaultJobsMap> = keyof T;
+export type GetJobMethod<T extends DefaultJobsMap> = (
+  jobId: string
+) => Promise<DefaultJob<T[DefaultJobKey<T>]>>;
+export type IsExistingJobMethod = (jobId: string) => Promise<boolean>;
+export type GenerateJobIdMethod<Job extends DefaultJobsMap> = (
+  jobData: Omit<Job[DefaultJobKey<Job>], "jobResult" | "jobErrorCode"> & {
+    group: string;
+  }
+) => string;
 
 export interface CreateQueueParams {
   name: string;
@@ -54,12 +77,15 @@ export interface CreateQueueParams {
 }
 export interface Queue<Job extends DefaultJobsMap> {
   addJob: (
-    job: Omit<Job[DefaultJobKey<Job>], "jobResult">,
+    job: Omit<Job[DefaultJobKey<Job>], "jobResult" | "jobErrorCode">,
     options?: {
       jobId?: string;
       delayMs?: number;
     }
   ) => Promise<MethodResult<void, "failed_to_add_job">>;
+  getJob: GetJobMethod<Job>;
+  isExistingJob: IsExistingJobMethod;
+  generateJobId: GenerateJobIdMethod<Job>;
   init: () => Promise<MethodResult<void, "failed_to_init_queue">>;
   close: () => Promise<MethodResult<void, "failed_to_close_queue">>;
 }
@@ -80,6 +106,7 @@ export interface CreateWorkerParams<
     job: Job,
     options: {
       abortSignal: AbortSignal;
+      queueInstance: Queue<JobMap>;
     }
   ) => Promise<
     MethodResult<

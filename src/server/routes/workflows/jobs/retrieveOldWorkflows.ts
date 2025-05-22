@@ -4,6 +4,8 @@ import { validator } from "hono/validator";
 import { z } from "zod";
 import { processWorkflowJobQueue } from "../../../queue.js";
 import { RETRIEVE_OLDER_RUNS_JOB_NAME } from "../../../../queues/methods/retrieveOldRuns.js";
+import { DEFAULT_PENDING_JOB_GROUP } from "../../../../entities/PendingJob/constants.js";
+import { DB } from "../../../../entities/db.js";
 
 const ROUTE_PATH = "/older" as const;
 
@@ -35,11 +37,12 @@ export function mountRetrieveOlderRunsRoute<
     async (c) => {
       const { workflowKey } = await c.req.json();
 
-      const addJobResult = await processWorkflowJobQueue.addJob({
-        jobName: RETRIEVE_OLDER_RUNS_JOB_NAME,
-        jobData: {
+      const addJobResult = await DB.mutations.createPendingJob({
+        data: {
           workflowKey,
         },
+        group: DEFAULT_PENDING_JOB_GROUP,
+        method: RETRIEVE_OLDER_RUNS_JOB_NAME,
       });
 
       if (addJobResult.hasFailed) {

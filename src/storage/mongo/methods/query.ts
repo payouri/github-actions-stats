@@ -22,7 +22,7 @@ export function buildQuery<Result>(dependencies: {
     logger.debug(
       "workflowName" in params
         ? `Querying data for workflow ${params.workflowName} in repository ${params.repositoryName} by ${params.repositoryOwner}`
-        : `Querying data in collection ${params.collectionName}`
+        : `Querying data in collection ${model.modelName}`
     );
     const time = performance.now();
 
@@ -57,7 +57,7 @@ export function buildQuery<Result>(dependencies: {
             endTime - time
           )}ms`
         : `Data for collection ${
-            params.collectionName
+            model.modelName
           } has been queried in ${formatMs(endTime - time)}ms`
     );
 

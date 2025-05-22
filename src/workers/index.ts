@@ -7,6 +7,10 @@ import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
 import { createProcessWorkflowJobWorker } from "../queues/index.js";
 import globalWorkerAbortController from "./globalWorkerAbortController.js";
+import {
+  closeDefaultRedisClient,
+  initDefaultRedisClient,
+} from "../lib/RedisClient/redisClient.js";
 
 const processWorkflowJobWorker = createProcessWorkflowJobWorker({
   abortSignal: globalWorkerAbortController.signal,
@@ -30,7 +34,7 @@ function handleSignal(params: { abortController: AbortController }) {
         }
 
         await Promise.all([processWorkflowJobWorker.close()]);
-        await closeMongoStorages();
+        await Promise.all([closeMongoStorages(), closeDefaultRedisClient()]);
         logger.info(`Workers closed in ${formatMs(performance.now() - start)}`);
 
         process.exit(0);
@@ -46,7 +50,7 @@ function handleSignal(params: { abortController: AbortController }) {
 export const initWorkers = async () => {
   logger.info("Initializing workers...");
   const start = performance.now();
-  await initMongoStorages();
+  await Promise.all([initMongoStorages(), initDefaultRedisClient()]);
   await processWorkflowJobWorker.init();
   // await initMigrations();
   logger.info(`Workers initialized in ${formatMs(performance.now() - start)}`);

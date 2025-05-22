@@ -1,26 +1,32 @@
-import type { ProjectionType, SortValues } from "mongoose";
+import { ObjectId } from "mongodb";
 import {
   generateWorkflowRunKey,
   getWorkflowParamsFromKey,
 } from "../helpers/generateWorkflowKey.js";
+import type { WorkflowQueueJobData } from "../queues/types.js";
+import type { MongoSortOptions } from "../storage/mongo/types.js";
 import { buildLoadWorkflowData } from "./FormattedWorkflow/storage/methods/loadWorkflowData.js";
 import { buildSaveWorkflowData } from "./FormattedWorkflow/storage/methods/saveWorkflowData.js";
 import {
-  workflowRunsMongoStorage,
   workflowMongoStorage,
+  workflowRunsMongoStorage,
 } from "./FormattedWorkflow/storage/mongo.js";
 import type {
   FormattedWorkflowRun,
   RunCompletionStatus,
   StoredFormattedWorkflowRunDocument,
 } from "./FormattedWorkflow/types.js";
+import { pendingJobsMongoStorage } from "./PendingJob/storage/mongo.js";
+import type { PendingJob } from "./PendingJob/types.js";
 import { buildAggregateStatsOnPeriodAndSave } from "./WorkflowStat/methods/aggregateStatsOnPeriod.js";
 import { buildUpsertWorkflowRunStat } from "./WorkflowStat/methods/createWorkflowStat.js";
 import {
   aggregatedWorkflowStatsMongoStorage,
   workflowRunStatsMongoStorage,
 } from "./WorkflowStat/storage/mongo.js";
-import type { MongoSortOptions } from "../storage/mongo/types.js";
+import type { DEFAULT_PENDING_JOB_GROUP } from "./PendingJob/constants.js";
+import { processWorkflowJobQueue } from "../server/queue.js";
+import type { JobsMap } from "../queues/methods/types.js";
 
 const loadWorkflowData = buildLoadWorkflowData({
   workflowRunsStorage: workflowRunsMongoStorage,
@@ -61,6 +67,24 @@ function getMongoSort(
 
 export const DB = {
   queries: {
+    async getNextQueueJob(params: {
+      user: typeof DEFAULT_PENDING_JOB_GROUP | `user_${string}`;
+    }) {
+      const [job] = await pendingJobsMongoStorage.query(
+        {
+          group: params.user,
+        },
+        {
+          sort: {
+            createdAt: 1,
+          },
+          limit: 1,
+        }
+      );
+      if (!job) return null;
+
+      return job;
+    },
     getRuns(
       params: {
         workflowKey: string;
@@ -82,7 +106,7 @@ export const DB = {
     ) {
       const { status, workflowKey } = params;
       const {
-        count = 20,
+        count = 10,
         sort = { type: "completedAt", order: "desc" },
         start = 0,
       } = options ?? {};
@@ -219,8 +243,14 @@ export const DB = {
         throw error;
       }
     },
+    deletePendingJob(params: { jobId: string }) {
+      return pendingJobsMongoStorage.delete(params.jobId);
+    },
     aggregateAndSaveStats,
     saveWorkflowData,
     upsertWorkflowRunStat,
+    createPendingJob(params: Omit<PendingJob, "data"> & WorkflowQueueJobData) {
+      return pendingJobsMongoStorage.set(new ObjectId().toString(), params);
+    },
   },
 } as const;

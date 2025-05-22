@@ -1,17 +1,26 @@
 import {
   Queue as BullQueue,
   Worker as BullWorker,
+  DelayedError,
+  JobScheduler,
   UnrecoverableError,
 } from "bullmq";
 import { BullMQOtel } from "bullmq-otel";
 import dayjs from "dayjs";
 import { config } from "../../config/config.js";
 import { AbortError } from "../../errors/AbortError.js";
+import { ReprocessLaterError } from "../../errors/ReprocessLaterError.js";
 import { formatMs } from "../../helpers/format/formatMs.js";
+import {
+  initUniqueJobs,
+  UniqueJobsMap,
+  type UniqueJobsMapType,
+} from "../../queues/uniqueJobs/initUniqueJobs.js";
 import logger from "../Logger/logger.js";
 import type {
   CreateQueueParams,
   CreateWorkerParams,
+  DefaultJob,
   DefaultJobsMap,
   Queue,
   Worker,
@@ -74,12 +83,35 @@ export function createQueue<T extends DefaultJobsMap>(
       hasFailed: false,
     };
   }
+  async function isExistingJob(
+    ...params: Parameters<Queue<T>["isExistingJob"]>
+  ): ReturnType<Queue<T>["isExistingJob"]> {
+    const [jobId] = params;
+    const job = await queue.getJobState(jobId);
+    console.log("isExistingJob", job);
+    return job !== "unknown";
+  }
+  async function getJob(
+    ...params: Parameters<Queue<T>["getJob"]>
+  ): ReturnType<Queue<T>["getJob"]> {
+    const [jobId] = params;
+    const [job] = await queue.getJob(jobId);
+    return job;
+  }
+  function generateJobId(
+    ...params: Parameters<Queue<T>["generateJobId"]>
+  ): ReturnType<Queue<T>["generateJobId"]> {
+    const [jobData] = params;
+
+    return `group:${jobData.group}`;
+  }
 
   async function init(): ReturnType<Queue<T>["init"]> {
     const client = await queue.client;
 
     if (client.status === "ready") {
       logger.debug(`[${name}] Queue is ready`);
+      await initUniqueJobs(queue);
       return {
         hasFailed: false,
       };
@@ -172,7 +204,10 @@ export function createQueue<T extends DefaultJobsMap>(
   }
 
   return {
+    generateJobId,
     addJob,
+    getJob,
+    isExistingJob,
     init,
     close,
   };
@@ -194,6 +229,20 @@ export function createWorker<Job extends DefaultJobsMap>(
   const abortSignal = abortSignalParam
     ? AbortSignal.any([abortSignalParam, abortController.signal])
     : abortController.signal;
+  const jobScheduler = new JobScheduler(queue, {
+    connection: {
+      lazyConnect: true,
+      url: redisUrl,
+    },
+    telemetry: new BullMQOtel("stats-worker", config.OTEL.serviceVersion),
+    prefix: PREFIX,
+  });
+
+  const queueInstance = createQueue<Job>({
+    name: queue,
+    redisUrl,
+    abortSignal: abortController.signal,
+  });
 
   const worker = new BullWorker(
     queue,
@@ -205,6 +254,7 @@ export function createWorker<Job extends DefaultJobsMap>(
         const start = performance.now();
         const result = await processJob(job, {
           abortSignal,
+          queueInstance,
         });
         if (result.hasFailed) {
           if (result.error.error instanceof AbortError) {
@@ -231,6 +281,32 @@ export function createWorker<Job extends DefaultJobsMap>(
         );
         return result;
       } catch (error) {
+        if (error instanceof ReprocessLaterError && job.token) {
+          logger.debug(
+            `[${queue}][${worker.id}][${
+              job.id
+            }] Job will be reprocessed in ${formatMs(error.delayMs, {
+              convertToSeconds: true,
+            })}`
+          );
+          if (job.name in UniqueJobsMap) {
+            const { name, repeat, ...jobOpts } =
+              UniqueJobsMap[job.name as keyof UniqueJobsMapType];
+
+            await jobScheduler.upsertJobScheduler(
+              queue,
+              {
+                ...UniqueJobsMap[job.name as keyof UniqueJobsMapType].repeat,
+                startDate: dayjs().add(error.delayMs, "milliseconds").toDate(),
+              },
+              name,
+              job.data,
+              jobOpts,
+              { override: true, producerId: `${queue}:${worker.id}` }
+            );
+          }
+          throw new DelayedError(error.message);
+        }
         if (
           error instanceof AbortError &&
           ["SIGTERM", "SIGINT", "abort_signal_aborted"].includes(
@@ -267,8 +343,8 @@ export function createWorker<Job extends DefaultJobsMap>(
   worker.on("error", (error) => {
     logger.error(`[${name}:${worker.id}] Worker error`, error);
   });
-  worker.on("completed", (job) => {
-    onJobEnd?.({
+  worker.on("completed", async (job) => {
+    await onJobEnd?.({
       name: job.name,
       data: job.data,
       startTime: dayjs(job.processedOn).toDate(),
@@ -284,13 +360,13 @@ export function createWorker<Job extends DefaultJobsMap>(
       jobId: job.id ?? "unknown",
     });
   });
-  worker.on("failed", (job) => {
+  worker.on("failed", async (job) => {
     if (!job) {
       logger.error(`[${name}:${worker.id}] Failed job is undefined`);
       return;
     }
 
-    onJobEnd?.({
+    await onJobEnd?.({
       name: job.name,
       data: job.data,
       startTime: dayjs(job.processedOn).toDate(),
@@ -337,10 +413,13 @@ export function createWorker<Job extends DefaultJobsMap>(
           data: undefined,
         },
       };
+    } finally {
+      await queueInstance.close();
     }
   }
 
   async function init(): ReturnType<Worker["init"]> {
+    await queueInstance.init();
     if (worker.closing) {
       logger.debug(`[${name}] Worker is closing`);
       return {

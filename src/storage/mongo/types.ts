@@ -119,7 +119,7 @@ export type MongoStorageQueryMethod<Result> = (
     };
     projection?: ProjectionType<Result>;
   }
-) => Promise<Result[]>;
+) => Promise<LeanDocumentWithKey<Result>[]>;
 
 export type CreateMongoStorageParams<
   Schema extends AnyZodObject,
@@ -127,9 +127,9 @@ export type CreateMongoStorageParams<
   Storage extends MongoStorage<Schema, Result> = MongoStorage<Schema, Result>
 > = {
   collectionName: string;
-  dbURI: string;
+  dbURI?: string;
   dbName?: string;
-  indexes: [IndexDefinition, IndexOptions][];
+  indexes?: [IndexDefinition, IndexOptions][];
   schema: {
     version: string;
     schema: Schema;

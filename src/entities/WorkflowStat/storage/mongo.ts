@@ -5,10 +5,12 @@ import { createMongoStorage } from "../../../storage/mongo/index.js";
 import type { MongoStorage } from "../../../storage/mongo/types.js";
 import { aggregatedStatSchema } from "../schemas/aggregatedStat.schema.js";
 import { workflowStatSchema } from "../schemas/workflowStat.schema.js";
-import { formatMs } from "../../../helpers/format/formatMs.js";
 
-const STORED_WORKFLOW_VERSION = "1.0.1" as const;
-const STORED_WORKFLOW_RUN_VERSION = "1.0.1" as const;
+export const WORKFLOW_STAT_COLLECTION_NAME = "workflow-stats" as const;
+export const AGGREGATED_STAT_COLLECTION_NAME =
+  "aggregated-workflow-stats" as const;
+export const STORED_WORKFLOW_VERSION = "1.0.1" as const;
+export const STORED_WORKFLOW_RUN_VERSION = "1.0.1" as const;
 
 const storedAggregatedStatSchema = aggregatedStatSchema.merge(
   z.object({
@@ -22,9 +24,7 @@ const storedWorkflowStatSchema = workflowStatSchema.merge(
 );
 
 export const aggregatedWorkflowStatsMongoStorage = createMongoStorage({
-  collectionName: "aggregated-runs-stats",
-  dbURI: MONGO_CONFIG.dbURI,
-  dbName: MONGO_CONFIG.databaseName,
+  collectionName: AGGREGATED_STAT_COLLECTION_NAME,
   indexes: MONGO_CONFIG.indexes.workflows,
   schema: {
     schema: storedAggregatedStatSchema,
@@ -34,9 +34,7 @@ export const aggregatedWorkflowStatsMongoStorage = createMongoStorage({
 });
 
 export const workflowRunStatsMongoStorage = createMongoStorage({
-  collectionName: "workflow-runs-stats",
-  dbURI: MONGO_CONFIG.dbURI,
-  dbName: MONGO_CONFIG.databaseName,
+  collectionName: WORKFLOW_STAT_COLLECTION_NAME,
   schema: {
     schema: storedWorkflowStatSchema,
     version: STORED_WORKFLOW_RUN_VERSION,
@@ -53,29 +51,15 @@ export type WorkflowRunStatsMongoStorage = MongoStorage<
 >;
 
 export const initWorkflowStatsMongoStorage = async () => {
-  logger.debug("Initializing Workflows Stats MongoDB storage");
-  const start = performance.now();
   await Promise.all([
     aggregatedWorkflowStatsMongoStorage.init(),
     workflowRunStatsMongoStorage.init(),
   ]);
-  logger.debug(
-    `Workflows Stats MongoDB storage has been initialized in ${formatMs(
-      performance.now() - start
-    )}`
-  );
 };
 
 export const closeWorkflowStatsMongoStorage = async () => {
-  logger.debug("Closing Workflows Stats MongoDB storage");
-  const start = performance.now();
   await Promise.all([
     aggregatedWorkflowStatsMongoStorage.close(),
     workflowRunStatsMongoStorage.close(),
   ]);
-  logger.debug(
-    `Workflows Stats MongoDB storage has been closed in ${formatMs(
-      performance.now() - start
-    )}`
-  );
 };

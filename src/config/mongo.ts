@@ -5,6 +5,32 @@ export const MONGO_CONFIG = {
   testDbURI: process.env.TEST_MONGODB_URI || "mongodb://localhost:27017/",
   databaseName: process.env.MONGODB_DATABASE_NAME || "Test_My_Db",
   indexes: {
+    queueJobExecutionReport: [
+      [
+        {
+          status: 1,
+          name: 1,
+        },
+        {},
+      ],
+      [
+        {
+          createdAt: 1,
+        },
+        {
+          expires: "7d",
+        },
+      ],
+    ],
+    pendingJob: [
+      [
+        {
+          group: 1,
+          createdAt: 1,
+        },
+        {},
+      ],
+    ],
     workflows: [
       [
         {
@@ -12,7 +38,7 @@ export const MONGO_CONFIG = {
         } satisfies IndexDefinition,
         {} satisfies IndexOptions,
       ],
-    ] satisfies [IndexDefinition, IndexOptions][],
+    ],
     workflowRuns: [
       [
         {
@@ -20,16 +46,16 @@ export const MONGO_CONFIG = {
           status: 1,
           conclusion: 1,
           runAt: -1,
-        } satisfies IndexDefinition,
-        {} satisfies IndexOptions,
+        },
+        {},
       ],
       [
         {
           workflowId: 1,
-        } satisfies IndexDefinition,
-        {} satisfies IndexOptions,
+        },
+        {},
       ],
-    ] satisfies [IndexDefinition, IndexOptions][],
-    workflowStats: [] satisfies [IndexDefinition, IndexOptions][],
-  },
+    ],
+    workflowStats: [],
+  } satisfies Record<string, [IndexDefinition, IndexOptions][]>,
 } as const;

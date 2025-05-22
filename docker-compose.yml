@@ -1,0 +1,57 @@
+services:
+  mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    logging:
+      driver: none
+
+  redis:
+    image: redis:latest
+    command:
+      [
+        "redis-server",
+        "/usr/local/etc/redis/redis.conf",
+        "--bind",
+        "redis",
+        "--port",
+        "6379",
+      ]
+    volumes:
+      - redisdata:/data/db
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    logging:
+      driver: none
+
+  # kafka:
+  #   image: confluentinc/cp-kafka:latest
+  #   ports:
+  #     - "9092:9092"
+  #   volumes:
+  #     - kafkadata:/var/lib/kafka
+  #   environment:
+  #     - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+  #   depends_on:
+  #     - zookeeper
+
+  # zookeeper:
+  #   image: confluentinc/cp-zookeeper:latest
+  #   ports:
+  #     - "2181:2181"
+  #   environment:
+  #     - ZOOKEEPER_CLIENT_PORT=2181
+  #   healthcheck:
+  #     test: ["CMD", "nc", "-z", "zookeeper", "2181"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+
+volumes:
+  mongodata:
+  redisdata:
+  # kafkadata:

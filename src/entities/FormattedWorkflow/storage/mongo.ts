@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { MONGO_CONFIG } from "../../../config/mongo.js";
-import { formatMs } from "../../../helpers/format/formatMs.js";
 import logger from "../../../lib/Logger/logger.js";
 import { createMongoStorage } from "../../../storage/mongo/index.js";
 import type { MongoStorage } from "../../../storage/mongo/types.js";
 import { formattedWorkflowRunSchema } from "../schemas/schema.js";
+
+const WORKFLOW_COLLECTION_NAME = "workflow-data" as const;
+const WORKFLOW_RUN_COLLECTION_NAME = "workflow-runs" as const;
 
 const STORED_WORKFLOW_VERSION = "1.0.0" as const;
 export const storedWorkflow = z.object({
@@ -48,7 +50,7 @@ export const storedWorkflowRun = formattedWorkflowRunSchema.merge(
 );
 
 export const workflowMongoStorage = createMongoStorage({
-  collectionName: "workflow-data",
+  collectionName: WORKFLOW_COLLECTION_NAME,
   dbURI: MONGO_CONFIG.dbURI,
   dbName: MONGO_CONFIG.databaseName,
   indexes: MONGO_CONFIG.indexes.workflows,
@@ -57,7 +59,7 @@ export const workflowMongoStorage = createMongoStorage({
 });
 
 export const workflowRunsMongoStorage = createMongoStorage({
-  collectionName: "workflow-runs",
+  collectionName: WORKFLOW_RUN_COLLECTION_NAME,
   dbURI: MONGO_CONFIG.dbURI,
   dbName: MONGO_CONFIG.databaseName,
   schema: { schema: storedWorkflowRun, version: STORED_WORKFLOW_RUN_VERSION },
@@ -69,29 +71,15 @@ export type WorkflowMongoStorage = MongoStorage<typeof storedWorkflow>;
 export type WorkflowRunsMongoStorage = MongoStorage<typeof storedWorkflowRun>;
 
 export const initFormattedWorkflowStorage = async () => {
-  logger.debug("Initializing Workflows MongoDB storage");
-  const start = performance.now();
   await Promise.all([
     workflowMongoStorage.init(),
     workflowRunsMongoStorage.init(),
   ]);
-  logger.debug(
-    `Workflows MongoDB storage has been initialized in ${formatMs(
-      performance.now() - start
-    )}`
-  );
 };
 
 export const closeFormattedWorkflowStorage = async () => {
-  logger.debug("Closing Workflows MongoDB storage");
-  const start = performance.now();
   await Promise.all([
     workflowMongoStorage.close(),
     workflowRunsMongoStorage.close(),
   ]);
-  logger.debug(
-    `Workflows MongoDB storage has been closed in ${formatMs(
-      performance.now() - start
-    )}`
-  );
 };

@@ -65,9 +65,10 @@ export function createMongoStorage<
   const {
     schema: { schema, version: schemaVersion },
     collectionName,
-    dbURI,
+    dbURI = config.MONGO.dbURI,
     logger = defaultLogger,
     dbName = config.MONGO.databaseName,
+    indexes = [],
   } = params;
 
   const mongooseSchema = new Schema<DocumentWithKey<Result>>(
@@ -321,7 +322,7 @@ export function createMongoStorage<
       throw new Error(`[${collectionName}] MongoDB connection is not open`);
     }
 
-    for (const [index, options] of params.indexes) {
+    for (const [index, options] of indexes) {
       mongooseSchema.index(index, options);
     }
     await model.syncIndexes(
