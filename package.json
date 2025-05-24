@@ -10,48 +10,27 @@
     "node": "22.x",
     "npm": "10.x"
   },
+  "workspaces": [
+    "libs/**/*",
+    "apps/*"
+  ],
   "devDependencies": {
+    "@biomejs/biome": "^1.8.3",
+    "@gitopslovers/nx-biome": "^1.5.0",
+    "@nx/devkit": "^21.1.2",
+    "@nx/vite": "21.1.2",
+    "@nx/web": "21.1.2",
     "@types/node": "20.14.8",
+    "@vitest/ui": "^3.0.0",
+    "jiti": "2.4.2",
+    "nx": "21.1.2",
+    "prettier": "^3.5.3",
     "tsc-alias": "^1.8.10",
     "typescript": "^5.6.3",
     "vite": "^6.3.5",
     "vitest": "^3.1.3"
   },
   "dependencies": {
-    "@hono/node-server": "^1.14.1",
-    "@hono/otel": "^0.2.0",
-    "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.59.0",
-    "bullmq": "^5.49.2",
-    "bullmq-otel": "^1.0.1",
-    "chalk": "^5.4.1",
-    "colors": "^1.4.0",
-    "commander": "^12.1.0",
-    "concurrently": "^9.1.2",
-    "dayjs": "^1.11.13",
-    "dotenv": "^16.4.5",
-    "hono": "^4.7.7",
-    "inquirer": "^12.1.0",
-    "ioredis": "^5.6.1",
-    "mongoose": "^8.13.2",
-    "octokit": "^4.0.2",
-    "ts-node": "^10.9.2",
-    "winston": "^3.17.0",
     "zod": "^3.23.8"
-  },
-  "scripts": {
-    "test": "vitest run --config ./vitest.config.ts",
-    "test:watch": "vitest --config ./vitest.config.ts --watch",
-    "build": "tsc -p ./tsconfig.json && tsc-alias -p ./tsconfig.json",
-    "postinstall": "$npm_execpath run build",
-    "start:cli:tsx": "NODE_NO_WARNINGS=1 node --loader ts-node/esm src/cli.ts",
-    "start:cli": "node dist/cli.js",
-    "start:server": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./src/server/start.ts",
-    "start:workers": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./src/workers/index.ts",
-    "dev:server": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./src/server/start.ts",
-    "dev:workers": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./src/workers/index.ts",
-    "dev": "NODE_ENV=development node --loader ts-node/esm ./src/index.ts",
-    "start": "NODE_ENV=production node --loader ts-node/esm ./src/index.ts",
-    "migration:ui": "NODE_ENV=development node --loader ts-node/esm ./src/migrations/migrations.ts"
   }
 }

@@ -1,0 +1,31 @@
+{
+  "name": "@github-actions-stats/front",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "author": "Youri Pailloux",
+  "license": "UNLICENSED",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": "22.x",
+    "npm": "10.x"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.7",
+    "@tanstack/router-plugin": "^1.120.10",
+    "@types/react": "^19.1.5",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react-swc": "^3.10.0",
+    "vite-plugin-static-copy": "^3.0.0"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-aria-components": "^1.9.0",
+    "react-dom": "^19.1.0",
+    "@github-actions-stats/workflow-entity": "0.0.1",
+    "zod": "*"
+  },
+  "scripts": {
+    "dev": "vite"
+  }
+}

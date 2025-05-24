@@ -1,0 +1,85 @@
+{
+    "name": "back",
+    "root": "apps/back",
+    "sourceRoot": "apps/back/src",
+    "projectType": "application",
+    "targets": {
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "vitest run --config ./vitest.config.ts",
+                "cwd": "apps/back"
+            }
+        },
+        "test:watch": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "vitest --config ./vitest.config.ts --watch",
+                "cwd": "apps/back"
+            }
+        },
+        "build": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "tsc -p ./tsconfig.json && tsc-alias -p ./tsconfig.json",
+                "cwd": "apps/back"
+            }
+        },
+        "start:cli:tsx": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./src/cli.ts",
+                "cwd": "apps/back"
+            }
+        },
+        "start:cli": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "node dist/cli.js",
+                "cwd": "apps/back"
+            }
+        },
+        "start:server": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./src/server/start.ts",
+                "cwd": "apps/back"
+            }
+        },
+        "start:workers": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./src/workers/index.ts",
+                "cwd": "apps/back"
+            }
+        },
+        "dev:server": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./src/server/start.ts",
+                "cwd": "apps/back"
+            }
+        },
+        "dev:workers": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./src/workers/index.ts",
+                "cwd": "apps/back"
+            }
+        },
+        "dev": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "NODE_NO_WARNINGS=1 NODE_ENV=development node --loader ts-node/esm ./src/index.ts",
+                "cwd": "apps/back"
+            }
+        },
+        "start": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "NODE_NO_WARNINGS=1 NODE_ENV=production node --loader ts-node/esm ./src/index.ts",
+                "cwd": "apps/back"
+            }
+        }
+    }
+}

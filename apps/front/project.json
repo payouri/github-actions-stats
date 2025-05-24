@@ -1,0 +1,35 @@
+{
+    "name": "front",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "apps/front/src",
+    "projectType": "application",
+    "targets": {
+        "build": {
+            "executor": "@nx/vite:build",
+            "options": {
+                "outputPath": "dist/apps/front"
+            }
+        },
+        "serve": {
+            "executor": "@nx/vite:dev-server",
+            "defaultConfiguration": "development",
+            "options": {
+                "buildTarget": "front:build"
+            },
+            "configurations": {}
+        },
+        "biome-lint": {
+            "executor": "@gitopslovers/nx-biome:biome-lint",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "lintFilePatterns": [
+                    "apps/front/**/*.ts"
+                ],
+                "write": false,
+                "unsafe": false
+            }
+        }
+    }
+}

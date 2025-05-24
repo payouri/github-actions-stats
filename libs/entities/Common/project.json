@@ -1,0 +1,21 @@
+{
+    "name": "common-entity",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "libs/entities/Workflow",
+    "projectType": "library",
+    "targets": {
+        "lint": {
+            "executor": "@gitopslovers/nx-biome:biome-lint",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "lintFilePatterns": [
+                    "apps/front/**/*.ts"
+                ],
+                "write": false,
+                "unsafe": false
+            }
+        }
+    }
+}
