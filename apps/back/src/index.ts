@@ -1,9 +1,11 @@
 import concurrently from "concurrently";
 import packageJson from "../project.json" with { type: "json" };
+import logger from "./lib/Logger/logger.js";
 
 const { targets } = packageJson;
 
-concurrently(
+console.log(process.env.NODE_ENV);
+const result = concurrently(
 	process.env.NODE_ENV === "production"
 		? [
 				{
@@ -30,7 +32,16 @@ concurrently(
 				},
 			],
 	{
-		killOthers: [],
+		killOthers: process.env.NODE_ENV === "production" ? "failure" : [],
 		killSignal: "SIGTERM",
+		timings: true,
 	},
 );
+
+console.log(result.commands);
+try {
+	await result.result;
+} catch (error) {
+	logger.error("Failed to start server", error);
+	process.exit(1);
+}

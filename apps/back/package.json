@@ -35,7 +35,6 @@
     "zod": "*"
   },
   "scripts": {
-    "postinstall": "nx build back",
     "migration:ui": "NODE_ENV=development node --loader ts-node/esm ./src/migrations/migrations.ts"
   }
 }
