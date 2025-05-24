@@ -1,30 +1,30 @@
 import concurrently from "concurrently";
-import packageJson from "../package.json" with { type: "json" };
+import packageJson from "../project.json" with { type: "json" };
 
-const { scripts } = packageJson;
+const { targets } = packageJson;
 
 concurrently(
   process.env.NODE_ENV === "production"
     ? [
       {
-        command: scripts["start:server"],
+        command: targets["start:server"]["options"]["command"],
         prefixColor: "yellow",
         name: "server",
       },
       {
-        command: scripts["start:workers"],
+        command: targets["start:workers"]["options"]["command"],
         prefixColor: "green",
         name: "worker",
       },
     ]
     : [
       {
-        command: scripts["dev:server"],
+        command: targets["dev:server"]["options"]["command"],
         prefixColor: "yellow",
         name: "server",
       },
       {
-        command: scripts["dev:workers"],
+        command: targets["dev:workers"]["options"]["command"],
         prefixColor: "green",
         name: "worker",
       },

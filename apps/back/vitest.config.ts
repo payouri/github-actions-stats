@@ -3,7 +3,5 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     // ...
-    globals: true,
-    workspace: ["apps/*/vitest.config.ts", "libs/*/vitest.config.ts"],
   },
 });

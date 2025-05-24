@@ -1,5 +1,5 @@
 {
-  "name": "github-actions-stats",
+  "name": "@github-actions-stats/back",
   "version": "0.0.1",
   "main": "dist/index.js",
   "author": "Youri Pailloux",
@@ -10,10 +10,6 @@
     "node": "22.x",
     "npm": "10.x"
   },
-  "workspaces": [
-    "libs/*",
-    "apps/*"
-  ],
   "devDependencies": {
     "@nx/vite": "21.1.2",
     "@nx/web": "21.1.2",
@@ -49,18 +45,7 @@
     "zod": "^3.23.8"
   },
   "scripts": {
-    "test": "nx test run --config ./vitest.config.ts",
-    "test:watch": "nx test --config ./vitest.config.ts --watch",
-    "build": "nx build back:build",
     "postinstall": "$npm_execpath run build",
-    "start:cli:tsx": "NODE_NO_WARNINGS=1 node --loader ts-node/esm apps/back/src/cli.ts",
-    "start:cli": "node dist/cli.js",
-    "start:server": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./apps/back/src/server/start.ts",
-    "start:workers": "NODE_NO_WARNINGS=1 node --loader ts-node/esm ./apps/back/src/workers/index.ts",
-    "dev:server": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./apps/back/src/server/start.ts",
-    "dev:workers": "NODE_NO_WARNINGS=1 node --watch --loader ts-node/esm ./apps/back/src/workers/index.ts",
-    "dev": "NODE_ENV=development node --loader ts-node/esm ./apps/back/src/index.ts",
-    "start": "NODE_ENV=production node --loader ts-node/esm ./apps/back/src/index.ts",
-    "migration:ui": "NODE_ENV=development node --loader ts-node/esm ./apps/back/src/migrations/migrations.ts"
+    "migration:ui": "NODE_ENV=development node --loader ts-node/esm ./src/migrations/migrations.ts"
   }
 }
