@@ -77,7 +77,7 @@ function buildFetchNewWorkflowRuns(dependencies: {
 		const abortController = new AbortController();
 
 		const globalOptions = program.opts();
-		console.log(globalOptions);
+		// console.log(globalOptions);
 		for (const option of getWorkflowRunsInstanceOptions) {
 			if (
 				option.required &&
@@ -181,7 +181,7 @@ export function buildFetchNewWorkflowRunsCommand(dependencies: {
 		if (option.required) {
 			const { name, description, required, paramName } = option;
 			const optionValueString = required ? `<${name}>` : `[${name}]`;
-			console.log(optionValueString);
+			// console.log(optionValueString);
 
 			fetchNewWorkflowRunsCommand.requiredOption(
 				`--${paramName ?? name} ${optionValueString}`,

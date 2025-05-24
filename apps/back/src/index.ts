@@ -3,8 +3,6 @@ import packageJson from "../project.json" with { type: "json" };
 
 const { targets } = packageJson;
 
-console.log(targets["start:server"].options.command);
-console.log(targets["dev:server"].options.command);
 concurrently(
 	process.env.NODE_ENV === "production"
 		? [
