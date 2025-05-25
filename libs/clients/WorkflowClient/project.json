@@ -1,8 +1,8 @@
 {
-    "name": "@github-actions-stats/workflow-entity",
+    "name": "@github-actions-stats/workflow-client",
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-    "root": "libs/entities/Workflow",
-    "sourceRoot": "libs/entities/Workflow/src",
+    "root": "libs/clients/WorkflowClient",
+    "sourceRoot": "libs/clients/WorkflowClient/src",
     "projectType": "library",
     "targets": {
         "lint": {
@@ -12,7 +12,7 @@
             ],
             "options": {
                 "lintFilePatterns": [
-                    "libs/entities/Workflow/**/*.ts"
+                    "libs/clients/WorkflowClient/**/*.ts"
                 ],
                 "write": false,
                 "unsafe": false

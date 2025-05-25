@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { MONGO_CONFIG } from "../../../config/mongo.js";
 import logger from "../../../lib/Logger/logger.js";
-import { createMongoStorage } from "../../../storage/mongo/index.js";
-import type { MongoStorage } from "../../../storage/mongo/types.js";
 import {
 	aggregatedStatSchema,
 	workflowStatSchema,
 } from "@github-actions-stats/workflow-entity";
+import { createMongoStorage } from "../../../storage/mongo.js";
+import type { MongoStorage } from "@github-actions-stats/storage";
 
 export const WORKFLOW_STAT_COLLECTION_NAME = "workflow-stats" as const;
 export const AGGREGATED_STAT_COLLECTION_NAME =
@@ -32,7 +32,6 @@ export const aggregatedWorkflowStatsMongoStorage = createMongoStorage({
 		schema: storedAggregatedStatSchema,
 		version: STORED_WORKFLOW_VERSION,
 	},
-	logger,
 });
 
 export const workflowRunStatsMongoStorage = createMongoStorage({
@@ -42,7 +41,6 @@ export const workflowRunStatsMongoStorage = createMongoStorage({
 		version: STORED_WORKFLOW_RUN_VERSION,
 	},
 	indexes: MONGO_CONFIG.indexes.workflowStats,
-	logger,
 });
 
 export type AggregatedWorkflowStatsMongoStorage = MongoStorage<

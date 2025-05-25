@@ -1,0 +1,15 @@
+{
+    "name": "@github-actions-stats/types-utils",
+    "author": "Youri Pailloux",
+    "license": "UNLICENSED",
+    "main": "src/index.ts",
+    "private": true,
+    "type": "module",
+    "version": "0.0.1",
+    "engines": {
+        "node": "22.x",
+        "npm": "10.x"
+    },
+    "dependencies": {},
+    "devDependencies": {}
+}

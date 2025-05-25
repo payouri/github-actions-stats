@@ -1,4 +1,8 @@
-import type { WorkflowRunId } from "@github-actions-stats/common-entity";
+import type {
+	MethodResult,
+	OverrideMethods,
+	Prettify,
+} from "@github-actions-stats/types-utils";
 import type {
 	ClientSession,
 	Document,
@@ -14,9 +18,6 @@ import type {
 } from "mongoose";
 import type { Logger } from "winston";
 import type { AnyZodObject, z } from "zod";
-import type { MethodResult } from "../../types/MethodResult.js";
-import type { OverrideMethods } from "../../types/OverrideMethods.js";
-import type { Prettify } from "../../types/Prettify.js";
 import type { Storage } from "../types.js";
 
 export type MongoSortOptions<Result> = {
@@ -91,25 +92,7 @@ export type MongoStorageIterateMethod<Result> = (
 ) => AsyncIterable<DocumentWithKey<Result>, void, undefined>;
 
 export type MongoStorageQueryMethod<Result> = (
-	query: Result extends {
-		workflowId: WorkflowRunId;
-		workflowName: string;
-		repositoryName: string;
-		repositoryOwner: string;
-		branchName?: string;
-	}
-		? {
-				workflowName: string;
-				repositoryName: string;
-				repositoryOwner: string;
-				branchName?: string;
-				ranAt?: {
-					min: Date;
-					max: Date;
-				};
-				status?: string;
-			}
-		: FilterQuery<EntityWithKey<Result>>,
+	query: FilterQuery<EntityWithKey<Result>>,
 	options?: {
 		session?: ClientSession;
 		limit?: number;
@@ -127,14 +110,14 @@ export type CreateMongoStorageParams<
 	Storage extends MongoStorage<Schema, Result> = MongoStorage<Schema, Result>,
 > = {
 	collectionName: string;
-	dbURI?: string;
-	dbName?: string;
+	dbURI: string;
+	dbName: string;
 	indexes?: [IndexDefinition, IndexOptions][];
 	schema: {
 		version: string;
 		schema: Schema;
 	};
-	logger?: Logger;
+	logger: Logger;
 };
 
 export type MongoStorage<

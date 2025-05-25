@@ -1,0 +1,17 @@
+- workflow list
+    - name
+    - runs count
+    - repository
+        - name
+        - owner
+    - total
+- main
+    - runs count
+        - error
+        - average duration
+    - consumption
+        - by runner type
+        - cost by run
+    - graphs
+        - timings
+    - run filters

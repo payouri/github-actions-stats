@@ -1,9 +1,10 @@
-import { join } from "node:path";
 import { workflowRunId } from "@github-actions-stats/common-entity";
+import { createFSStorage, type FSStorage } from "@github-actions-stats/storage";
 import {
 	formattedWorkflowRunSchema,
 	retrievedWorkflowSchema,
 } from "@github-actions-stats/workflow-entity";
+import { join } from "node:path";
 import { z } from "zod";
 import { config } from "../../../config/config.js";
 import {
@@ -11,8 +12,6 @@ import {
 	generateWorkflowRunKey,
 } from "../../../helpers/generateWorkflowKey.js";
 import logger from "../../../lib/Logger/logger.js";
-import { createFSStorage } from "../../../storage/fs/index.js";
-import type { FSStorage } from "../../../storage/fs/types.js";
 
 const storedWorkflow = retrievedWorkflowSchema
 	.omit({

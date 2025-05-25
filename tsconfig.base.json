@@ -33,12 +33,15 @@
 		"module": "NodeNext" /* Specify what module code is generated. */,
 		"moduleResolution": "NodeNext" /* Specify how TypeScript looks up a file from a given module specifier. */,
 		"paths": {
+			"@github-actions-stats/storage": ["./libs/storage/src/index.ts"],
 			"@github-actions-stats/workflow-entity": [
 				"./libs/entities/Workflow/src/index.ts"
 			],
 			"@github-actions-stats/common-entity": [
 				"./libs/entities/Common/src/index.ts"
-			]
+			],
+			"@github-actions-stats/types-utils": ["./libs/types-utils/src/index.ts"],
+			"@github-actions-stats/common-utils": ["./libs/common-utils/src/index.ts"]
 		} /* Specify a set of entries that re-map imports to additional lookup locations. */,
 		// "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
 		// "typeRoots": [],                                  /* Specify multiple folders that act like './node_modules/@types'. */

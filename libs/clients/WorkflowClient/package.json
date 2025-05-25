@@ -1,0 +1,18 @@
+{
+    "name": "@github-actions-stats/workflow-client",
+    "author": "Youri Pailloux",
+    "license": "UNLICENSED",
+    "main": "src/index.ts",
+    "private": true,
+    "type": "module",
+    "version": "0.0.1",
+    "engines": {
+        "node": "22.x",
+        "npm": "10.x"
+    },
+    "dependencies": {
+        "@trpc/client": "^11.1.2",
+        "@trpc/server": "^11.1.2"
+    },
+    "devDependencies": {}
+}
