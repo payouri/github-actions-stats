@@ -4,6 +4,7 @@ import {
 	Route,
 } from "react-router-dom";
 import { HomePage, HomePageLoader } from "./pages/Home";
+import { HomeRouter } from "./pages/router";
 
 export const AppRoutes = createBrowserRouter([
 	{
@@ -18,5 +19,6 @@ export const AppRoutes = createBrowserRouter([
 				start: Number.isInteger(start) ? Number(start) : undefined,
 			});
 		},
+		children: HomeRouter,
 	},
 ]);

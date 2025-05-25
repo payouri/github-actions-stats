@@ -5,20 +5,26 @@ import {
 	type GetWorkflowsProcedureResponse,
 } from "./procedures/workflow.procedures.js";
 import type { MongoStorage } from "@github-actions-stats/storage";
-import type { storedWorkflow } from "@github-actions-stats/workflow-entity";
+import type {
+	storedWorkflow,
+	storedWorkflowRun,
+} from "@github-actions-stats/workflow-entity";
 
 export type { GetWorkflowsProcedureInput, GetWorkflowsProcedureResponse };
 
 export const buildWorkflowRouter = <Builder extends TRPCBuilder>(dependencies: {
 	trpc: Builder;
 	storedWorkflowMongoStorage: MongoStorage<typeof storedWorkflow>;
+	storedWorkflowRunMongoStorage: MongoStorage<typeof storedWorkflowRun>;
 }) => {
-	const { trpc, storedWorkflowMongoStorage } = dependencies;
+	const { trpc, storedWorkflowMongoStorage, storedWorkflowRunMongoStorage } =
+		dependencies;
 	const trpcInstance = trpc.create({});
 	const router = trpcInstance.router;
 	const procedures = buildWorkflowsProcedures({
 		trpcInstance,
 		storedWorkflowMongoStorage,
+		storedWorkflowRunMongoStorage,
 	});
 
 	return {

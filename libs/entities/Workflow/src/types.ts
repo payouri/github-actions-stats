@@ -1,5 +1,5 @@
 import type {
-	DocumentWithKey,
+	EntityWithKey,
 	LeanDocumentWithKey,
 } from "@github-actions-stats/storage";
 import type { z } from "zod";
@@ -29,5 +29,5 @@ export type RetrievedWorkflow = z.infer<typeof retrievedWorkflowSchema>;
 export type StoredWorkflow = z.infer<typeof storedWorkflow>;
 export type StoredWorkflowRun = z.infer<typeof storedWorkflowRun>;
 
-export type StoredWorkflowWithKey = DocumentWithKey<StoredWorkflow>;
+export type StoredWorkflowWithKey = EntityWithKey<StoredWorkflow>;
 export type StoredWorkflowDocument = LeanDocumentWithKey<StoredWorkflow>;

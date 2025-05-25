@@ -1,9 +1,16 @@
 import type { StoredWorkflowWithKey } from "@github-actions-stats/workflow-entity";
 import { Avatar, Flex, Grid, Heading, Spinner } from "@radix-ui/themes";
-import type { FC } from "react";
-import { useLoaderData } from "react-router";
+import { Suspense, type FC } from "react";
+import {
+	useLoaderData,
+	useLocation,
+	useNavigate,
+	useRoutes,
+} from "react-router";
 import { WorkflowSidebar } from "../components/WorkflowSidebar/WorkflowSidebar.component";
 import { trpcReactClient } from "../hooks/useRequest";
+import { RouterProvider } from "react-router-dom";
+import { HomeRouter } from "./router";
 
 const PageHeader: FC<{
 	title?: string;
@@ -46,8 +53,19 @@ export const useHomePageData = useLoaderData<
 	Awaited<ReturnType<typeof HomePageLoader>>
 >;
 
-export const HomePage: FC = (params) => {
+export const HomePage: FC = () => {
 	const { workflows } = useHomePageData();
+	const location = useLocation();
+	const history = useNavigate();
+	const routes = useRoutes(HomeRouter);
+
+	console.log(location);
+	function onWorkflowSelected(workflowKey: string) {
+		history({
+			pathname: `/${encodeURIComponent(workflowKey)}`,
+		});
+	}
+
 	if (workflows.hasFailed) {
 		return <div>Failed to load data</div>;
 	}
@@ -70,14 +88,10 @@ export const HomePage: FC = (params) => {
 			<WorkflowSidebar
 				workflows={workflows.data as unknown as StoredWorkflowWithKey[]}
 				onNewWorkflowAdded={undefined}
+				selectedWorkflow={undefined}
+				onWorkflowSelected={onWorkflowSelected}
 			/>
-			<div
-				style={{
-					gridArea: "content",
-				}}
-			>
-				Hello World
-			</div>
+			<Suspense fallback="loading">{routes}</Suspense>
 		</Grid>
 	);
 };
