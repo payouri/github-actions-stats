@@ -11,13 +11,16 @@
     "npm": "10.x"
   },
   "dependencies": {
-    "@hono/trpc-server": "^0.3.4",
+    "@github-actions-stats/common-entity": "0.0.1",
+    "@github-actions-stats/storage": "0.0.1",
+    "@github-actions-stats/workflow-entity": "0.0.1",
     "@hono/node-server": "^1.14.1",
     "@hono/otel": "^0.2.0",
+    "@hono/trpc-server": "^0.3.4",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/auto-instrumentations-node": "^0.59.0",
-    "bullmq": "^5.49.2",
     "bullmq-otel": "^1.0.1",
+    "bullmq": "^5.49.2",
     "chalk": "*",
     "colors": "^1.4.0",
     "commander": "^12.1.0",
@@ -31,8 +34,6 @@
     "octokit": "^4.0.2",
     "ts-node": "^10.9.2",
     "winston": "^3.17.0",
-    "@github-actions-stats/workflow-entity": "0.0.1",
-    "@github-actions-stats/common-entity": "0.0.1",
     "zod": "*"
   },
   "scripts": {

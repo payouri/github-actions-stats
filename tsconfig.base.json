@@ -41,7 +41,12 @@
 				"./libs/entities/Common/src/index.ts"
 			],
 			"@github-actions-stats/types-utils": ["./libs/types-utils/src/index.ts"],
-			"@github-actions-stats/common-utils": ["./libs/common-utils/src/index.ts"]
+			"@github-actions-stats/common-utils": [
+				"./libs/common-utils/src/index.ts"
+			],
+			"@github-actions-stats/workflow-client": [
+				"./libs/clients/WorkflowClient/src/index.ts"
+			]
 		} /* Specify a set of entries that re-map imports to additional lookup locations. */,
 		// "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
 		// "typeRoots": [],                                  /* Specify multiple folders that act like './node_modules/@types'. */

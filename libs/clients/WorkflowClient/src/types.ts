@@ -13,19 +13,19 @@ export type ProcedureError<
 	hasFailed: true;
 } & Error;
 
-export type ProcedureSuccess<
-	Data extends Record<string | number, unknown> | undefined,
-> = Data extends undefined
-	? {
-			hasFailed: false;
-		}
-	: {
-			hasFailed: false;
-			data: Data;
-		};
+export type ProcedureSuccess<Data extends unknown | undefined> =
+	// biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+	Data extends undefined | void
+		? {
+				hasFailed: false;
+			}
+		: {
+				hasFailed: false;
+				data: Data;
+			};
 
 export type AsyncProcedureResponse<
-	Data extends Record<string | number, unknown> | undefined,
+	Data extends unknown | undefined,
 	Error extends {
 		message: string;
 		code: string;
@@ -35,7 +35,7 @@ export type AsyncProcedureResponse<
 > = Promise<ProcedureSuccess<Data> | ProcedureError<Error>>;
 
 export type ProcedureResponse<
-	Data extends Record<string | number, unknown> | undefined,
+	Data extends unknown | undefined,
 	Error extends {
 		message: string;
 		code: string;
