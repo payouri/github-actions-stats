@@ -15,7 +15,7 @@ export const WorkflowSidebar: FC<WorkflowSidebarProps> = ({
 	onNewWorkflowAdded,
 	gridArea = "sidebar",
 }) => {
-	const defaultValue = workflows[0].workflowName;
+	const defaultValue = workflows[0]?.workflowName;
 
 	return (
 		<Container
