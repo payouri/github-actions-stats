@@ -1,22 +1,27 @@
 import {
 	WORKFLOW_MOUNT_POINT,
-	buildWorkflowClient,
+	type WorkflowRouter,
 } from "@github-actions-stats/workflow-client";
 import { QueryClient } from "@tanstack/react-query";
-import { createTRPCQueryUtils } from "@trpc/react-query";
-import { lazy } from "react";
-// import
+import {
+	createTRPCQueryUtils,
+	createTRPCReact,
+	httpBatchLink,
+} from "@trpc/react-query";
 
-export const queryClient = new QueryClient({});
-export const trpcClient = buildWorkflowClient({
-	serverUrl: new URL(
-		WORKFLOW_MOUNT_POINT,
-		"https://ghstats.pailloux-youri.xyz",
-	).toString(),
+export const trpcReactClient = createTRPCReact<WorkflowRouter>().createClient({
+	links: [
+		httpBatchLink({
+			url: new URL(
+				WORKFLOW_MOUNT_POINT,
+				"https://ghstats.pailloux-youri.xyz",
+			).toString(),
+		}),
+	],
 });
-
-export const makeRequest = createTRPCQueryUtils({
-	client: trpcClient,
+export const queryClient = new QueryClient({});
+export const queryClientUtils = createTRPCQueryUtils({
+	client: trpcReactClient,
 	queryClient,
 });
 

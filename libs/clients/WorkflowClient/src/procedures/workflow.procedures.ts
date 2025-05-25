@@ -1,25 +1,23 @@
-import { z } from "zod";
+import type { MongoStorage } from "@github-actions-stats/storage";
 import type {
 	storedWorkflow,
-	StoredWorkflow,
+	StoredWorkflowWithKey,
+	StoredWorkflowDocument,
 } from "@github-actions-stats/workflow-entity";
-import type {
-	LeanDocumentWithKey,
-	MongoStorage,
-} from "@github-actions-stats/storage";
+import { z } from "zod";
 import type { AsyncProcedureResponse, TRPCBuilder } from "../types.js";
 
-type StoredWorkflowMongoStorage = MongoStorage<typeof storedWorkflow>;
 const getWorkflowsProcedureInputSchema = z.object({
 	start: z.number(),
 	count: z.number(),
 });
 
+export type StoredWorkflowMongoStorage = MongoStorage<typeof storedWorkflow>;
 export type GetWorkflowsProcedureInput = z.infer<
 	typeof getWorkflowsProcedureInputSchema
 >;
 export type GetWorkflowsProcedureResponse = AsyncProcedureResponse<
-	LeanDocumentWithKey<StoredWorkflow>[],
+	StoredWorkflowDocument[],
 	{
 		code: "failed_to_get_workflows";
 		message: string;
@@ -33,7 +31,7 @@ function buildGetWorkflowsProcedureProcedure(dependencies: {
 }) => GetWorkflowsProcedureResponse {
 	const { storedWorkflowMongoStorage } = dependencies;
 
-	return async ({ input }) => {
+	return async ({ input }): GetWorkflowsProcedureResponse => {
 		const { start, count } = input;
 		const result = await storedWorkflowMongoStorage.query(
 			{},

@@ -1,3 +1,7 @@
+import type {
+	DocumentWithKey,
+	LeanDocumentWithKey,
+} from "@github-actions-stats/storage";
 import type { z } from "zod";
 import type {
 	aggregatePeriodSchema,
@@ -5,14 +9,14 @@ import type {
 } from "./schemas/AggregatedStat.schema.js";
 import type { runJobDataSchema } from "./schemas/FormattedJob.schema.js";
 import type { retrievedWorkflowSchema } from "./schemas/RetrievedWorkflow.schema.js";
+import type { storedWorkflow } from "./schemas/StoredWorkflow.schema.js";
+import type { storedWorkflowRun } from "./schemas/StoredWorkflowRun.schema.js";
 import type {
 	formattedWorkflowRunSchema,
 	githubJobDataSchema,
 	runUsageDataSchema,
 } from "./schemas/WorkflowData.schema.js";
 import type { workflowStatSchema } from "./schemas/WorkflowStat.schema.js";
-import type { storedWorkflowRun } from "./schemas/StoredWorkflowRun.schema.js";
-import type { storedWorkflow } from "./schemas/StoredWorkflow.schema.js";
 
 export type RunJobData = z.infer<typeof runJobDataSchema>;
 export type GithubJobData = z.infer<typeof githubJobDataSchema>;
@@ -24,3 +28,6 @@ export type AggregatedWorkflowStat = z.infer<typeof aggregatedStatSchema>;
 export type RetrievedWorkflow = z.infer<typeof retrievedWorkflowSchema>;
 export type StoredWorkflow = z.infer<typeof storedWorkflow>;
 export type StoredWorkflowRun = z.infer<typeof storedWorkflowRun>;
+
+export type StoredWorkflowWithKey = DocumentWithKey<StoredWorkflow>;
+export type StoredWorkflowDocument = LeanDocumentWithKey<StoredWorkflow>;

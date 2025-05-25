@@ -11,6 +11,9 @@
         "npm": "10.x"
     },
     "dependencies": {
+        "mongoose": "*",
+        "@github-actions-stats/common-entity": "0.0.1",
+        "@github-actions-stats/storage": "0.0.1",
         "zod": "*"
     },
     "devDependencies": {}

@@ -1,11 +1,11 @@
-import type { StoredWorkflow } from "@github-actions-stats/workflow-entity";
+import type { StoredWorkflowWithKey } from "@github-actions-stats/workflow-entity";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { Container, Flex, Button, RadioCards } from "@radix-ui/themes";
 import type { FC } from "react";
 import { WorkflowSidebarItem } from "./components/WorkflowSidebarItem.component";
 
 export type WorkflowSidebarProps = {
-	workflows: StoredWorkflow[];
+	workflows: StoredWorkflowWithKey[];
 	gridArea?: string;
 	onNewWorkflowAdded: ((workflowName: string) => void) | undefined;
 };
@@ -44,7 +44,7 @@ export const WorkflowSidebar: FC<WorkflowSidebarProps> = ({
 					gap="0"
 				>
 					{workflows.map((workflow) => (
-						<WorkflowSidebarItem key={workflow.workflowName} {...workflow} />
+						<WorkflowSidebarItem {...workflow} key={workflow.key} />
 					))}
 				</RadioCards.Root>
 			</Flex>
