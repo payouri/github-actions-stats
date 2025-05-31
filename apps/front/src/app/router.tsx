@@ -1,14 +1,12 @@
-import {
-	createBrowserRouter,
-	createRoutesFromElements,
-	Route,
-} from "react-router-dom";
-import { HomePage, HomePageLoader } from "./pages/Home";
-import { HomeRouter } from "./pages/router";
+import { createBrowserRouter } from "react-router-dom";
+import { HomePage } from "./pages/Home.component";
+import { HomePageLoader } from "./pages/Home.loader";
+import { HomeRouter } from "./pages/Home.router";
 
 export const AppRoutes = createBrowserRouter([
 	{
 		path: "/",
+		// id: "root",
 		hydrateFallbackElement: <div>Loading...</div>,
 		Component: HomePage,
 		async loader({ params, context, request }) {

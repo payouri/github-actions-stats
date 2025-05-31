@@ -3,16 +3,30 @@ import durationPlugin from "dayjs/plugin/duration.js";
 
 dayjs.extend(durationPlugin);
 
-const PERIOD_TO_INTERVAL_MS_MAP = {
+type Period =
+	| "day"
+	| "week"
+	| "month"
+	| "last_7_days"
+	| "last_30_days"
+	| "last_90_days";
+
+const PERIOD_TO_INTERVAL_MS_MAP: Record<Period, number> = {
 	day: dayjs.duration(1, "hour").asMilliseconds(),
 	week: dayjs.duration(4, "hours").asMilliseconds(),
 	month: dayjs.duration(1, "day").asMilliseconds(),
-	last_30_days: dayjs.duration(2, "hour").asMilliseconds(),
+	last_30_days: dayjs.duration(4, "hour").asMilliseconds(),
 	last_90_days: dayjs.duration(1, "days").asMilliseconds(),
 	last_7_days: dayjs.duration(1, "hour").asMilliseconds(),
-} as const;
+};
 
-const PERIOD_FROM_END_TRANSFORM_MAP = {
+const PERIOD_FROM_END_TRANSFORM_MAP: Record<
+	Period,
+	{
+		from: (from: Date) => dayjs.Dayjs;
+		to: (from: Date) => dayjs.Dayjs;
+	}
+> = {
 	day: {
 		from: (from: Date) => dayjs(from).startOf("day"),
 		to: (from: Date) => dayjs(from).endOf("day"),
@@ -37,16 +51,10 @@ const PERIOD_FROM_END_TRANSFORM_MAP = {
 		from: (from: Date) => dayjs(from).subtract(90, "day"),
 		to: () => dayjs().endOf("day"),
 	},
-} as const;
+};
 
 export const getPeriodBoundaries = (
-	period:
-		| "day"
-		| "week"
-		| "month"
-		| "last_7_days"
-		| "last_30_days"
-		| "last_90_days",
+	period: Period,
 	from: Date,
 ): {
 	from: Date;

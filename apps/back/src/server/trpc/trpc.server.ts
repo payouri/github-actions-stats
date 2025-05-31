@@ -12,11 +12,17 @@ import type { BlankEnv } from "hono/types";
 import { trpcServer } from "@hono/trpc-server";
 import type { Hono } from "hono";
 import { join } from "node:path";
+import {
+	aggregatedWorkflowStatsMongoStorage,
+	workflowRunStatsMongoStorage,
+} from "../../entities/WorkflowStat/storage/mongo.js";
 
 const { router } = buildWorkflowRouter({
 	trpc: initTRPC,
 	storedWorkflowMongoStorage: workflowMongoStorage,
 	storedWorkflowRunMongoStorage: workflowRunsMongoStorage,
+	aggregatedWorkflowStatsMongoStorage: aggregatedWorkflowStatsMongoStorage,
+	workflowStatsMongoStorage: workflowRunStatsMongoStorage,
 });
 
 export function mountTrpcServer<Env extends BlankEnv>(params: {

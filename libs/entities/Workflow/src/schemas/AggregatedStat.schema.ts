@@ -7,7 +7,14 @@ import {
 } from "@github-actions-stats/common-entity";
 import { z } from "zod";
 
-export const aggregatePeriodSchema = z.enum(["day", "week", "month"]);
+export const aggregatePeriodSchema = z.enum([
+	"day",
+	"week",
+	"month",
+	"last_7_days",
+	"last_30_days",
+	"last_90_days",
+]);
 
 const durationMsField = z.number();
 export const baseStatsRecord = z.object({

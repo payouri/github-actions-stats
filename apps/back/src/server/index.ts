@@ -33,13 +33,15 @@ export async function createServer() {
 		});
 	});
 
-	app.use(
-		"*",
-		otel({
+	app.use("*", async (context, next) => {
+		if (context.req.path.startsWith("/healthcheck")) {
+			return next();
+		}
+		return otel({
 			augmentSpan: false,
 			tracerProvider: trace.getTracerProvider(),
-		}),
-	);
+		})(context, next);
+	});
 	requestTimeMiddleware({ logger })(app);
 	mountTrpcServer({ app });
 	buildRoutes({ app });

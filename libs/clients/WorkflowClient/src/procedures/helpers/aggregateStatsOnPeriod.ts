@@ -2,21 +2,24 @@ import type {
 	AggregatePeriod,
 	AggregatedWorkflowStat,
 	WorkflowRunStat,
+	aggregatedStatSchema,
+	workflowStatSchema,
 } from "@github-actions-stats/workflow-entity";
-import { join } from "node:path";
-import { AbortError } from "../../../errors/AbortError.js";
-import { getDateIntervals } from "../helpers/getDateIntervals.js";
-import { getPeriodBoundaries } from "../helpers/getPeriodBoundaries.js";
-import type {
-	AggregatedWorkflowStatsMongoStorage,
-	WorkflowRunStatsMongoStorage,
-} from "../storage/mongo.js";
+// import { AbortError } from "../../../errors/AbortError.js";
+import { getDateIntervals } from "./getDateIntervals.js";
+import { getPeriodBoundaries } from "./getPeriodBoundaries.js";
+import { AbortError } from "./errors/AbortError.js";
+import type { MongoStorage } from "@github-actions-stats/storage";
+import dayjs from "dayjs";
+import type { MethodResult } from "@github-actions-stats/types-utils";
 
 const limit = 100;
 
-/**
- * @deprecated use from DB instead
- */
+type AggregatedWorkflowStatsMongoStorage = MongoStorage<
+	typeof aggregatedStatSchema
+>;
+type WorkflowRunStatsMongoStorage = MongoStorage<typeof workflowStatSchema>;
+
 export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 	aggregatedWorkflowStatsMongoStorage: AggregatedWorkflowStatsMongoStorage;
 	workflowRunStatsMongoStorage: WorkflowRunStatsMongoStorage;
@@ -33,7 +36,13 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 		options?: {
 			abortSignal?: AbortSignal;
 		},
-	) {
+	): Promise<
+		MethodResult<
+			AggregatedWorkflowStat[],
+			"failed_to_save_aggregated_workflow_stat" | "abort_signal_aborted"
+		>
+	> {
+		const { join } = await import("node:path");
 		const { workflowKey, from: fromDate, period } = params;
 		const { to, from, intervalMs } = getPeriodBoundaries(period, fromDate);
 		const { abortSignal } = options ?? {};
@@ -43,6 +52,8 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 			to,
 			intervalMs,
 		});
+
+		const allAggregatedStats: AggregatedWorkflowStat[] = [];
 
 		for (const batch of batches) {
 			if (abortSignal?.aborted) {
@@ -64,31 +75,43 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 				};
 			}
 			const { from: batchFrom, to: batchTo } = batch;
-			const aggregated: AggregatedWorkflowStat = {
-				period,
-				aggregatedJobsStats: {},
-				maxRunDurationMs: 0,
-				minRunDurationMs: Number.MAX_SAFE_INTEGER,
-				meanRunDurationMs: 0,
-				minCompletedRunDurationMs: Number.MAX_SAFE_INTEGER,
-				periodEnd: batchTo,
-				periodStart: batchFrom,
-				totalDurationMsByJobName: {},
-				totalDurationMsByStepsName: {},
-				totalDurationMsByStatus: {},
-				workflowId: -1,
-				workflowName: "",
-				runsCount: 0,
-				runsDetails: [],
-				runsIds: [],
-				runsDurationMs: 0,
-				statusCount: {},
-				workflowKey: "",
-			};
+			const aggregated: AggregatedWorkflowStat =
+				(await aggregatedWorkflowStatsMongoStorage.get(
+					join(
+						workflowKey,
+						period,
+						batchFrom.toISOString(),
+						batchTo.toISOString(),
+					),
+				)) ?? {
+					period,
+					aggregatedJobsStats: {},
+					maxRunDurationMs: 0,
+					minRunDurationMs: Number.MAX_SAFE_INTEGER,
+					meanRunDurationMs: 0,
+					minCompletedRunDurationMs: Number.MAX_SAFE_INTEGER,
+					periodEnd: batchTo,
+					periodStart: batchFrom,
+					totalDurationMsByJobName: {},
+					totalDurationMsByStepsName: {},
+					totalDurationMsByStatus: {},
+					workflowId: -1,
+					workflowName: "",
+					runsCount: 0,
+					runsDetails: [],
+					runsIds: [],
+					runsDurationMs: 0,
+					statusCount: {},
+					workflowKey,
+				};
+			if ("_id" in aggregated && dayjs(batchTo).isBefore(dayjs())) {
+				allAggregatedStats.push(aggregated);
+				continue;
+			}
 
 			let current: WorkflowRunStat[] | null = null;
 			let total = 0;
-			while (current !== null && current.length > 0) {
+			while (current === null || current.length > 0) {
 				if (abortSignal?.aborted) {
 					return {
 						hasFailed: true,
@@ -107,6 +130,7 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 						},
 					};
 				}
+
 				current = await workflowRunStatsMongoStorage.query(
 					{
 						workflowKey,
@@ -117,6 +141,7 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 					},
 					{
 						limit,
+						start: current?.length || 0,
 						sort: {
 							startedAt: 1,
 						},
@@ -261,30 +286,40 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 			aggregated.meanRunDurationMs /= total > 0 ? total : 1;
 			aggregated.runsCount = total;
 
-			const saveResult = await aggregatedWorkflowStatsMongoStorage.set(
-				join(workflowKey, period),
-				aggregated,
-			);
+			if (total > 0) {
+				const saveResult = await aggregatedWorkflowStatsMongoStorage.set(
+					join(
+						workflowKey,
+						period,
+						batchFrom.toISOString(),
+						batchTo.toISOString(),
+					),
+					aggregated,
+				);
 
-			if (saveResult.hasFailed) {
-				return {
-					hasFailed: true,
-					error: {
-						code: "failed_to_save_aggregated_workflow_stat",
-						message: "Failed to save aggregated workflow stat",
-						error: saveResult.error.error,
-						data: {
-							parentError: saveResult.error,
-							workflowKey,
-							period,
+				if (saveResult.hasFailed) {
+					return {
+						hasFailed: true,
+						error: {
+							code: "failed_to_save_aggregated_workflow_stat",
+							message: "Failed to save aggregated workflow stat",
+							error: saveResult.error.error,
+							data: {
+								parentError: saveResult.error,
+								workflowKey,
+								period,
+							},
 						},
-					},
-				};
+					};
+				}
 			}
+
+			allAggregatedStats.push(aggregated);
 		}
 
 		return {
 			hasFailed: false,
+			data: allAggregatedStats,
 		};
 	};
 }

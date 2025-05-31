@@ -19,26 +19,36 @@ const { connection, ConnectionStates, Schema } = mongoose;
 mongoose.set("strictQuery", false);
 mongoose.set("strict", false);
 
+type AcceptedTypes =
+	| typeof Schema.Types.Mixed
+	| typeof Schema.Types.String
+	| typeof Schema.Types.Date;
+
 function getSchemaFields<T extends AnyZodObject>(
 	schema: T,
 ): Record<
 	string,
-	{ type: typeof Schema.Types.Mixed | typeof Schema.Types.String }
+	{ type: AcceptedTypes; required?: boolean; unique?: boolean }
 > {
 	return Object.entries(schema.shape).reduce<
 		Record<
 			string,
 			{
-				type: typeof Schema.Types.Mixed | typeof Schema.Types.String;
+				type: AcceptedTypes;
 				required?: boolean;
 				unique?: boolean;
 			}
 		>
 	>(
 		(acc, [fieldName]) => {
-			acc[fieldName] = {
-				type: Schema.Types.Mixed,
-			};
+			acc[fieldName] =
+				fieldName.toLowerCase().includes("date") || fieldName.endsWith("At")
+					? {
+							type: Schema.Types.Date,
+						}
+					: {
+							type: Schema.Types.Mixed,
+						};
 			return acc;
 		},
 		{

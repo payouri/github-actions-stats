@@ -50,30 +50,30 @@ const traceSampler = new TraceIdRatioBasedSampler(0.1);
 
 const sdk = new NodeSDK({
 	autoDetectResources: true,
-	sampler: {
-		shouldSample: (context, traceId, __, _, attributes): SamplingResult => {
-			if (
-				"http.url" in attributes &&
-				attributes["http.target"] === "/healthcheck"
-			) {
-				return traceSampler.shouldSample(context, traceId);
-			}
+	// sampler: {
+	// 	shouldSample: (context, traceId, __, _, attributes): SamplingResult => {
+	// 		if (
+	// 			"http.url" in attributes &&
+	// 			attributes["http.target"] === "/healthcheck"
+	// 		) {
+	// 			return traceSampler.shouldSample(context, traceId);
+	// 		}
 
-			console.log("#######", {
-				traceId,
-				__,
-				_,
-				context,
-				attributes,
-			});
+	// 		console.log("#######", {
+	// 			traceId,
+	// 			__,
+	// 			_,
+	// 			context,
+	// 			attributes,
+	// 		});
 
-			return {
-				decision: SamplingDecision.RECORD,
-				attributes,
-				// traceState: ,
-			};
-		},
-	},
+	// 		return {
+	// 			decision: SamplingDecision.RECORD,
+	// 			attributes,
+	// 			// traceState: ,
+	// 		};
+	// 	},
+	// },
 	logRecordProcessors: [
 		new BatchLogRecordProcessor(logExporter),
 		// new BatchLogRecordProcessor(logConsoleExporter),

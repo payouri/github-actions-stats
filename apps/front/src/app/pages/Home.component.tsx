@@ -1,16 +1,10 @@
 import type { StoredWorkflowWithKey } from "@github-actions-stats/workflow-entity";
 import { Avatar, Flex, Grid, Heading, Spinner } from "@radix-ui/themes";
 import { Suspense, type FC } from "react";
-import {
-	useLoaderData,
-	useLocation,
-	useNavigate,
-	useRoutes,
-} from "react-router";
+import { useNavigate, useParams, useRoutes } from "react-router";
 import { WorkflowSidebar } from "../components/WorkflowSidebar/WorkflowSidebar.component";
-import { trpcReactClient } from "../hooks/useRequest";
-import { RouterProvider } from "react-router-dom";
-import { HomeRouter } from "./router";
+import { useHomePageData } from "./Home.loader";
+import { HomeRouter } from "./Home.router";
 
 const PageHeader: FC<{
 	title?: string;
@@ -33,33 +27,12 @@ const PageHeader: FC<{
 	);
 };
 
-export async function HomePageLoader(params: {
-	start?: number;
-	count?: number;
-}) {
-	const { start = 0, count = 10 } = params;
-	const [workflows] = await Promise.all([
-		trpcReactClient.getWorkflows.query({
-			count,
-			start,
-		}),
-	]);
-
-	return {
-		workflows,
-	};
-}
-export const useHomePageData = useLoaderData<
-	Awaited<ReturnType<typeof HomePageLoader>>
->;
-
 export const HomePage: FC = () => {
 	const { workflows } = useHomePageData();
-	const location = useLocation();
 	const history = useNavigate();
 	const routes = useRoutes(HomeRouter);
+	const routeParams = useParams<{ workflowKey: string }>();
 
-	console.log(location);
 	function onWorkflowSelected(workflowKey: string) {
 		history({
 			pathname: `/${encodeURIComponent(workflowKey)}`,
@@ -88,7 +61,11 @@ export const HomePage: FC = () => {
 			<WorkflowSidebar
 				workflows={workflows.data as unknown as StoredWorkflowWithKey[]}
 				onNewWorkflowAdded={undefined}
-				selectedWorkflow={undefined}
+				selectedWorkflow={
+					routeParams.workflowKey
+						? decodeURIComponent(routeParams.workflowKey)
+						: undefined
+				}
 				onWorkflowSelected={onWorkflowSelected}
 			/>
 			<Suspense fallback="loading">{routes}</Suspense>

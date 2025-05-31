@@ -4,7 +4,6 @@ import logger from "./lib/Logger/logger.js";
 
 const { targets } = packageJson;
 
-console.log(process.env.NODE_ENV);
 const result = concurrently(
 	process.env.NODE_ENV === "production"
 		? [
@@ -38,7 +37,6 @@ const result = concurrently(
 	},
 );
 
-console.log(result.commands);
 try {
 	await result.result;
 } catch (error) {

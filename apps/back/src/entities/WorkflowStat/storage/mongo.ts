@@ -1,29 +1,20 @@
-import { z } from "zod";
-import { MONGO_CONFIG } from "../../../config/mongo.js";
-import logger from "../../../lib/Logger/logger.js";
+import type { MongoStorage } from "@github-actions-stats/storage";
 import {
 	aggregatedStatSchema,
 	workflowStatSchema,
 } from "@github-actions-stats/workflow-entity";
+import { z } from "zod";
+import { MONGO_CONFIG } from "../../../config/mongo.js";
 import { createMongoStorage } from "../../../storage/mongo.js";
-import type { MongoStorage } from "@github-actions-stats/storage";
 
-export const WORKFLOW_STAT_COLLECTION_NAME = "workflow-stats" as const;
+export const WORKFLOW_STAT_COLLECTION_NAME = "workflow-runs-stats" as const;
 export const AGGREGATED_STAT_COLLECTION_NAME =
 	"aggregated-workflow-stats" as const;
 export const STORED_WORKFLOW_VERSION = "1.0.1" as const;
 export const STORED_WORKFLOW_RUN_VERSION = "1.0.1" as const;
 
-const storedAggregatedStatSchema = aggregatedStatSchema.merge(
-	z.object({
-		workflowKey: z.string(),
-	}),
-);
-const storedWorkflowStatSchema = workflowStatSchema.merge(
-	z.object({
-		workflowKey: z.string(),
-	}),
-);
+const storedAggregatedStatSchema = aggregatedStatSchema;
+const storedWorkflowStatSchema = workflowStatSchema;
 
 export const aggregatedWorkflowStatsMongoStorage = createMongoStorage({
 	collectionName: AGGREGATED_STAT_COLLECTION_NAME,

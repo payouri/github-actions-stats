@@ -8,6 +8,7 @@ import {
 	createTRPCReact,
 	httpBatchLink,
 } from "@trpc/react-query";
+import SuperJSON from "superjson";
 
 export const trpcReactClient = createTRPCReact<WorkflowRouter>().createClient({
 	links: [
@@ -16,6 +17,7 @@ export const trpcReactClient = createTRPCReact<WorkflowRouter>().createClient({
 				WORKFLOW_MOUNT_POINT,
 				"https://ghstats.pailloux-youri.xyz",
 			).toString(),
+			transformer: SuperJSON,
 		}),
 	],
 });

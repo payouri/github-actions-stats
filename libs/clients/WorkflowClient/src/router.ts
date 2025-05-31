@@ -6,25 +6,46 @@ import {
 } from "./procedures/workflow.procedures.js";
 import type { MongoStorage } from "@github-actions-stats/storage";
 import type {
+	aggregatedStatSchema,
 	storedWorkflow,
 	storedWorkflowRun,
+	workflowStatSchema,
 } from "@github-actions-stats/workflow-entity";
+import SuperJSON from "superjson";
 
 export type { GetWorkflowsProcedureInput, GetWorkflowsProcedureResponse };
 
-export const buildWorkflowRouter = <Builder extends TRPCBuilder>(dependencies: {
+export const buildWorkflowRouter = <
+	Context extends object,
+	Meta extends object,
+	Builder extends TRPCBuilder<Context, Meta>,
+>(dependencies: {
 	trpc: Builder;
 	storedWorkflowMongoStorage: MongoStorage<typeof storedWorkflow>;
 	storedWorkflowRunMongoStorage: MongoStorage<typeof storedWorkflowRun>;
+	workflowStatsMongoStorage: MongoStorage<typeof workflowStatSchema>;
+	aggregatedWorkflowStatsMongoStorage: MongoStorage<
+		typeof aggregatedStatSchema
+	>;
 }) => {
-	const { trpc, storedWorkflowMongoStorage, storedWorkflowRunMongoStorage } =
-		dependencies;
-	const trpcInstance = trpc.create({});
-	const router = trpcInstance.router;
-	const procedures = buildWorkflowsProcedures({
-		trpcInstance,
+	const {
+		trpc,
 		storedWorkflowMongoStorage,
 		storedWorkflowRunMongoStorage,
+		workflowStatsMongoStorage,
+		aggregatedWorkflowStatsMongoStorage,
+	} = dependencies;
+	const trpcInstance = trpc.create({
+		transformer: SuperJSON,
+	});
+	const router = trpcInstance.router;
+	const procedures = buildWorkflowsProcedures({
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		trpcInstance: trpcInstance as any,
+		storedWorkflowMongoStorage,
+		storedWorkflowRunMongoStorage,
+		aggregatedWorkflowStatsMongoStorage,
+		workflowStatsMongoStorage,
 	});
 
 	return {

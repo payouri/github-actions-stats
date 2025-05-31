@@ -1,6 +1,4 @@
-import type { initTRPC } from "@trpc/server";
-
-export type TRPCBuilder = typeof initTRPC;
+export type { TRPCBuilder } from "@trpc/server";
 
 export type ProcedureError<
 	Error extends {

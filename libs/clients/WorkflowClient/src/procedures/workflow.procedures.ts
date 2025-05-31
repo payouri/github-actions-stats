@@ -2,15 +2,20 @@ import type {
 	EntityWithKey,
 	MongoStorage,
 } from "@github-actions-stats/storage";
-import type {
-	storedWorkflow,
-	StoredWorkflowWithKey,
-	StoredWorkflowDocument,
-	storedWorkflowRun,
-	StoredWorkflowRun,
+import {
+	aggregatePeriodSchema,
+	type aggregatedStatSchema,
+	type AggregatedWorkflowStat,
+	type storedWorkflow,
+	type StoredWorkflowDocument,
+	type storedWorkflowRun,
+	type StoredWorkflowRun,
+	type workflowStatSchema,
 } from "@github-actions-stats/workflow-entity";
+import dayjs from "dayjs";
 import { z } from "zod";
 import type { AsyncProcedureResponse, TRPCBuilder } from "../types.js";
+import { buildAggregateStatsOnPeriodAndSave } from "./helpers/aggregateStatsOnPeriod.js";
 
 export const getWorkflowsProcedureInputSchema = z.object({
 	start: z.number(),
@@ -21,10 +26,26 @@ export const getWorkflowRunsProcedureInputSchema = z.object({
 	start: z.number(),
 	count: z.number(),
 });
+export const getAggregatedWorkflowStatsProcedureInputSchema = z.object({
+	workflowKey: z.string(),
+	period: aggregatePeriodSchema,
+	from: z.union([z.date(), z.string()]).transform((v): Date => {
+		if (typeof v === "string") {
+			const d = dayjs(v);
+			if (d.isValid()) {
+				return d.toDate();
+			}
+			throw new Error("Invalid date");
+		}
+		return v;
+	}),
+});
 
-export type StoredWorkflowMongoStorage = MongoStorage<typeof storedWorkflow>;
-export type StoredWorkflowRunsMongoStorage = MongoStorage<
-	typeof storedWorkflowRun
+type StoredWorkflowMongoStorage = MongoStorage<typeof storedWorkflow>;
+type StoredWorkflowRunsMongoStorage = MongoStorage<typeof storedWorkflowRun>;
+type WorkflowRunStatsMongoStorage = MongoStorage<typeof workflowStatSchema>;
+type AggregatedWorkflowStatsMongoStorage = MongoStorage<
+	typeof aggregatedStatSchema
 >;
 export type GetWorkflowsProcedureInput = z.infer<
 	typeof getWorkflowsProcedureInputSchema
@@ -97,15 +118,72 @@ function buildGetWorkflowRunsProcedure(dependencies: {
 	};
 }
 
-export function buildWorkflowsProcedures(dependencies: {
-	trpcInstance: ReturnType<TRPCBuilder["create"]>;
+type GetAggregatedWorkflowStatsProcedureInput = z.infer<
+	typeof getAggregatedWorkflowStatsProcedureInputSchema
+>;
+type GetAggregatedWorkflowStatsProcedureResponse = AsyncProcedureResponse<
+	AggregatedWorkflowStat[],
+	{
+		code: "failed_to_get_aggregated_workflow_stats";
+		message: string;
+	}
+>;
+function buildGetAggregatedWorkflowStatsProcedure(dependencies: {
+	aggregatedWorkflowStatsMongoStorage: AggregatedWorkflowStatsMongoStorage;
+	workflowRunStatsMongoStorage: WorkflowRunStatsMongoStorage;
+}) {
+	const { aggregatedWorkflowStatsMongoStorage, workflowRunStatsMongoStorage } =
+		dependencies;
+	const aggregateStatsOnPeriod = buildAggregateStatsOnPeriodAndSave({
+		aggregatedWorkflowStatsMongoStorage,
+		workflowRunStatsMongoStorage,
+	});
+
+	return async function getAggregatedWorkflowStatsProcedure(params: {
+		input: GetAggregatedWorkflowStatsProcedureInput;
+	}): GetAggregatedWorkflowStatsProcedureResponse {
+		const {
+			input: { workflowKey, period, from },
+		} = params;
+
+		const result = await aggregateStatsOnPeriod({
+			workflowKey,
+			period,
+			from,
+		});
+
+		if (result.hasFailed) {
+			return {
+				hasFailed: true,
+				code: "failed_to_get_aggregated_workflow_stats",
+				message: result.error?.message,
+			};
+		}
+
+		return {
+			hasFailed: false,
+			data: result.data,
+		};
+	};
+}
+
+export function buildWorkflowsProcedures<
+	Context extends object,
+	Meta extends object,
+	Instance extends ReturnType<TRPCBuilder<Context, Meta>["create"]>,
+>(dependencies: {
+	trpcInstance: Instance;
 	storedWorkflowMongoStorage: StoredWorkflowMongoStorage;
 	storedWorkflowRunMongoStorage: StoredWorkflowRunsMongoStorage;
+	workflowStatsMongoStorage: WorkflowRunStatsMongoStorage;
+	aggregatedWorkflowStatsMongoStorage: AggregatedWorkflowStatsMongoStorage;
 }) {
 	const {
 		trpcInstance,
 		storedWorkflowMongoStorage,
 		storedWorkflowRunMongoStorage,
+		workflowStatsMongoStorage,
+		aggregatedWorkflowStatsMongoStorage,
 	} = dependencies;
 	const getWorkflowsProcedure = buildGetWorkflowsProcedure({
 		storedWorkflowMongoStorage,
@@ -113,6 +191,11 @@ export function buildWorkflowsProcedures(dependencies: {
 	const getWorkflowRunsProcedure = buildGetWorkflowRunsProcedure({
 		storedWorkflowRunMongoStorage,
 	});
+	const getAggregatedWorkflowStatsProcedure =
+		buildGetAggregatedWorkflowStatsProcedure({
+			aggregatedWorkflowStatsMongoStorage,
+			workflowRunStatsMongoStorage: workflowStatsMongoStorage,
+		});
 
 	return {
 		getWorkflows: trpcInstance.procedure
@@ -121,5 +204,8 @@ export function buildWorkflowsProcedures(dependencies: {
 		getWorkflowRuns: trpcInstance.procedure
 			.input(getWorkflowRunsProcedureInputSchema)
 			.query(getWorkflowRunsProcedure),
+		getAggregatedWorkflowStats: trpcInstance.procedure
+			.input(getAggregatedWorkflowStatsProcedureInputSchema)
+			.query(getAggregatedWorkflowStatsProcedure),
 	};
 }

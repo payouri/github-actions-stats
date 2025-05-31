@@ -21,6 +21,9 @@
     "mongoose": "*"
   },
   "dependencies": {
+    "dayjs": "*",
+    "@github-actions-stats/common-entity": "0.0.1",
+    "@github-actions-stats/types-utils": "0.0.1",
     "@github-actions-stats/workflow-client": "0.0.1",
     "@github-actions-stats/workflow-entity": "0.0.1",
     "@radix-ui/react-icons": "^1.3.2",
