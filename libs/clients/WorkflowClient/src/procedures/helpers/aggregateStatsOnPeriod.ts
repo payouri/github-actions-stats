@@ -208,9 +208,13 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 					// biome-ignore lint/complexity/noForEach: <explanation>
 					jobs.forEach((job) => {
 						const jobName = job.name;
-						aggregated.totalDurationMsByJobName[jobName] =
-							(aggregated.totalDurationMsByJobName[jobName] ?? 0) +
-							jobDurationMap[job.name];
+						if (!aggregated.totalDurationMsByJobName[jobName]) {
+							aggregated.totalDurationMsByJobName[jobName] = 0;
+						}
+						if (typeof jobDurationMap[job.name] === "number") {
+							aggregated.totalDurationMsByJobName[jobName] +=
+								jobDurationMap[job.name];
+						}
 						if (!aggregated.aggregatedJobsStats[jobName]) {
 							aggregated.aggregatedJobsStats[jobName] = {
 								name: jobName,
@@ -262,23 +266,27 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 						for (const step of job.steps) {
 							const { name: stepName, durationMs: stepDuration, status } = step;
 							const computedStepName = `${jobName}>${stepName}`;
-							aggregated.totalDurationMsByStepsName[computedStepName] =
-								(aggregated.totalDurationMsByStepsName[computedStepName] ?? 0) +
-								stepDuration;
 							if (
-								!aggregated.aggregatedJobsStats[computedStepName]
-									.aggregatedSteps[stepName]
+								!aggregated.aggregatedJobsStats[jobName].aggregatedSteps[
+									stepName
+								]
 							) {
-								aggregated.aggregatedJobsStats[
-									computedStepName
-								].aggregatedSteps[stepName] = {
+								aggregated.aggregatedJobsStats[jobName].aggregatedSteps[
+									stepName
+								] = {
 									count: 0,
 									durationMs: 0,
 								};
 							}
-							aggregated.aggregatedJobsStats[computedStepName].count += 1;
-							aggregated.aggregatedJobsStats[computedStepName].durationMs +=
-								stepDuration;
+							aggregated.totalDurationMsByStepsName[computedStepName] =
+								(aggregated.totalDurationMsByStepsName?.[computedStepName] ??
+									0) + stepDuration;
+							aggregated.aggregatedJobsStats[jobName].aggregatedSteps[
+								stepName
+							].count += 1;
+							aggregated.aggregatedJobsStats[jobName].aggregatedSteps[
+								stepName
+							].durationMs += stepDuration;
 						}
 					});
 				}
