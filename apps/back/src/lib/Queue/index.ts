@@ -74,9 +74,16 @@ export function createQueue<T extends DefaultJobsMap>(
 	});
 	queueEvents.on("stalled", async (job) => {
 		const jobData = await queue.getJob(job.jobId);
-		logger.warn(`[${name}] Job ${job.jobId} is stalled`, {
-			jobName: jobData.name,
-		});
+
+		logger.warn(
+			`[${name}] Job ${job.jobId} is stalled`,
+			jobData
+				? {
+						jobName: jobData.name,
+						stalledTime: jobData.stalledCounter,
+					}
+				: {},
+		);
 	});
 	queueEvents.on("duplicated", async (job) => {
 		const jobData = await queue.getJob(job.jobId);
