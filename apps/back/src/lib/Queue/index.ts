@@ -25,6 +25,7 @@ import type {
 	Queue,
 	Worker,
 } from "./types.js";
+import { MoveToWaitError } from "../../errors/MoveToWaitError.js";
 
 const PREFIX = "github-actions-stats-queues";
 const INIT_TIMEOUT = 10_000;
@@ -281,6 +282,13 @@ export function createWorker<Job extends DefaultJobsMap>(
 				);
 				return result;
 			} catch (error) {
+				if (error instanceof MoveToWaitError) {
+					logger.debug(
+						`[${queue}][${worker.id}][${job.id}] Job will be moved to wait`,
+					);
+					await job.moveToWait(error.jobToken);
+					return;
+				}
 				if (error instanceof ReprocessLaterError && job.token) {
 					logger.debug(
 						`[${queue}][${worker.id}][${
