@@ -368,7 +368,8 @@ export function createWorker<Job extends DefaultJobsMap>(
 			jobId: job.id ?? "unknown",
 		});
 	});
-	worker.on("failed", async (job) => {
+	worker.on("failed", async (job, error) => {
+		logger.error(`[${name}:${worker.id}] Worker failed`, error);
 		if (!job) {
 			logger.error(`[${name}:${worker.id}] Failed job is undefined`);
 			return;
