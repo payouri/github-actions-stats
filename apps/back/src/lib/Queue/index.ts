@@ -4,6 +4,7 @@ import {
 	DelayedError,
 	JobScheduler,
 	UnrecoverableError,
+	QueueEvents,
 } from "bullmq";
 import { BullMQOtel } from "bullmq-otel";
 import dayjs from "dayjs";
@@ -64,6 +65,25 @@ export function createQueue<T extends DefaultJobsMap>(
 			},
 		},
 	});
+	const queueEvents = new QueueEvents(name, {
+		connection: {
+			lazyConnect: true,
+			url: redisUrl,
+		},
+		prefix: PREFIX,
+	});
+	queueEvents.on("stalled", async (job) => {
+		const jobData = await queue.getJob(job.jobId);
+		logger.warn(`[${name}] Job ${job.jobId} is stalled`, {
+			jobName: jobData.name,
+		});
+	});
+	queueEvents.on("duplicated", async (job) => {
+		const jobData = await queue.getJob(job.jobId);
+		logger.warn(`[${name}] Job ${job.jobId} is duplicated`, {
+			jobName: jobData.name,
+		});
+	});
 
 	async function addJob(
 		...data: Parameters<Queue<T>["addJob"]>
@@ -109,10 +129,10 @@ export function createQueue<T extends DefaultJobsMap>(
 
 	async function init(): ReturnType<Queue<T>["init"]> {
 		const client = await queue.client;
+		const queueEventsClient = await queueEvents.client;
 
 		if (client.status === "ready") {
 			logger.debug(`[${name}] Queue is ready`);
-			await initUniqueJobs(queue);
 			return {
 				hasFailed: false,
 			};
@@ -121,7 +141,14 @@ export function createQueue<T extends DefaultJobsMap>(
 		logger.debug(`[${name}] Connecting to queue`);
 		const start = Date.now();
 		client.connect();
-		while (["connecting", "reconnecting", "connect"].includes(client.status)) {
+		queueEventsClient.connect();
+
+		while (
+			["connecting", "reconnecting", "connect"].includes(client.status) ||
+			["connecting", "reconnecting", "connect"].includes(
+				queueEventsClient.status,
+			)
+		) {
 			logger.debug(`[${name}] Waiting for queue to be ready`);
 			await new Promise((resolve) => {
 				setTimeout(resolve, 100);
@@ -139,7 +166,10 @@ export function createQueue<T extends DefaultJobsMap>(
 			}
 		}
 
-		if (client.status === "close" || client.status === "end") {
+		if (
+			["close", "end"].includes(client.status) ||
+			["close", "end"].includes(queueEventsClient.status)
+		) {
 			return {
 				hasFailed: true,
 				error: {
@@ -171,14 +201,15 @@ export function createQueue<T extends DefaultJobsMap>(
 		try {
 			if (queue.closing) {
 				logger.debug(`[${name}] Queue is already closing`);
-				await queue.closing;
+				await Promise.all([queue.closing, queueEvents.closing]);
+
 				return {
 					hasFailed: false,
 				};
 			}
 
 			logger.debug(`[${name}] Closing queue`);
-			await queue.close();
+			await Promise.all([queue.close(), queueEvents.close()]);
 			logger.debug(`[${name}] Queue has been closed`);
 			return {
 				hasFailed: false,
