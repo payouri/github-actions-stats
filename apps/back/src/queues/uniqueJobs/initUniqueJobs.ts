@@ -3,27 +3,33 @@ import type { MethodResult } from "../../types/MethodResult.js";
 import { PopJobsRepeatedly } from "./popJobsRepeatedly.js";
 
 export const UniqueJobsMap = {
-  [PopJobsRepeatedly.name]: PopJobsRepeatedly,
+	[PopJobsRepeatedly.name]: PopJobsRepeatedly,
 } as const;
 
 export type UniqueJobsMapType = typeof UniqueJobsMap;
 
 export async function initUniqueJobs(
-  queue: BullQueue
+	queue: BullQueue,
 ): Promise<MethodResult<void, string>> {
-  for (const [key, job] of Object.entries(UniqueJobsMap)) {
-    if (job.type === "scheduled") {
-      const { name, repeat, ...jobOpts } = job;
-      await queue.upsertJobScheduler(queue.name, repeat, {
-        name,
-        opts: jobOpts,
-        data: {},
-      });
-      // if (res.token) console.log(await res.moveToWait(res.token));
-    }
-  }
+	await Promise.all(
+		(await queue.getJobSchedulers()).map(async ({ id }) => {
+			if (!id) return;
+			await queue.removeJobScheduler(id);
+		}),
+	);
+	for (const [key, job] of Object.entries(UniqueJobsMap)) {
+		if (job.type === "scheduled") {
+			const { name, repeat, ...jobOpts } = job;
+			await queue.upsertJobScheduler(queue.name, repeat, {
+				name,
+				opts: jobOpts,
+				data: {},
+			});
+			// if (res.token) console.log(await res.moveToWait(res.token));
+		}
+	}
 
-  return {
-    hasFailed: false,
-  };
+	return {
+		hasFailed: false,
+	};
 }
