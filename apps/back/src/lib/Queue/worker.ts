@@ -1,27 +1,22 @@
-import {
-	DelayedError,
-	JobScheduler,
-	UnrecoverableError,
-	Worker as BullWorker,
-} from "bullmq";
-import type { CreateWorkerParams, DefaultJobsMap, Worker } from "./types.js";
-import { BullMQOtel } from "bullmq-otel";
-import { config } from "../../config/config.js";
-import {
-	DEFAULT_QUEUE_INIT_TIMEOUT,
-	DEFAULT_QUEUE_PREFIX,
-} from "./constants.js";
-import logger from "../Logger/logger.js";
 import { formatMs } from "@github-actions-stats/common-utils";
+import { Worker as BullWorker, DelayedError, UnrecoverableError } from "bullmq";
+import { BullMQOtel } from "bullmq-otel";
 import dayjs from "dayjs";
-import { AbortError } from "libs/clients/WorkflowClient/src/procedures/helpers/errors/AbortError.js";
+import { config } from "../../config/config.js";
+import { AbortError } from "../../errors/AbortError.js";
 import { MoveToWaitError } from "../../errors/MoveToWaitError.js";
 import { ReprocessLaterError } from "../../errors/ReprocessLaterError.js";
 import {
 	UniqueJobsMap,
 	type UniqueJobsMapType,
 } from "../../queues/uniqueJobs/initUniqueJobs.js";
+import logger from "../Logger/logger.js";
+import {
+	DEFAULT_QUEUE_INIT_TIMEOUT,
+	DEFAULT_QUEUE_PREFIX,
+} from "./constants.js";
 import { createQueue } from "./index.js";
+import type { CreateWorkerParams, DefaultJobsMap, Worker } from "./types.js";
 
 export function createWorker<Job extends DefaultJobsMap>(
 	params: CreateWorkerParams<Job>,
