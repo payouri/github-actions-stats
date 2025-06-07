@@ -9,6 +9,7 @@ import type {
 import type { JobsMap } from "../methods/types.js";
 import type { WorkflowQueueJobData } from "../types.js";
 import logger from "../../lib/Logger/logger.js";
+import { JobTokenMissingError } from "../../errors/JobTokenMissingError.js";
 
 type Steps = Readonly<{
 	1: {
@@ -22,12 +23,22 @@ const JOB_ALREADY_PROCESSING_DELAY_MS = 1000;
 
 const firstStep = {
 	name: "get-next-job",
-	async method() {
+	async method(...args: Parameters<JobProcessMethod<DefaultJobDefinition>>) {
+		const [jobData] = args;
 		const pendingJob = await DB.queries.getNextQueueJob({ user: "default" });
 		if (!pendingJob) {
+			if (!jobData.token) {
+				throw new JobTokenMissingError({
+					message: "No job token found",
+					jobName: jobData.name,
+					methodName: POP_JOBS_REPEATEDLY_JOB_NAME,
+				});
+			}
+
 			throw new ReprocessLaterError({
 				message: "No pending jobs found",
 				delayMs: NO_JOB_DEFAULT_DELAY_MS,
+				jobToken: jobData.token,
 			});
 		}
 		return pendingJob;
@@ -72,9 +83,17 @@ export const PopJobsRepeatedly: {
 		);
 		if (!pendingJob) {
 			logger.debug(`[${POP_JOBS_REPEATEDLY_JOB_NAME}]:No pending jobs found`);
+			if (!jobData.token) {
+				throw new JobTokenMissingError({
+					message: "No job token found",
+					jobName: jobData.name,
+					methodName: POP_JOBS_REPEATEDLY_JOB_NAME,
+				});
+			}
 			throw new ReprocessLaterError({
 				message: "No pending jobs found",
 				delayMs: NO_JOB_DEFAULT_DELAY_MS,
+				jobToken: jobData.token,
 			});
 		}
 		console.log(
@@ -95,9 +114,17 @@ export const PopJobsRepeatedly: {
 			logger.debug(
 				`[${POP_JOBS_REPEATEDLY_JOB_NAME}]:Job ${pendingJob.key} is already existing`,
 			);
+			if (!jobData.token) {
+				throw new JobTokenMissingError({
+					message: "No job token found",
+					jobName: jobData.name,
+					methodName: POP_JOBS_REPEATEDLY_JOB_NAME,
+				});
+			}
 			throw new ReprocessLaterError({
 				message: "No pending jobs found",
 				delayMs: NO_JOB_DEFAULT_DELAY_MS,
+				jobToken: jobData.token,
 			});
 		}
 		const addJobResult = await processWorkflowJobQueue.addJob({

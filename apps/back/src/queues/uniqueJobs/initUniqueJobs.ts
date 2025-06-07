@@ -13,13 +13,6 @@ export async function initUniqueJobs(
 	queue: BullQueue,
 ): Promise<MethodResult<void, string>> {
 	const schedulers = await queue.getJobSchedulers();
-	console.log(
-		schedulers.length,
-		schedulers.map(({ id, key }) => ({
-			id,
-			key,
-		})),
-	);
 	await Promise.all(
 		schedulers.map(async ({ id, key }) => {
 			if (!id && !key) return;

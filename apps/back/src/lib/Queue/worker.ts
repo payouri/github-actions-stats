@@ -86,7 +86,7 @@ export function createWorker<Job extends DefaultJobsMap>(
 					await job.moveToWait(error.jobToken);
 					return;
 				}
-				if (error instanceof ReprocessLaterError && job.token) {
+				if (error instanceof ReprocessLaterError) {
 					logger.debug(
 						`[${queue}][${worker.id}][${
 							job.id
@@ -95,6 +95,7 @@ export function createWorker<Job extends DefaultJobsMap>(
 						})}`,
 					);
 					if (job.name in UniqueJobsMap) {
+						await job.remove();
 						const { name, repeat, ...jobOpts } =
 							UniqueJobsMap[job.name as keyof UniqueJobsMapType];
 
@@ -111,7 +112,10 @@ export function createWorker<Job extends DefaultJobsMap>(
 							},
 						);
 					}
-					throw new DelayedError(error.message);
+					return {
+						hasFailed: false,
+					};
+					// throw new DelayedError(error.message);
 				}
 				if (
 					error instanceof AbortError &&
@@ -221,6 +225,9 @@ export function createWorker<Job extends DefaultJobsMap>(
 				},
 			};
 		} finally {
+			await queueInstance.queue.obliterate({
+				force: true,
+			});
 			await queueInstance.close();
 		}
 	}
