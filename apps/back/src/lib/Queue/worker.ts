@@ -98,7 +98,7 @@ export function createWorker<Job extends DefaultJobsMap>(
 						const { name, repeat, ...jobOpts } =
 							UniqueJobsMap[job.name as keyof UniqueJobsMapType];
 
-						await queueInstance.upsertJobScheduler(
+						await queueInstance.queue.upsertJobScheduler(
 							name,
 							{
 								...UniqueJobsMap[job.name as keyof UniqueJobsMapType].repeat,

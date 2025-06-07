@@ -91,7 +91,7 @@ export interface Queue<Job extends DefaultJobsMap> {
 	generateJobId: GenerateJobIdMethod<Job>;
 	init: () => Promise<MethodResult<void, "failed_to_init_queue">>;
 	close: () => Promise<MethodResult<void, "failed_to_close_queue">>;
-	upsertJobScheduler: BullQueue["upsertJobScheduler"];
+	queue: BullQueue;
 }
 
 export interface CreateWorkerParams<
