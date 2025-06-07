@@ -40,14 +40,6 @@ export function createWorker<Job extends DefaultJobsMap>(
 	const abortSignal = abortSignalParam
 		? AbortSignal.any([abortSignalParam, abortController.signal])
 		: abortController.signal;
-	const jobScheduler = new JobScheduler(queue, {
-		connection: {
-			lazyConnect: true,
-			url: redisUrl,
-		},
-		telemetry: new BullMQOtel("stats-worker", config.OTEL.serviceVersion),
-		prefix: queuePrefix,
-	});
 
 	const queueInstance = createQueue<Job>({
 		name: queue,
@@ -111,16 +103,17 @@ export function createWorker<Job extends DefaultJobsMap>(
 						const { name, repeat, ...jobOpts } =
 							UniqueJobsMap[job.name as keyof UniqueJobsMapType];
 
-						await jobScheduler.upsertJobScheduler(
-							queue,
+						await queueInstance.upsertJobScheduler(
+							name,
 							{
 								...UniqueJobsMap[job.name as keyof UniqueJobsMapType].repeat,
 								startDate: dayjs().add(error.delayMs, "milliseconds").toDate(),
 							},
-							name,
-							job.data,
-							jobOpts,
-							{ override: true, producerId: `${queue}:${worker.id}` },
+							{
+								data: job.data,
+								opts: jobOpts,
+								name,
+							},
 						);
 					}
 					throw new DelayedError(error.message);

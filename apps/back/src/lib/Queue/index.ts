@@ -233,5 +233,6 @@ export function createQueue<T extends DefaultJobsMap>(
 		isExistingJob,
 		init,
 		close,
+		upsertJobScheduler: queue.upsertJobScheduler,
 	};
 }

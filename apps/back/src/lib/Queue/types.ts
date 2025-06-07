@@ -1,5 +1,5 @@
 import type { MethodResult } from "../../types/MethodResult.js";
-import type { Job as BullJob } from "bullmq";
+import type { Job as BullJob, Queue as BullQueue } from "bullmq";
 
 export interface EndedJob<Job extends DefaultJobDefinition> {
 	jobId: string;
@@ -91,6 +91,7 @@ export interface Queue<Job extends DefaultJobsMap> {
 	generateJobId: GenerateJobIdMethod<Job>;
 	init: () => Promise<MethodResult<void, "failed_to_init_queue">>;
 	close: () => Promise<MethodResult<void, "failed_to_close_queue">>;
+	upsertJobScheduler: BullQueue["upsertJobScheduler"];
 }
 
 export interface CreateWorkerParams<
