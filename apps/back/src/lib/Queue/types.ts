@@ -54,7 +54,7 @@ export type JobMethodResult<JobDefinition extends DefaultJobDefinition> =
 
 export type JobProcessMethod<JobDefinition extends DefaultJobDefinition> = (
 	job: DefaultJob<JobDefinition>,
-	options: { abortSignal?: AbortSignal; queueInstance: Queue<DefaultJobsMap> },
+	options: { abortSignal: AbortSignal; queueInstance: Queue<DefaultJobsMap> },
 ) => JobMethodResult<JobDefinition> | Promise<JobMethodResult<JobDefinition>>;
 
 export type MethodMap<T extends DefaultJobsMap> = {

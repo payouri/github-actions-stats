@@ -21,19 +21,19 @@ export async function initUniqueJobs(
 		})),
 	);
 	await Promise.all(
-		schedulers.map(async ({ id }) => {
-			if (!id) return;
-			await queue.removeJobScheduler(id);
+		schedulers.map(async ({ id, key }) => {
+			if (!id && !key) return;
+			await queue.removeJobScheduler(id || key);
 		}),
 	);
 	logger.info(`[${queue.name}]: Removed ${schedulers.length} schedulers`);
-	for (const [key, job] of Object.entries(UniqueJobsMap)) {
+	for (const job of Object.values(UniqueJobsMap)) {
 		if (job.type === "scheduled") {
 			const { name, repeat, ...jobOpts } = job;
-			await queue.upsertJobScheduler(queue.name, repeat, {
+			await queue.upsertJobScheduler(name, repeat, {
 				name,
 				opts: jobOpts,
-				data: {},
+				data: job,
 			});
 			// if (res.token) console.log(await res.moveToWait(res.token));
 		}

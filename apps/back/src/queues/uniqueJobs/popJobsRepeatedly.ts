@@ -45,6 +45,7 @@ const MAX_JOB_STEPS = Object.keys(JOB_STEPS).length;
 
 export const PopJobsRepeatedly: {
 	repeat: RepeatOptions;
+	data?: Record<string, unknown>;
 } & JobSchedulerTemplateOptions & {
 		name: typeof POP_JOBS_REPEATEDLY_JOB_NAME;
 		type: "scheduled";
