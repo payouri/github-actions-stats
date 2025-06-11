@@ -1,9 +1,9 @@
 import type { StoredWorkflowWithKey } from "@github-actions-stats/workflow-entity";
 import { Avatar, Flex, Grid, Heading, Spinner } from "@radix-ui/themes";
 import { Suspense, type FC } from "react";
-import { useNavigate, useParams, useRoutes } from "react-router";
+import { useMatches, useNavigate, useParams, useRoutes } from "react-router";
 import { WorkflowSidebar } from "../components/WorkflowSidebar/WorkflowSidebar.component";
-import { useHomePageData } from "./Home.loader";
+import { useHomePageData, useRouteHomePageDataLoader } from "./Home.loader";
 import { HomeRouter } from "./Home.router";
 
 const PageHeader: FC<{
@@ -28,7 +28,7 @@ const PageHeader: FC<{
 };
 
 export const HomePage: FC = () => {
-	const { workflows } = useHomePageData();
+	const workflows = useRouteHomePageDataLoader();
 	const history = useNavigate();
 	const routes = useRoutes(HomeRouter);
 	const routeParams = useParams<{ workflowKey: string }>();
@@ -37,10 +37,6 @@ export const HomePage: FC = () => {
 		history({
 			pathname: `/${encodeURIComponent(workflowKey)}`,
 		});
-	}
-
-	if (workflows.hasFailed) {
-		return <div>Failed to load data</div>;
 	}
 
 	return (
@@ -59,7 +55,7 @@ export const HomePage: FC = () => {
 		>
 			<PageHeader title="Hello World" />
 			<WorkflowSidebar
-				workflows={workflows.data as unknown as StoredWorkflowWithKey[]}
+				workflows={workflows as unknown as StoredWorkflowWithKey[]}
 				onNewWorkflowAdded={undefined}
 				selectedWorkflow={
 					routeParams.workflowKey

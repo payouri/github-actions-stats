@@ -6,3 +6,9 @@ export * from "./schemas/StoredWorkflowRun.schema.js";
 export * from "./schemas/WorkflowData.schema.js";
 export * from "./schemas/WorkflowStat.schema.js";
 export type * from "./types.js";
+export {
+	generateWorkflowKey,
+	generateWorkflowRunKey,
+	getWorkflowParamsFromKey,
+} from "./helpers/generateWorkflowKey.js";
+export { createEmptyWorkflowData } from "./helpers/createEmptyWorkflowData.js";

@@ -6,7 +6,7 @@ import { HomeRouter } from "./pages/Home.router";
 export const AppRoutes = createBrowserRouter([
 	{
 		path: "/",
-		// id: "root",
+		id: "root",
 		hydrateFallbackElement: <div>Loading...</div>,
 		Component: HomePage,
 		async loader({ params, context, request }) {

@@ -1,38 +1,24 @@
-import {
-	Queue as BullQueue,
-	Worker as BullWorker,
-	DelayedError,
-	JobScheduler,
-	UnrecoverableError,
-} from "bullmq";
+import { Queue as BullQueue, QueueEvents } from "bullmq";
 import { BullMQOtel } from "bullmq-otel";
-import dayjs from "dayjs";
 import { config } from "../../config/config.js";
-import { AbortError } from "../../errors/AbortError.js";
-import { ReprocessLaterError } from "../../errors/ReprocessLaterError.js";
-import { formatMs } from "../../helpers/format/formatMs.js";
-import {
-	initUniqueJobs,
-	UniqueJobsMap,
-	type UniqueJobsMapType,
-} from "../../queues/uniqueJobs/initUniqueJobs.js";
 import logger from "../Logger/logger.js";
-import type {
-	CreateQueueParams,
-	CreateWorkerParams,
-	DefaultJob,
-	DefaultJobsMap,
-	Queue,
-	Worker,
-} from "./types.js";
+import {
+	DEFAULT_QUEUE_INIT_TIMEOUT,
+	DEFAULT_QUEUE_PREFIX,
+} from "./constants.js";
+import type { CreateQueueParams, DefaultJobsMap, Queue } from "./types.js";
 
-const PREFIX = "github-actions-stats-queues";
-const INIT_TIMEOUT = 10_000;
+export { createWorker } from "./worker.js";
 
 export function createQueue<T extends DefaultJobsMap>(
 	params: CreateQueueParams,
 ): Queue<T> {
-	const { name, redisUrl, abortSignal: abortSignalParam } = params;
+	const {
+		name,
+		redisUrl,
+		abortSignal: abortSignalParam,
+		queuePrefix = DEFAULT_QUEUE_PREFIX,
+	} = params;
 
 	const abortController = new AbortController();
 	const abortSignal = abortSignalParam
@@ -44,7 +30,7 @@ export function createQueue<T extends DefaultJobsMap>(
 			lazyConnect: true,
 			url: redisUrl,
 		},
-		prefix: PREFIX,
+		prefix: queuePrefix,
 		streams: {
 			events: {
 				maxLen: 5000,
@@ -62,6 +48,32 @@ export function createQueue<T extends DefaultJobsMap>(
 				delay: 1000,
 			},
 		},
+	});
+	const queueEvents = new QueueEvents(name, {
+		connection: {
+			lazyConnect: true,
+			url: redisUrl,
+		},
+		prefix: queuePrefix,
+	});
+	queueEvents.on("stalled", async (job) => {
+		const jobData = await queue.getJob(job.jobId);
+
+		logger.warn(
+			`[${name}] Job ${job.jobId} is stalled`,
+			jobData
+				? {
+						jobName: jobData.name,
+						stalledTime: jobData.stalledCounter,
+					}
+				: {},
+		);
+	});
+	queueEvents.on("duplicated", async (job) => {
+		const jobData = await queue.getJob(job.jobId);
+		logger.warn(`[${name}] Job ${job.jobId} is duplicated`, {
+			jobName: jobData.name,
+		});
 	});
 
 	async function addJob(
@@ -108,10 +120,10 @@ export function createQueue<T extends DefaultJobsMap>(
 
 	async function init(): ReturnType<Queue<T>["init"]> {
 		const client = await queue.client;
+		const queueEventsClient = await queueEvents.client;
 
 		if (client.status === "ready") {
 			logger.debug(`[${name}] Queue is ready`);
-			await initUniqueJobs(queue);
 			return {
 				hasFailed: false,
 			};
@@ -120,12 +132,19 @@ export function createQueue<T extends DefaultJobsMap>(
 		logger.debug(`[${name}] Connecting to queue`);
 		const start = Date.now();
 		client.connect();
-		while (["connecting", "reconnecting", "connect"].includes(client.status)) {
+		queueEventsClient.connect();
+
+		while (
+			["connecting", "reconnecting", "connect"].includes(client.status) ||
+			["connecting", "reconnecting", "connect"].includes(
+				queueEventsClient.status,
+			)
+		) {
 			logger.debug(`[${name}] Waiting for queue to be ready`);
 			await new Promise((resolve) => {
 				setTimeout(resolve, 100);
 			});
-			if (Date.now() - start > INIT_TIMEOUT) {
+			if (Date.now() - start > DEFAULT_QUEUE_INIT_TIMEOUT) {
 				return {
 					hasFailed: true,
 					error: {
@@ -138,7 +157,10 @@ export function createQueue<T extends DefaultJobsMap>(
 			}
 		}
 
-		if (client.status === "close" || client.status === "end") {
+		if (
+			["close", "end"].includes(client.status) ||
+			["close", "end"].includes(queueEventsClient.status)
+		) {
 			return {
 				hasFailed: true,
 				error: {
@@ -170,14 +192,15 @@ export function createQueue<T extends DefaultJobsMap>(
 		try {
 			if (queue.closing) {
 				logger.debug(`[${name}] Queue is already closing`);
-				await queue.closing;
+				await Promise.all([queue.closing, queueEvents.closing]);
+
 				return {
 					hasFailed: false,
 				};
 			}
 
 			logger.debug(`[${name}] Closing queue`);
-			await queue.close();
+			await Promise.all([queue.close(), queueEvents.close()]);
 			logger.debug(`[${name}] Queue has been closed`);
 			return {
 				hasFailed: false,
@@ -210,287 +233,8 @@ export function createQueue<T extends DefaultJobsMap>(
 		isExistingJob,
 		init,
 		close,
-	};
-}
-
-export function createWorker<Job extends DefaultJobsMap>(
-	params: CreateWorkerParams<Job>,
-): Worker<Job> {
-	const {
-		queue,
-		name,
-		concurrency,
-		redisUrl,
-		abortSignal: abortSignalParam,
-		onJobEnd,
-		processJob,
-	} = params;
-	const abortController = new AbortController();
-	const abortSignal = abortSignalParam
-		? AbortSignal.any([abortSignalParam, abortController.signal])
-		: abortController.signal;
-	const jobScheduler = new JobScheduler(queue, {
-		connection: {
-			lazyConnect: true,
-			url: redisUrl,
+		get queue() {
+			return queue;
 		},
-		telemetry: new BullMQOtel("stats-worker", config.OTEL.serviceVersion),
-		prefix: PREFIX,
-	});
-
-	const queueInstance = createQueue<Job>({
-		name: queue,
-		redisUrl,
-		abortSignal: abortController.signal,
-	});
-
-	const worker = new BullWorker(
-		queue,
-		async (job) => {
-			try {
-				logger.debug(
-					`[${queue}] Processing job ${job.id}, job name ${job.name}`,
-				);
-				const start = performance.now();
-				const result = await processJob(job, {
-					abortSignal,
-					queueInstance,
-				});
-				if (result.hasFailed) {
-					if (result.error.error instanceof AbortError) {
-						if (
-							["max_duration_reached", "max_data_reached"].includes(
-								result.error.error.abortReason,
-							)
-						) {
-							return {
-								hasFailed: false,
-							};
-						}
-
-						throw result.error.error;
-					}
-
-					throw result.error instanceof Error
-						? result.error
-						: new Error(result.error.message);
-				}
-				const end = performance.now();
-				logger.debug(
-					`[${queue}] Job ${job.id} processed in ${formatMs(end - start)}ms`,
-				);
-				return result;
-			} catch (error) {
-				if (error instanceof ReprocessLaterError && job.token) {
-					logger.debug(
-						`[${queue}][${worker.id}][${
-							job.id
-						}] Job will be reprocessed in ${formatMs(error.delayMs, {
-							convertToSeconds: true,
-						})}`,
-					);
-					if (job.name in UniqueJobsMap) {
-						const { name, repeat, ...jobOpts } =
-							UniqueJobsMap[job.name as keyof UniqueJobsMapType];
-
-						await jobScheduler.upsertJobScheduler(
-							queue,
-							{
-								...UniqueJobsMap[job.name as keyof UniqueJobsMapType].repeat,
-								startDate: dayjs().add(error.delayMs, "milliseconds").toDate(),
-							},
-							name,
-							job.data,
-							jobOpts,
-							{ override: true, producerId: `${queue}:${worker.id}` },
-						);
-					}
-					throw new DelayedError(error.message);
-				}
-				if (
-					error instanceof AbortError &&
-					["SIGTERM", "SIGINT", "abort_signal_aborted"].includes(
-						error.abortReason,
-					) &&
-					job.token
-				) {
-					logger.debug(
-						`[${queue}][${worker.id}][${job.id}] Job is aborted, moving to wait`,
-					);
-					await job.moveToWait(job.token);
-					return;
-				}
-
-				job.failedReason = JSON.stringify(error);
-				logger.error(
-					`[${queue}][${worker.id}][${job.id}] Job failed to process`,
-					error,
-				);
-				throw new UnrecoverableError(String(error));
-			}
-		},
-		{
-			telemetry: new BullMQOtel("stats-worker", config.OTEL.serviceVersion),
-			connection: {
-				lazyConnect: true,
-				url: redisUrl,
-			},
-			autorun: false,
-			concurrency,
-			prefix: PREFIX,
-		},
-	);
-	worker.on("error", (error) => {
-		logger.error(`[${name}:${worker.id}] Worker error`, error);
-	});
-	worker.on("completed", async (job) => {
-		await onJobEnd?.({
-			name: job.name,
-			data: job.data,
-			startTime: dayjs(job.processedOn).toDate(),
-			endTime: dayjs(job.finishedOn).toDate(),
-			createdTime: dayjs(job.timestamp).toDate(),
-			status:
-				job.returnvalue !== undefined &&
-				Reflect.has(job.returnvalue, "hasFailed") &&
-				Reflect.get(job.returnvalue, "hasFailed") === false
-					? "success"
-					: "failed",
-			result: job.returnvalue,
-			jobId: job.id ?? "unknown",
-		});
-	});
-	worker.on("failed", async (job) => {
-		if (!job) {
-			logger.error(`[${name}:${worker.id}] Failed job is undefined`);
-			return;
-		}
-
-		await onJobEnd?.({
-			name: job.name,
-			data: job.data,
-			startTime: dayjs(job.processedOn).toDate(),
-			endTime: dayjs(job.finishedOn).toDate(),
-			createdTime: dayjs(job.timestamp).toDate(),
-			jobId: job.id ?? "unknown",
-			status: "failed",
-			result: job.returnvalue
-				? job.returnvalue
-				: { reason: job.failedReason, errorCode: "unknown" },
-		});
-	});
-
-	async function close(): ReturnType<Worker["close"]> {
-		try {
-			if (worker.closing) {
-				logger.debug(`[${name}:${worker.id}] Worker is already closing`);
-				await worker.closing;
-				return {
-					hasFailed: false,
-				};
-			}
-			logger.debug(`[${name}:${worker.id}] Closing worker`);
-			await worker.close();
-			logger.debug(`[${name}:${worker.id}] Worker has been closed`);
-			return {
-				hasFailed: false,
-			};
-		} catch (error) {
-			return {
-				hasFailed: true,
-				error: {
-					code: "failed_to_close_worker",
-					message:
-						error instanceof Error
-							? error.message
-							: "Failed to close worker properly",
-					error:
-						error instanceof Error
-							? error
-							: new Error("Failed to close worker properly", {
-									cause: error,
-								}),
-					data: undefined,
-				},
-			};
-		} finally {
-			await queueInstance.close();
-		}
-	}
-
-	async function init(): ReturnType<Worker["init"]> {
-		await queueInstance.init();
-		if (worker.closing) {
-			logger.debug(`[${name}] Worker is closing`);
-			return {
-				hasFailed: true,
-				error: {
-					code: "failed_to_init_worker",
-					message: `[${name}] Worker is closing`,
-					error: new Error(`[${name}] Worker is closing`),
-					data: undefined,
-				},
-			};
-		}
-
-		if (worker.isRunning()) {
-			if (worker.isPaused()) {
-				logger.debug(`[${name}] Worker is already paused`);
-				return {
-					hasFailed: false,
-				};
-			}
-			logger.debug(`[${name}] Worker is already running`);
-			return {
-				hasFailed: false,
-			};
-		}
-
-		const start = Date.now();
-		logger.debug(`[${name}:${worker.id}] Starting worker`);
-		worker.run();
-		while (!worker.isRunning()) {
-			logger.debug(`[${name}:${worker.id}] Waiting for worker to be ready`);
-			await new Promise((resolve) => {
-				setTimeout(resolve, 100);
-			});
-			if (Date.now() - start > INIT_TIMEOUT) {
-				return {
-					hasFailed: true,
-					error: {
-						code: "failed_to_init_worker",
-						message: ` [${name}:${worker.id}] RedisClient of worker failed to connect`,
-						error: new Error(
-							`[${name}:${worker.id}] RedisClient of worker is not ready`,
-						),
-						data: undefined,
-					},
-				};
-			}
-		}
-		if (worker.isPaused()) {
-			logger.debug(`[${name}:${worker.id}] Worker is paused`);
-			worker.resume();
-		}
-
-		logger.debug(`[${name}:${worker.id}] Worker initialized`);
-
-		return {
-			hasFailed: false,
-		};
-	}
-
-	abortSignal.addEventListener(
-		"abort",
-		() => {
-			logger.debug(`[${name}:${worker.id}] Aborting worker`);
-			close();
-		},
-		{ once: true },
-	);
-
-	return {
-		close,
-		init,
 	};
 }

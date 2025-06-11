@@ -1,6 +1,6 @@
+import type { AggregatePeriod } from "@github-actions-stats/workflow-entity";
 import { useLoaderData, useRouteLoaderData } from "react-router";
 import { queryClientUtils } from "../../../hooks/useRequest";
-import type { AggregatePeriod } from "@github-actions-stats/workflow-entity";
 
 export async function loadStatsData(params: {
 	workflowKey: string;
@@ -23,7 +23,7 @@ export async function loadStatsData(params: {
 	};
 }
 
-export async function loadMainContentData(params: {
+export async function loadWorkflowRunsData(params: {
 	workflowKey: string;
 	start?: number;
 	count?: number;
@@ -45,17 +45,27 @@ export async function loadMainContentData(params: {
 }
 
 export const useRouteMainContentDataLoader = () =>
-	useRouteLoaderData<Awaited<ReturnType<typeof loadMainContentData>>>(
-		"workflow-overview",
+	useRouteLoaderData<Awaited<ReturnType<typeof loadWorkflowRunsData>>>(
+		"workflow-runs",
 	);
 
 export const useMainContentDataLoader = useLoaderData<
-	Awaited<ReturnType<typeof loadMainContentData>>
+	Awaited<ReturnType<typeof loadWorkflowRunsData>>
 >;
-export const useRouteStatsDataLoader = () =>
-	useRouteLoaderData<Awaited<ReturnType<typeof loadStatsData>>>(
-		"workflow-overview",
-	);
+export const useRouteStatsDataLoader = () => {
+	const overviewData =
+		useRouteLoaderData<Awaited<ReturnType<typeof loadStatsData>>>(
+			"workflow-overview",
+		);
+	if (!overviewData?.stats) {
+		throw new Error("Stats are not loaded");
+	}
+	if (overviewData.stats.hasFailed) {
+		throw new Error("Stats failed to load");
+	}
+
+	return overviewData.stats.data;
+};
 export const useStatsDataLoader = useLoaderData<
 	Awaited<ReturnType<typeof loadStatsData>>
 >;

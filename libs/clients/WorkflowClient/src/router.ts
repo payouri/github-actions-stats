@@ -12,6 +12,7 @@ import type {
 	workflowStatSchema,
 } from "@github-actions-stats/workflow-entity";
 import SuperJSON from "superjson";
+import type { Octokit } from "octokit";
 
 export type { GetWorkflowsProcedureInput, GetWorkflowsProcedureResponse };
 
@@ -27,6 +28,7 @@ export const buildWorkflowRouter = <
 	aggregatedWorkflowStatsMongoStorage: MongoStorage<
 		typeof aggregatedStatSchema
 	>;
+	githubClient: Octokit["rest"];
 }) => {
 	const {
 		trpc,
@@ -34,6 +36,7 @@ export const buildWorkflowRouter = <
 		storedWorkflowRunMongoStorage,
 		workflowStatsMongoStorage,
 		aggregatedWorkflowStatsMongoStorage,
+		githubClient,
 	} = dependencies;
 	const trpcInstance = trpc.create({
 		transformer: SuperJSON,
@@ -46,6 +49,7 @@ export const buildWorkflowRouter = <
 		storedWorkflowRunMongoStorage,
 		aggregatedWorkflowStatsMongoStorage,
 		workflowStatsMongoStorage,
+		githubClient,
 	});
 
 	return {

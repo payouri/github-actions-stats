@@ -4,9 +4,12 @@ import type {
 } from "@github-actions-stats/storage";
 import {
 	aggregatePeriodSchema,
+	createEmptyWorkflowData,
+	generateWorkflowKey,
+	storedWorkflow,
+	type StoredWorkflowWithKey,
 	type aggregatedStatSchema,
 	type AggregatedWorkflowStat,
-	type storedWorkflow,
 	type StoredWorkflowDocument,
 	type storedWorkflowRun,
 	type StoredWorkflowRun,
@@ -16,6 +19,7 @@ import dayjs from "dayjs";
 import { z } from "zod";
 import type { AsyncProcedureResponse, TRPCBuilder } from "../types.js";
 import { buildAggregateStatsOnPeriodAndSave } from "./helpers/aggregateStatsOnPeriod.js";
+import type { Octokit } from "octokit";
 
 export const getWorkflowsProcedureInputSchema = z.object({
 	start: z.number(),
@@ -39,6 +43,12 @@ export const getAggregatedWorkflowStatsProcedureInputSchema = z.object({
 		}
 		return v;
 	}),
+});
+export const upsertWorkflowProcedureInputSchema = storedWorkflow.omit({
+	lastRunAt: true,
+	oldestRunAt: true,
+	totalWorkflowRuns: true,
+	lastUpdatedAt: true,
 });
 
 type StoredWorkflowMongoStorage = MongoStorage<typeof storedWorkflow>;
@@ -167,6 +177,58 @@ function buildGetAggregatedWorkflowStatsProcedure(dependencies: {
 	};
 }
 
+export type UpsertWorkflowProcedureInput = z.infer<
+	typeof upsertWorkflowProcedureInputSchema
+>;
+export type UpsertWorkflowProcedureResponse = AsyncProcedureResponse<
+	StoredWorkflowWithKey,
+	{
+		code: "failed_workflow_upsert";
+		message: string;
+	}
+>;
+
+function buildUpsertWorkflowProcedure /* <Context extends object, Meta extends object, Instance > */(dependencies: {
+	workflowMongoStorage: StoredWorkflowMongoStorage;
+	githubClient: Octokit["rest"];
+}) {
+	const { workflowMongoStorage } = dependencies;
+	return async function createWorkflowProcedure(workflowDataParams: {
+		input: UpsertWorkflowProcedureInput;
+	}): UpsertWorkflowProcedureResponse {
+		const { input: workflowData } = workflowDataParams;
+
+		const key = generateWorkflowKey({
+			workflowName: workflowData.workflowName,
+			workflowParams: workflowData.workflowParams,
+		});
+		const emptyWorkflowData = createEmptyWorkflowData({
+			workflowId: workflowData.workflowId,
+			workflowName: workflowData.workflowName,
+			workflowOwner: workflowData.workflowParams.owner,
+			workflowRepository: workflowData.workflowParams.repo,
+		});
+
+		const upsertResult = await workflowMongoStorage.set(key, emptyWorkflowData);
+
+		if (upsertResult.hasFailed) {
+			return {
+				hasFailed: true,
+				code: "failed_workflow_upsert",
+				message: "failed_workflow_upsert",
+			};
+		}
+
+		return {
+			hasFailed: false,
+			data: {
+				...emptyWorkflowData,
+				key,
+			},
+		};
+	};
+}
+
 export function buildWorkflowsProcedures<
 	Context extends object,
 	Meta extends object,
@@ -177,6 +239,7 @@ export function buildWorkflowsProcedures<
 	storedWorkflowRunMongoStorage: StoredWorkflowRunsMongoStorage;
 	workflowStatsMongoStorage: WorkflowRunStatsMongoStorage;
 	aggregatedWorkflowStatsMongoStorage: AggregatedWorkflowStatsMongoStorage;
+	githubClient: Octokit["rest"];
 }) {
 	const {
 		trpcInstance,
@@ -184,6 +247,7 @@ export function buildWorkflowsProcedures<
 		storedWorkflowRunMongoStorage,
 		workflowStatsMongoStorage,
 		aggregatedWorkflowStatsMongoStorage,
+		githubClient,
 	} = dependencies;
 	const getWorkflowsProcedure = buildGetWorkflowsProcedure({
 		storedWorkflowMongoStorage,
@@ -196,6 +260,10 @@ export function buildWorkflowsProcedures<
 			aggregatedWorkflowStatsMongoStorage,
 			workflowRunStatsMongoStorage: workflowStatsMongoStorage,
 		});
+	const upsertWorkflowProcedure = buildUpsertWorkflowProcedure({
+		githubClient,
+		workflowMongoStorage: storedWorkflowMongoStorage,
+	});
 
 	return {
 		getWorkflows: trpcInstance.procedure
@@ -207,5 +275,8 @@ export function buildWorkflowsProcedures<
 		getAggregatedWorkflowStats: trpcInstance.procedure
 			.input(getAggregatedWorkflowStatsProcedureInputSchema)
 			.query(getAggregatedWorkflowStatsProcedure),
+		upsertWorkflow: trpcInstance.procedure
+			.input(upsertWorkflowProcedureInputSchema)
+			.query(upsertWorkflowProcedure),
 	};
 }

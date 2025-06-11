@@ -1,5 +1,5 @@
 import { type FC, use, useState } from "react";
-import { useHomePageData } from "../../Home.loader";
+import { useHomePageData, useRouteHomePageDataLoader } from "../../Home.loader";
 import {
 	useLocation,
 	useNavigate,
@@ -8,6 +8,7 @@ import {
 	useRoutes,
 	useOutlet,
 	useRouteLoaderData,
+	useMatches,
 } from "react-router";
 import {
 	useMainContentDataLoader,
@@ -37,15 +38,11 @@ export const NoWorkflowSelected: FC = () => {
 // const statsLoader = async ({ workflowKey, period, from }: {
 
 const MainContent: FC = () => {
-	const { workflows } = useHomePageData();
-	const data = useRouteMainContentDataLoader();
-	const { workflowRuns, workflowKey } = data ?? {};
+	const { workflowKey } = useParams<{ workflowKey: string }>();
 	const safeUrlWorkflowKey = encodeURIComponent(workflowKey ?? "");
-	console.log({ workflowKey, workflowRuns });
 	const outlet = useOutlet();
 	const location = useLocation();
 	const navigate = useNavigate();
-	const [tab, setTab] = useState<"runs" | "jobs">("runs");
 
 	const locationSearchParams = new URLSearchParams(location.search);
 	const initialPeriod = aggregatePeriodSchema.safeParse(
@@ -116,12 +113,9 @@ export const MainContentPage: FC = () => {
 	const { workflowKey } = useParams<{
 		workflowKey: string;
 	}>();
-	const { workflows } = useHomePageData();
+	const workflows = useRouteHomePageDataLoader();
 
-	if (workflows.hasFailed) {
-		return <div>Failed to load data</div>;
-	}
-	if (workflows.data.length === 0) {
+	if (workflows.length === 0) {
 		return <NoWorkflows />;
 	}
 	if (!workflowKey) {

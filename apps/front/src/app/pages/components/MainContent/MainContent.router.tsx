@@ -1,14 +1,47 @@
-import type { RouteObject } from "react-router";
-import { JobsView } from "./views/JobsView.components";
-import { OverviewView } from "./views/Overview.components";
-import { HomePageLoader } from "../../Home.loader";
-import { loadMainContentData, loadStatsData } from "./MainContent.loader";
 import { aggregatePeriodSchema } from "@github-actions-stats/workflow-entity";
 import dayjs from "dayjs";
+import type { LoaderFunction, RouteObject } from "react-router";
+import { HomePageLoader } from "../../Home.loader";
+import { loadStatsData, loadWorkflowRunsData } from "./MainContent.loader";
+import { OverviewView } from "./views/Overview.components";
+import { RunsView } from "./views/RunsView.components";
 
 const getSearchParamsFromUrl = (url: string) => {
 	const searchParams = new URLSearchParams(url.split("?")[1]);
 	return searchParams;
+};
+
+const loader = async (...loaderParams: Parameters<LoaderFunction>) => {
+	const [
+		{
+			params: { workflowKey },
+			request,
+		},
+	] = loaderParams;
+	if (!workflowKey) {
+		throw new Error("Workflow key is required");
+	}
+	const searchParams = getSearchParamsFromUrl(request.url);
+	const period = aggregatePeriodSchema.safeParse(searchParams.get("period"));
+	const from = dayjs(searchParams.get("from"));
+
+	const [homeLoaded, mainLoaded, statsLoaded] = await Promise.all([
+		HomePageLoader({}),
+		loadWorkflowRunsData({
+			workflowKey,
+		}),
+		loadStatsData({
+			workflowKey,
+			period: period.success ? period.data : "last_7_days",
+			from: from.isValid() ? from.toDate() : new Date(),
+		}),
+	]);
+	return {
+		...homeLoaded,
+		...mainLoaded,
+		...statsLoaded,
+		workflowKey,
+	};
 };
 
 export const MainContentRouter: RouteObject[] = [
@@ -20,49 +53,51 @@ export const MainContentRouter: RouteObject[] = [
 			if (!workflowKey) {
 				throw new Error("Workflow key is required");
 			}
+
 			const searchParams = getSearchParamsFromUrl(request.url);
 			const period = aggregatePeriodSchema.safeParse(
 				searchParams.get("period"),
 			);
 			const from = dayjs(searchParams.get("from"));
 
-			const [homeLoaded, mainLoaded, statsLoaded] = await Promise.all([
-				HomePageLoader({}),
-				loadMainContentData({
-					workflowKey,
-				}),
-				loadStatsData({
-					workflowKey,
-					period: period.success ? period.data : "last_7_days",
-					from: from.isValid() ? from.toDate() : new Date(),
-				}),
-			]);
-			return {
-				...homeLoaded,
-				...mainLoaded,
-				...statsLoaded,
-			};
+			return await loadStatsData({
+				workflowKey,
+				period: period.success ? period.data : "last_7_days",
+				from: from.isValid() ? from.toDate() : new Date(),
+			});
 		},
 	},
 	{
 		id: "workflow-runs",
 		path: "/:workflowKey/runs",
-		Component: () => <div>Runs</div>,
+		Component: RunsView,
+		loader: async ({ params: { workflowKey } }) => {
+			if (!workflowKey) {
+				throw new Error("Workflow key is required");
+			}
+
+			return await loadWorkflowRunsData({
+				workflowKey,
+			});
+		},
 	},
-	{
-		id: "workflow-jobs",
-		path: "/:workflowKey/jobs",
-		Component: JobsView,
-	},
+	// {
+	// 	id: "workflow-jobs",
+	// 	path: "/:workflowKey/jobs",
+	// 	Component: JobsView,
+	// 	loader,
+	// },
 	{
 		id: "workflow-costs",
 		path: "/:workflowKey/costs",
 		element: <div>Costs</div>,
+		// loader,
 	},
 	{
 		id: "workflow-graphs",
 		path: "/:workflowKey/graphs",
 		element: <div>Graphs</div>,
+		// loader,
 	},
 ];
 
