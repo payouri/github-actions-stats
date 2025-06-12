@@ -49,6 +49,7 @@ export const MainContentRouter: RouteObject[] = [
 		id: "workflow-overview",
 		path: "/:workflowKey",
 		Component: OverviewView,
+		HydrateFallback: OverviewView,
 		loader: async ({ params: { workflowKey }, request }) => {
 			if (!workflowKey) {
 				throw new Error("Workflow key is required");

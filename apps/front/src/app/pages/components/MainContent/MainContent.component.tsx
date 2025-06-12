@@ -1,31 +1,11 @@
-import { type FC, use, useState } from "react";
-import { useHomePageData, useRouteHomePageDataLoader } from "../../Home.loader";
-import {
-	useLocation,
-	useNavigate,
-	useParams,
-	useResolvedPath,
-	useRoutes,
-	useOutlet,
-	useRouteLoaderData,
-	useMatches,
-} from "react-router";
-import {
-	useMainContentDataLoader,
-	useRouteMainContentDataLoader,
-} from "./MainContent.loader";
-import { Container, Flex, Select, TabNav, Tabs } from "@radix-ui/themes";
-import {
-	getMainContentFormattedRoutes,
-	MainContentRouter,
-} from "./MainContent.router";
-import { SelectDateRange } from "../../../components/SelectDateRange/SelectDateRange.component";
-import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import { queryClientUtils } from "../../../hooks/useRequest";
-import { HomeRouter } from "../../Home.router";
-import { TabNavigation } from "../../../components/TabNavigation/TabNavigation.component";
 import { aggregatePeriodSchema } from "@github-actions-stats/workflow-entity";
+import { Flex } from "@radix-ui/themes";
+import type { FC } from "react";
+import { useLocation, useNavigate, useOutlet, useParams } from "react-router";
+import { SelectDateRange } from "../../../components/SelectDateRange/SelectDateRange.component";
+import { TabNavigation } from "../../../components/TabNavigation/TabNavigation.component";
+import { useRouteHomePageDataLoader } from "../../Home.loader";
+import { getMainContentFormattedRoutes } from "./MainContent.router";
 
 export const NoWorkflows: FC = () => {
 	return <div>No workflows</div>;

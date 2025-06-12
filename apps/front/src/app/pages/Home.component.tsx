@@ -32,6 +32,7 @@ export const HomePage: FC = () => {
 	const history = useNavigate();
 	const routes = useRoutes(HomeRouter);
 	const routeParams = useParams<{ workflowKey: string }>();
+	console.log(routeParams);
 
 	function onWorkflowSelected(workflowKey: string) {
 		history({
@@ -55,7 +56,7 @@ export const HomePage: FC = () => {
 		>
 			<PageHeader title="Hello World" />
 			<WorkflowSidebar
-				workflows={workflows as unknown as StoredWorkflowWithKey[]}
+				workflows={workflows}
 				onNewWorkflowAdded={undefined}
 				selectedWorkflow={
 					routeParams.workflowKey

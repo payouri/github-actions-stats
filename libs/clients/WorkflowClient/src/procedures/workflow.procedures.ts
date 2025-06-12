@@ -2,24 +2,25 @@ import type {
 	EntityWithKey,
 	MongoStorage,
 } from "@github-actions-stats/storage";
+import { RequestError as OctokitRequestError } from "@octokit/request-error";
 import {
-	aggregatePeriodSchema,
-	createEmptyWorkflowData,
-	generateWorkflowKey,
-	storedWorkflow,
-	type StoredWorkflowWithKey,
-	type aggregatedStatSchema,
 	type AggregatedWorkflowStat,
 	type StoredWorkflowDocument,
-	type storedWorkflowRun,
 	type StoredWorkflowRun,
+	type StoredWorkflowWithKey,
+	aggregatePeriodSchema,
+	type aggregatedStatSchema,
+	createEmptyWorkflowData,
+	generateWorkflowKey,
+	type storedWorkflow,
+	type storedWorkflowRun,
 	type workflowStatSchema,
 } from "@github-actions-stats/workflow-entity";
 import dayjs from "dayjs";
+import type { Octokit } from "octokit";
 import { z } from "zod";
 import type { AsyncProcedureResponse, TRPCBuilder } from "../types.js";
 import { buildAggregateStatsOnPeriodAndSave } from "./helpers/aggregateStatsOnPeriod.js";
-import type { Octokit } from "octokit";
 
 export const getWorkflowsProcedureInputSchema = z.object({
 	start: z.number(),
@@ -44,11 +45,10 @@ export const getAggregatedWorkflowStatsProcedureInputSchema = z.object({
 		return v;
 	}),
 });
-export const upsertWorkflowProcedureInputSchema = storedWorkflow.omit({
-	lastRunAt: true,
-	oldestRunAt: true,
-	totalWorkflowRuns: true,
-	lastUpdatedAt: true,
+export const upsertWorkflowProcedureInputSchema = z.object({
+	workflowId: z.coerce.number(),
+	githubOwner: z.string(),
+	githubRepository: z.string(),
 });
 
 type StoredWorkflowMongoStorage = MongoStorage<typeof storedWorkflow>;
@@ -182,50 +182,86 @@ export type UpsertWorkflowProcedureInput = z.infer<
 >;
 export type UpsertWorkflowProcedureResponse = AsyncProcedureResponse<
 	StoredWorkflowWithKey,
-	{
-		code: "failed_workflow_upsert";
-		message: string;
-	}
+	| {
+			code: "failed_to_get_github_workflow";
+			message: string;
+	  }
+	| {
+			code: "failed_workflow_upsert";
+			message: string;
+	  }
 >;
 
 function buildUpsertWorkflowProcedure /* <Context extends object, Meta extends object, Instance > */(dependencies: {
 	workflowMongoStorage: StoredWorkflowMongoStorage;
 	githubClient: Octokit["rest"];
 }) {
-	const { workflowMongoStorage } = dependencies;
+	const { workflowMongoStorage, githubClient } = dependencies;
 	return async function createWorkflowProcedure(workflowDataParams: {
 		input: UpsertWorkflowProcedureInput;
 	}): UpsertWorkflowProcedureResponse {
 		const { input: workflowData } = workflowDataParams;
 
-		const key = generateWorkflowKey({
-			workflowName: workflowData.workflowName,
-			workflowParams: workflowData.workflowParams,
-		});
-		const emptyWorkflowData = createEmptyWorkflowData({
-			workflowId: workflowData.workflowId,
-			workflowName: workflowData.workflowName,
-			workflowOwner: workflowData.workflowParams.owner,
-			workflowRepository: workflowData.workflowParams.repo,
-		});
+		try {
+			const getWorkflowResponse = await githubClient.actions.getWorkflow({
+				owner: workflowData.githubOwner,
+				repo: workflowData.githubRepository,
+				workflow_id: workflowData.workflowId,
+			});
+			if (!getWorkflowResponse.data) {
+				return {
+					hasFailed: true,
+					code: "failed_to_get_github_workflow",
+					message: "failed_to_get_github_workflow",
+				};
+			}
 
-		const upsertResult = await workflowMongoStorage.set(key, emptyWorkflowData);
+			const key = generateWorkflowKey({
+				workflowName: getWorkflowResponse.data.name,
+				workflowParams: {
+					owner: workflowData.githubOwner,
+					repo: workflowData.githubRepository,
+				},
+			});
+			const emptyWorkflowData = createEmptyWorkflowData({
+				workflowId: workflowData.workflowId,
+				workflowName: getWorkflowResponse.data.name,
+				workflowOwner: workflowData.githubOwner,
+				workflowRepository: workflowData.githubRepository,
+			});
 
-		if (upsertResult.hasFailed) {
-			return {
-				hasFailed: true,
-				code: "failed_workflow_upsert",
-				message: "failed_workflow_upsert",
-			};
-		}
-
-		return {
-			hasFailed: false,
-			data: {
-				...emptyWorkflowData,
+			const upsertResult = await workflowMongoStorage.set(
 				key,
-			},
-		};
+				emptyWorkflowData,
+			);
+
+			if (upsertResult.hasFailed) {
+				return {
+					hasFailed: true,
+					code: "failed_workflow_upsert",
+					message: "failed_workflow_upsert",
+				};
+			}
+
+			return {
+				hasFailed: false,
+				data: {
+					...emptyWorkflowData,
+					key,
+				},
+			};
+		} catch (error) {
+			if (error instanceof OctokitRequestError) {
+				return {
+					hasFailed: true,
+					code: "failed_to_get_github_workflow",
+					message: error.message,
+				};
+			}
+			throw new Error("Create workflow failed", {
+				cause: error,
+			});
+		}
 	};
 }
 

@@ -73,9 +73,6 @@ export function createWorker<Job extends DefaultJobsMap>(
 						? result.error
 						: new Error(result.error.message);
 				}
-				await queueInstance.queue.obliterate({
-					force: true,
-				});
 				const end = performance.now();
 				logger.debug(
 					`[${queue}] Job ${job.id} processed in ${formatMs(end - start)}ms`,

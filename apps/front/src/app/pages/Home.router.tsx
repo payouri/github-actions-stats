@@ -11,7 +11,12 @@ export const HomeRouter: RouteObject[] = [
 	{
 		id: "home",
 		index: true,
+		path: "*",
+	},
+	{
+		id: "no_workflow_selected",
 		path: "/",
+		Component: LazyMainContent,
 	},
 	{
 		id: "main",

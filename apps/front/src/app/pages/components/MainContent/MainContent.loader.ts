@@ -1,6 +1,7 @@
 import type { AggregatePeriod } from "@github-actions-stats/workflow-entity";
 import { useLoaderData, useRouteLoaderData } from "react-router";
 import { queryClientUtils } from "../../../hooks/useRequest";
+import dayjs from "dayjs";
 
 export async function loadStatsData(params: {
 	workflowKey: string;
@@ -12,7 +13,7 @@ export async function loadStatsData(params: {
 	const [stats] = await Promise.all([
 		queryClientUtils.getAggregatedWorkflowStats.ensureData({
 			workflowKey,
-			from,
+			from: dayjs(from).endOf("hour").toDate(),
 			period,
 		}),
 	]);

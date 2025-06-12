@@ -1,16 +1,18 @@
 // import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { workspaceRoot } from "@nx/devkit";
+import tailwindcssPlugin from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
-import path, { join } from "node:path";
+import { join } from "node:path";
 import { normalizePath } from "vite";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { defineConfig } from "vitest/config";
-import tailwindcssPlugin from "@tailwindcss/vite";
-import { workspaceRoot } from "@nx/devkit";
 
 // https://vitejs.dev/config/
 export default defineConfig({
 	root: join(workspaceRoot, "apps/front"),
 	plugins: [
+		nodePolyfills(),
 		react(),
 		tailwindcssPlugin(),
 		// TanStackRouterVite(),
