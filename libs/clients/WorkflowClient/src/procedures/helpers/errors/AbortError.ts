@@ -5,7 +5,7 @@ type AbortErrorReason =
   | "SIGTERM"
   | "max_duration_reached"
   | "max_data_reached"
-  | "signal_aborted"
+  | "abort_signal_aborted"
   | (string & {});
 
 export class AbortError extends Error {
@@ -14,7 +14,7 @@ export class AbortError extends Error {
   constructor(params: {
     message: string;
     signal?: AbortSignal;
-    abortReason?: string;
+    abortReason?: AbortErrorReason;
   }) {
     super(params.message);
     this.name = AbortErrorName;

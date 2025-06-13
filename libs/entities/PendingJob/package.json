@@ -1,5 +1,5 @@
 {
-    "name": "@github-actions-stats/workflow-client",
+    "name": "@github-actions-stats/pending-job-entity",
     "author": "Youri Pailloux",
     "license": "UNLICENSED",
     "main": "src/index.ts",
@@ -11,13 +11,9 @@
         "npm": "10.x"
     },
     "dependencies": {
+        "mongoose": "*",
         "@github-actions-stats/common-entity": "0.0.1",
         "@github-actions-stats/storage": "0.0.1",
-        "@github-actions-stats/workflow-entity": "0.0.1",
-        "@trpc/client": "^11.1.2",
-        "@trpc/server": "^11.1.2",
-        "mongoose": "*",
-        "octokit": "*",
         "zod": "*"
     },
     "devDependencies": {}

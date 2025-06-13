@@ -1,9 +1,14 @@
 import dayjs from "dayjs";
 import { config } from "../config/config.js";
+import { queueJobExecutionReportsMongoStorage } from "../entities/QueueJobExecutionReport/storage.js";
 import { formatMs } from "../helpers/format/formatMs.js";
 import logger from "../lib/Logger/logger.js";
 import { createQueue, createWorker } from "../lib/Queue/index.js";
 import type { DefaultJobDefinition, MethodMap } from "../lib/Queue/types.js";
+import {
+	REFRESH_WORKFLOW_RUNS_DATA_JOB_NAME,
+	refreshWorkflowRunsData,
+} from "./methods/refreshWorkflowRunsData.js";
 import {
 	RETRIEVE_NEW_RUN_JOB_NAME,
 	retrieveNewRuns,
@@ -17,25 +22,29 @@ import {
 	retrieveWorkflowUpdates,
 } from "./methods/retrieveWorkflowUpdates.js";
 import type { JobsMap } from "./methods/types.js";
-import { queueJobExecutionReportsMongoStorage } from "../entities/QueueJobExecutionReport/storage.js";
+import {
+	POPULATE_RUN_AND_CREATE_STAT_JOB_NAME,
+	populateRunAndCreateStat,
+} from "./sequenceJobs/populateRunAndCreateStat/populateRunAndCreateStat.job.js";
 import {
 	UniqueJobsMap,
 	type UniqueJobsMapType,
 } from "./uniqueJobs/initUniqueJobs.js";
 import {
-	POPULATE_RUN_AND_CREATE_STAT_JOB_NAME,
-	populateRunAndCreateStat,
-} from "./sequenceJobs/populateRunAndCreateStat/populateRunAndCreateStat.job.js";
+	REFRESH_RUNS_DATA_JOB_NAME,
+	refreshRunsData,
+} from "./methods/refreshRunsData.js";
 
 const MethodsMap: MethodMap<JobsMap> = {
 	[RETRIEVE_OLDER_RUNS_JOB_NAME]: retrieveOldRuns,
 	[RETRIEVE_NEW_RUN_JOB_NAME]: retrieveNewRuns,
 	[RETRIEVE_WORKFLOW_UPDATES_JOB_NAME]: retrieveWorkflowUpdates,
 	[POPULATE_RUN_AND_CREATE_STAT_JOB_NAME]: populateRunAndCreateStat,
+	[REFRESH_WORKFLOW_RUNS_DATA_JOB_NAME]: refreshWorkflowRunsData,
+	[REFRESH_RUNS_DATA_JOB_NAME]: refreshRunsData,
 };
 
 const PROCESS_WORKFLOW_JOB_QUEUE_NAME = "process-workflow-job" as const;
-const PROCESS_WORKFLOW_JOB_QUEUE_WORKER_CONCURRENCY = 1 as const;
 
 export function createProcessWorkflowJobQueue(params?: {
 	abortSignal?: AbortSignal;
@@ -62,7 +71,7 @@ export function createProcessWorkflowJobWorker(params?: {
 		queue: PROCESS_WORKFLOW_JOB_QUEUE_NAME,
 		abortSignal,
 		name: "process-workflow-job-worker",
-		concurrency: PROCESS_WORKFLOW_JOB_QUEUE_WORKER_CONCURRENCY,
+		concurrency: config.QUEUES.PROCESS_WORKFLOW_JOB_QUEUE_WORKER_CONCURRENCY,
 		redisUrl: config.REDIS.uri,
 		async onJobEnd(endedJob) {
 			logger.debug(

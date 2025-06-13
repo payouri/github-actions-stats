@@ -3,6 +3,14 @@ import type {
 	PopulateRunAndCreateStatJobName,
 } from "../sequenceJobs/populateRunAndCreateStat/populateRunAndCreateStat.job.js";
 import type {
+	RefreshRunsData,
+	RefreshRunsDataJobJobName,
+} from "./refreshRunsData.js";
+import type {
+	RefreshWorkflowRunsData,
+	RefreshWorkflowRunsDataJobJobName,
+} from "./refreshWorkflowRunsData.js";
+import type {
 	RetrieveNewRuns,
 	RetrieveNewRunsJobJobName,
 } from "./retrieveNewRuns.js";
@@ -23,4 +31,8 @@ export type JobsMap = {
 	[Key in RetrieveWorkflowUpdatesJobJobName]: RetrieveWorkflowUpdates;
 } & {
 	[Key in PopulateRunAndCreateStatJobName]: PopulateRunAndCreateStat;
+} & {
+	[Key in RefreshWorkflowRunsDataJobJobName]: RefreshWorkflowRunsData;
+} & {
+	[Key in RefreshRunsDataJobJobName]: RefreshRunsData;
 };

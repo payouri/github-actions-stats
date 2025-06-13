@@ -32,6 +32,9 @@ export default defineConfig({
 			"@github-actions-stats/workflow-entity": normalizePath(
 				join(workspaceRoot, "libs/entities/Workflow/src/index.ts"),
 			),
+			"@github-actions-stats/pending-job-entity": normalizePath(
+				join(workspaceRoot, "libs/entities/PendingJob/src/index.ts"),
+			),
 		},
 	},
 	server: {

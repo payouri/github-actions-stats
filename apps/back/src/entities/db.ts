@@ -83,9 +83,15 @@ export const DB = {
 		},
 		getRuns(
 			params: {
-				workflowKey: string;
 				status?: RunCompletionStatus;
-			},
+			} & (
+				| {
+						runKeys: string[];
+				  }
+				| {
+						workflowKey: string;
+				  }
+			),
 			options?: {
 				start?: number;
 				count?: number;
@@ -100,14 +106,21 @@ export const DB = {
 					  };
 			},
 		) {
-			const { status, workflowKey } = params;
+			const { status } = params;
 			const {
 				count = 10,
 				sort = { type: "completedAt", order: "desc" },
 				start = 0,
 			} = options ?? {};
 			return workflowRunsMongoStorage.query(
-				{ ...getWorkflowParamsFromKey(workflowKey), status },
+				{
+					...("workflowKey" in params
+						? getWorkflowParamsFromKey(params.workflowKey)
+						: {
+								key: { $in: params.runKeys },
+							}),
+					status,
+				},
 				{
 					sort: getMongoSort(sort),
 					limit: count,

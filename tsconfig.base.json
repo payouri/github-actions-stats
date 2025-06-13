@@ -46,6 +46,9 @@
 			],
 			"@github-actions-stats/workflow-client": [
 				"./libs/clients/WorkflowClient/src/index.ts"
+			],
+			"@github-actions-stats/pending-job-entity": [
+				"./libs/entities/PendingJob/src/index.ts"
 			]
 		} /* Specify a set of entries that re-map imports to additional lookup locations. */,
 		// "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */

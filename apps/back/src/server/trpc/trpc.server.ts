@@ -1,17 +1,18 @@
+import { join } from "node:path";
 import {
-	buildWorkflowRouter,
 	WORKFLOW_MOUNT_POINT,
+	buildWorkflowRouter,
 } from "@github-actions-stats/workflow-client";
-import { cors } from "hono/cors";
+import { trpcServer } from "@hono/trpc-server";
 import { initTRPC } from "@trpc/server";
+import type { Hono } from "hono";
+import { cors } from "hono/cors";
+import type { BlankEnv } from "hono/types";
 import {
 	workflowMongoStorage,
 	workflowRunsMongoStorage,
 } from "../../entities/FormattedWorkflow/storage/mongo.js";
-import type { BlankEnv } from "hono/types";
-import { trpcServer } from "@hono/trpc-server";
-import type { Hono } from "hono";
-import { join } from "node:path";
+import { pendingJobsMongoStorage } from "../../entities/PendingJob/storage/mongo.js";
 import {
 	aggregatedWorkflowStatsMongoStorage,
 	workflowRunStatsMongoStorage,
@@ -28,6 +29,7 @@ export function mountTrpcServer<Env extends BlankEnv>(params: {
 		storedWorkflowRunMongoStorage: workflowRunsMongoStorage,
 		aggregatedWorkflowStatsMongoStorage: aggregatedWorkflowStatsMongoStorage,
 		workflowStatsMongoStorage: workflowRunStatsMongoStorage,
+		pendingJobsMongoStorage: pendingJobsMongoStorage,
 		githubClient: githubClient.rest,
 	});
 

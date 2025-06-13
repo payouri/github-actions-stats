@@ -1,0 +1,22 @@
+{
+    "name": "@github-actions-stats/pending-job-entity",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "root": "libs/entities/PendingJob",
+    "sourceRoot": "libs/entities/PendingJob/src",
+    "projectType": "library",
+    "targets": {
+        "lint": {
+            "executor": "@gitopslovers/nx-biome:biome-lint",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "lintFilePatterns": [
+                    "libs/entities/Workflow/**/*.ts"
+                ],
+                "write": false,
+                "unsafe": false
+            }
+        }
+    }
+}
