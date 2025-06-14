@@ -12,7 +12,9 @@ import SuperJSON from "superjson";
 
 const DEFAULT_QUERIES_STALE_TIME_MS = 10 * 60 * 1000; // 10 minutes
 
-export const trpcReactClient = createTRPCReact<WorkflowRouter>().createClient({
+export const trpcReact = createTRPCReact<WorkflowRouter>();
+
+export const trpcReactClient = trpcReact.createClient({
 	links: [
 		httpBatchLink({
 			url: new URL(
@@ -23,6 +25,7 @@ export const trpcReactClient = createTRPCReact<WorkflowRouter>().createClient({
 		}),
 	],
 });
+
 export const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {

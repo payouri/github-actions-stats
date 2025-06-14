@@ -35,7 +35,7 @@ export const getWorkflowsProcedureInputSchema = z.object({
 });
 export const getWorkflowRunsProcedureInputSchema = z.object({
 	workflowKey: z.string(),
-	start: z.number(),
+	cursor: z.number().nullish(),
 	count: z.number(),
 });
 export const getAggregatedWorkflowStatsProcedureInputSchema = z.object({
@@ -104,7 +104,7 @@ export type GetWorkflowRunsProcedureInput = z.infer<
 	typeof getWorkflowRunsProcedureInputSchema
 >;
 export type GetWorkflowRunsProcedureResponse = AsyncProcedureResponse<
-	EntityWithKey<StoredWorkflowRun>[],
+	{ runs: EntityWithKey<StoredWorkflowRun>[]; nextCursor: number | null },
 	{
 		code: "failed_to_get_workflows";
 		message: string;
@@ -118,20 +118,28 @@ function buildGetWorkflowRunsProcedure(dependencies: {
 	const { storedWorkflowRunMongoStorage } = dependencies;
 
 	return async ({ input }): GetWorkflowRunsProcedureResponse => {
-		const { start, count, workflowKey } = input;
+		const { cursor: start, count, workflowKey } = input;
 		const result = await storedWorkflowRunMongoStorage.query(
 			{
 				workflowKey,
 			},
 			{
-				start,
+				start: start ?? 0,
 				limit: count,
 			},
 		);
 
 		return {
 			hasFailed: false,
-			data: result,
+			data: {
+				runs: result,
+				nextCursor:
+					result.length === count
+						? typeof start === "number"
+							? start + count
+							: count
+						: null,
+			},
 		} as const;
 	};
 }

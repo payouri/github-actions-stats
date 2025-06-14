@@ -29,5 +29,6 @@ export type RetrievedWorkflow = z.infer<typeof retrievedWorkflowSchema>;
 export type StoredWorkflow = z.infer<typeof storedWorkflow>;
 export type StoredWorkflowRun = z.infer<typeof storedWorkflowRun>;
 
+export type StoredWorkflowRunWithKey = EntityWithKey<StoredWorkflowRun>;
 export type StoredWorkflowWithKey = EntityWithKey<StoredWorkflow>;
 export type StoredWorkflowDocument = LeanDocumentWithKey<StoredWorkflow>;

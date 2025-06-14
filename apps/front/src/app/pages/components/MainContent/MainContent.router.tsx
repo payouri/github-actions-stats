@@ -5,6 +5,10 @@ import { HomePageLoader } from "../../Home.loader";
 import { loadStatsData, loadWorkflowRunsData } from "./MainContent.loader";
 import { OverviewView } from "./views/Overview.components";
 import { RunsView } from "./views/RunsView.components";
+import {
+	RUNS_VIEW_LOADER_ID,
+	runsViewLoader,
+} from "./views/loaders/RunsView.loader";
 
 const getSearchParamsFromUrl = (url: string) => {
 	const searchParams = new URLSearchParams(url.split("?")[1]);
@@ -69,15 +73,16 @@ export const MainContentRouter: RouteObject[] = [
 		},
 	},
 	{
-		id: "workflow-runs",
+		id: RUNS_VIEW_LOADER_ID,
 		path: "/:workflowKey/runs",
 		Component: RunsView,
+		HydrateFallback: RunsView,
 		loader: async ({ params: { workflowKey } }) => {
 			if (!workflowKey) {
 				throw new Error("Workflow key is required");
 			}
 
-			return await loadWorkflowRunsData({
+			return await runsViewLoader({
 				workflowKey,
 			});
 		},
