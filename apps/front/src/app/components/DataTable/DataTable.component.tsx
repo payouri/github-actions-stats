@@ -1,4 +1,4 @@
-import { Flex, Table, Text } from "@radix-ui/themes";
+import { Button, Flex, Table, Text } from "@radix-ui/themes";
 import type { CellProps } from "@radix-ui/themes/components/table";
 import type { ReactNode } from "react";
 
@@ -11,10 +11,11 @@ export const DataTable = <Data extends Record<string, unknown>>(props: {
 		colWidth?: CellProps["width"];
 	}[];
 	getRowKey?: (data: Data) => string;
+	initialRowsCount?: number;
 }): ReactNode => {
-	const { data, columns, getRowKey } = props;
+	const { data, columns, getRowKey, initialRowsCount = 5 } = props;
 	return (
-		<Table.Root style={{ width: "100%" }} layout="fixed">
+		<Table.Root style={{ width: "100%" }} layout="fixed" variant="surface">
 			<Table.Header>
 				<Table.Row>
 					{columns.map(({ key, label, colWidth }) => (
@@ -73,6 +74,19 @@ export const DataTable = <Data extends Record<string, unknown>>(props: {
 						);
 					})
 				)}
+				<Table.Row>
+					<Table.Cell style={{ height: "auto" }} colSpan={columns.length} p="0">
+						<Button
+							radius="none"
+							size="2"
+							style={{
+								width: "100%",
+							}}
+						>
+							Show More
+						</Button>
+					</Table.Cell>
+				</Table.Row>
 			</Table.Body>
 		</Table.Root>
 	);

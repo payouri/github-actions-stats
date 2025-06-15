@@ -1,14 +1,13 @@
+import type { upsertWorkflowProcedureInputSchema } from "@github-actions-stats/workflow-client/src/procedures/workflow.procedures";
 import type { StoredWorkflowWithKey } from "@github-actions-stats/workflow-entity";
 import { PlusIcon } from "@radix-ui/react-icons";
-import { Button, Flex, RadioCards, Text, TextField } from "@radix-ui/themes";
-import { useCallback, type FC } from "react";
-import { useForm } from "react-hook-form";
+import { Button, Dialog, Flex, RadioCards } from "@radix-ui/themes";
+import { type FC, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router";
+import type { z } from "zod";
+import { CreateWorkflowForm } from "./components/CreateWorkflowForm.component";
 import { WorkflowSidebarItem } from "./components/WorkflowSidebarItem.component";
-import { Form, useLocation, useNavigate } from "react-router";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Dialog } from "@radix-ui/themes";
-import { Label } from "radix-ui";
-import { upsertWorkflowProcedureInputSchema } from "@github-actions-stats/workflow-client/src/procedures/workflow.procedures";
+import { queryClientUtils, trpcReactClient } from "../../hooks/useRequest";
 
 const SHOW_MODAL_QUERY_PARAM = "show-create-workflow-modal";
 
@@ -16,7 +15,9 @@ export type WorkflowSidebarProps = {
 	workflows: StoredWorkflowWithKey[];
 	gridArea?: string;
 	selectedWorkflow: string | undefined;
-	onNewWorkflowAdded: ((workflowKey: string) => void) | undefined;
+	onNewWorkflowAdded:
+		| ((workflowData: StoredWorkflowWithKey) => void)
+		| undefined;
 	onWorkflowSelected: ((workflowKey: string) => void) | undefined;
 };
 
@@ -29,9 +30,8 @@ export const WorkflowSidebar: FC<WorkflowSidebarProps> = ({
 }) => {
 	const { search } = useLocation();
 	const navigate = useNavigate();
-	const { register, handleSubmit, formState } = useForm({
-		resolver: zodResolver(upsertWorkflowProcedureInputSchema),
-	});
+	const isCreatingWorkflow = queryClientUtils.upsertWorkflow.isMutating();
+
 	const onNewWorkflowClick = useCallback(() => {
 		if (search.includes(`${SHOW_MODAL_QUERY_PARAM}=true`)) {
 			return;
@@ -45,8 +45,26 @@ export const WorkflowSidebar: FC<WorkflowSidebarProps> = ({
 		newSearch.delete(SHOW_MODAL_QUERY_PARAM);
 		navigate({ search: newSearch.toString() }, { replace: true });
 	}, [search, navigate]);
-	function onSubmit(...args) {
-		console.log("onSubmit", args);
+	async function onCreateWorkflow(
+		params: z.infer<typeof upsertWorkflowProcedureInputSchema>,
+	) {
+		if (!onNewWorkflowAdded) {
+			throw new Error("onNewWorkflowAdded is not defined");
+		}
+
+		const response = await trpcReactClient.upsertWorkflow.mutate(params);
+		if (response.hasFailed) {
+			return {
+				status: "failed",
+				message: response.message,
+			} as const;
+		}
+
+		onNewWorkflowAdded(response.data);
+
+		return {
+			status: "success",
+		} as const;
 	}
 
 	return (
@@ -63,7 +81,7 @@ export const WorkflowSidebar: FC<WorkflowSidebarProps> = ({
 				variant="solid"
 				size="3"
 				radius="none"
-				// disabled={typeof onNewWorkflowAdded !== "function"}
+				disabled={typeof onNewWorkflowAdded !== "function"}
 				onClick={onNewWorkflowClick}
 			>
 				<Flex align="center" justify="between" width="100%">
@@ -97,41 +115,10 @@ export const WorkflowSidebar: FC<WorkflowSidebarProps> = ({
 					<Dialog.Description size="2" mb="3">
 						Create a new workflow to track your GitHub Actions runs.
 					</Dialog.Description>
-					<form onSubmit={handleSubmit(onSubmit)}>
-						<Flex direction="column" gap="3">
-							<Label.Root>
-								<Text as="div" size="2" mb="1" weight="bold">
-									Organization
-								</Text>
-								<TextField.Root
-									{...register("githubOwner")}
-									placeholder="e.g. org-name"
-								/>
-							</Label.Root>
-							<Label.Root>
-								<Text as="div" size="2" mb="1" weight="bold">
-									Repository
-								</Text>
-								<TextField.Root
-									{...register("githubRepository")}
-									placeholder="e.g. my-repo"
-								/>
-							</Label.Root>
-							<Label.Root>
-								<Text as="div" size="2" mb="1" weight="bold">
-									Workflow Id
-								</Text>
-								<TextField.Root
-									{...register("workflowId")}
-									type="number"
-									placeholder="e.g. 213131313"
-								/>
-							</Label.Root>
-							<Button type="submit" variant="solid" size="2">
-								Create Workflow
-							</Button>
-						</Flex>
-					</form>
+					<CreateWorkflowForm
+						onCreateWorkflow={onCreateWorkflow}
+						isCreatingWorkflow={isCreatingWorkflow > 0}
+					/>
 				</Dialog.Content>
 			</Dialog.Root>
 		</Flex>

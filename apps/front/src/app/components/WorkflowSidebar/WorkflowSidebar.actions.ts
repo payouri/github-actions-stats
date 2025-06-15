@@ -7,7 +7,7 @@ export async function createWorkflow(params: {
 }) {
 	const { organization, repository, workflowId } = params;
 
-	const response = await queryClientUtils.upsertWorkflow.ensureData({
+	const response = await queryClientUtils.upsertWorkflow({
 		workflowId,
 		githubOwner: organization,
 		githubRepository: repository,

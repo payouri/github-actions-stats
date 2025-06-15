@@ -54,8 +54,8 @@ export const getAggregatedWorkflowStatsProcedureInputSchema = z.object({
 });
 export const upsertWorkflowProcedureInputSchema = z.object({
 	workflowId: z.coerce.number(),
-	githubOwner: z.string(),
-	githubRepository: z.string(),
+	githubOwner: z.string().min(1),
+	githubRepository: z.string().min(1),
 });
 
 type PendingJobStorage = MongoStorage<typeof pendingJobSchema>;
@@ -69,7 +69,7 @@ export type GetWorkflowsProcedureInput = z.infer<
 	typeof getWorkflowsProcedureInputSchema
 >;
 export type GetWorkflowsProcedureResponse = AsyncProcedureResponse<
-	StoredWorkflowDocument[],
+	StoredWorkflowWithKey[],
 	{
 		code: "failed_to_get_workflows";
 		message: string;
@@ -381,7 +381,7 @@ export function buildWorkflowsProcedures<
 			.query(getAggregatedWorkflowStatsProcedure),
 		upsertWorkflow: trpcInstance.procedure
 			.input(upsertWorkflowProcedureInputSchema)
-			.query(upsertWorkflowProcedure),
+			.mutation(upsertWorkflowProcedure),
 		refreshRunsData: trpcInstance.procedure
 			.input(refreshRunsDataInputSchema)
 			.mutation(refreshRunsDataProcedure),

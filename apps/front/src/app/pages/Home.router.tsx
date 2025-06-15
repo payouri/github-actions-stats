@@ -17,10 +17,12 @@ export const HomeRouter: RouteObject[] = [
 		id: "no_workflow_selected",
 		path: "/",
 		Component: LazyMainContent,
+		hydrateFallbackElement: <div>Loading...</div>,
 	},
 	{
 		id: "main",
 		path: "/:workflowKey",
+		hydrateFallbackElement: <div>Loading...</div>,
 		Component: LazyMainContent,
 		children: MainContentRouter,
 	},

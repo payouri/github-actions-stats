@@ -1,11 +1,21 @@
 import type { StoredWorkflowRunWithKey } from "@github-actions-stats/workflow-entity";
-import { Flex, Link, ScrollArea, Table } from "@radix-ui/themes";
-import { Text } from "@radix-ui/themes";
+import {
+	Box,
+	Button,
+	Flex,
+	Link,
+	Progress,
+	ScrollArea,
+	Table,
+	IconButton,
+	Text,
+} from "@radix-ui/themes";
+import {} from "@radix-ui/themes";
 import type {
 	CellProps,
 	ColumnHeaderCellProps,
 } from "@radix-ui/themes/components/table";
-import { Link1Icon } from "@radix-ui/react-icons";
+import { GitHubLogoIcon, ReloadIcon } from "@radix-ui/react-icons";
 import type { TextProps } from "@radix-ui/themes/components/text";
 import dayjs from "dayjs";
 import { useLayoutEffect, useRef, type FC } from "react";
@@ -202,19 +212,24 @@ const tableColumns = [
 		sortable: false,
 		getData(workflowRun: StoredWorkflowRunWithKey) {
 			return (
-				<Link
-					style={{
-						lineHeight: "1",
-					}}
-					href={`https://github.com/${workflowRun.repositoryOwner}/${workflowRun.repositoryName}/actions/runs/${workflowRun.runId}`}
-					target="_blank"
-					rel="noopener noreferrer nofollow"
-				>
-					<Flex align="center" gap="1">
-						<Link1Icon />
-						<Text>Open</Text>
-					</Flex>
-				</Link>
+				<Flex gap="1" align="center" justify="center">
+					<Link
+						style={{
+							lineHeight: "1",
+							display: "block",
+						}}
+						href={`https://github.com/${workflowRun.repositoryOwner}/${workflowRun.repositoryName}/actions/runs/${workflowRun.runId}`}
+						target="_blank"
+						rel="noopener noreferrer nofollow"
+					>
+						<Flex align="center" gap="1" justify="center">
+							<GitHubLogoIcon />
+						</Flex>
+					</Link>
+					<IconButton variant="ghost" size="1">
+						<ReloadIcon />
+					</IconButton>
+				</Flex>
 			);
 		},
 		cellProps: {
@@ -227,16 +242,16 @@ const tableColumns = [
 
 const RunTable: FC<{
 	workflowRuns: StoredWorkflowRunWithKey[];
+	isLoadingPage?: boolean;
 	onTableScroll?: (params: {
 		scrollTop: number;
 		scrollHeight: number;
 		clientHeight: number;
 	}) => void;
-}> = ({ workflowRuns, onTableScroll }) => {
+}> = ({ isLoadingPage, workflowRuns, onTableScroll }) => {
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	useLayoutEffect(() => {
-		console.log(scrollRef.current);
 		if (!scrollRef.current) return;
 		const { current: scrollElement } = scrollRef;
 
@@ -293,7 +308,17 @@ const RunTable: FC<{
 					</Table.Row>
 				</Table.Header>
 			</Table.Root>
-
+			<Box width="100%">
+				<Progress
+					duration={isLoadingPage ? "2s" : "0s"}
+					radius="none"
+					style={{
+						width: "100%",
+						minWidth: "100%",
+						opacity: isLoadingPage ? 1 : 0,
+					}}
+				/>
+			</Box>
 			<ScrollArea size="3" ref={scrollRef}>
 				<Table.Root
 					variant="surface"
@@ -345,7 +370,6 @@ export const RunsView: FC = () => {
 	const { workflowKey } = useParams<{ workflowKey: string }>();
 	if (!workflowKey) throw new Error("Workflow key is required");
 
-	const runsViewLoadedData = useLoaderData<typeof runsViewLoader>();
 	const query = trpcReact.getWorkflowRuns.useInfiniteQuery(
 		{
 			workflowKey,
@@ -368,18 +392,29 @@ export const RunsView: FC = () => {
 	}) {
 		const { scrollTop, scrollHeight, clientHeight } = params;
 		const scrollPercent = scrollTop / (scrollHeight - clientHeight);
-		if (scrollPercent > 0.8 && query.hasNextPage) {
+		if (scrollPercent > 0.9 && query.hasNextPage && !query.isFetching) {
 			query.fetchNextPage();
 		}
 	}
-	console.log(runsViewLoadedData);
+
+	const workflowRuns =
+		query.data?.pages
+			.flatMap((p) => {
+				if (p.hasFailed) {
+					throw new Error("Failed to load workflow runs");
+				}
+
+				return p.data;
+			})
+			.flatMap((d) => d.runs) ?? [];
 
 	return (
 		<ViewContainer>
 			<ViewInnerContainer direction="column" gap="0">
 				<RunTable
-					workflowRuns={runsViewLoadedData.workflowRuns}
+					workflowRuns={workflowRuns}
 					onTableScroll={onTableScroll}
+					isLoadingPage={query.isFetching || query.isFetchingNextPage}
 				/>
 			</ViewInnerContainer>
 		</ViewContainer>

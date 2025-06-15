@@ -35,7 +35,7 @@ export async function loadWorkflowRunsData(params: {
 		queryClientUtils.getWorkflowRuns.ensureData({
 			workflowKey,
 			count,
-			start,
+			cursor: start,
 		}),
 	]);
 

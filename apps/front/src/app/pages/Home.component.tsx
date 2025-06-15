@@ -5,6 +5,7 @@ import { useMatches, useNavigate, useParams, useRoutes } from "react-router";
 import { WorkflowSidebar } from "../components/WorkflowSidebar/WorkflowSidebar.component";
 import { useHomePageData, useRouteHomePageDataLoader } from "./Home.loader";
 import { HomeRouter } from "./Home.router";
+import { queryClient, queryClientUtils } from "../hooks/useRequest";
 
 const PageHeader: FC<{
 	title?: string;
@@ -32,12 +33,34 @@ export const HomePage: FC = () => {
 	const history = useNavigate();
 	const routes = useRoutes(HomeRouter);
 	const routeParams = useParams<{ workflowKey: string }>();
-	console.log(routeParams);
 
 	function onWorkflowSelected(workflowKey: string) {
 		history({
 			pathname: `/${encodeURIComponent(workflowKey)}`,
 		});
+	}
+	function onNewWorkflowAdded(workflowData: StoredWorkflowWithKey) {
+		console.log("onNewWorkflowAdded", workflowData);
+		const currentData = queryClientUtils.getWorkflows.getData({
+			count: 10,
+			start: 0,
+		});
+
+		queryClientUtils.getWorkflows.setData(
+			{
+				count: 10,
+				start: 0,
+			},
+			currentData?.hasFailed
+				? ({
+						hasFailed: false,
+						data: [workflowData],
+					} as const)
+				: ({
+						hasFailed: false,
+						data: [...(currentData?.data ?? []), workflowData],
+					} as const),
+		);
 	}
 
 	return (
@@ -57,7 +80,7 @@ export const HomePage: FC = () => {
 			<PageHeader title="Hello World" />
 			<WorkflowSidebar
 				workflows={workflows}
-				onNewWorkflowAdded={undefined}
+				onNewWorkflowAdded={onNewWorkflowAdded}
 				selectedWorkflow={
 					routeParams.workflowKey
 						? decodeURIComponent(routeParams.workflowKey)
