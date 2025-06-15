@@ -61,6 +61,13 @@ export const WorkflowSidebar: FC<WorkflowSidebarProps> = ({
 		}
 
 		onNewWorkflowAdded(response.data);
+		onDialogClose();
+		console.log(
+			queryClientUtils.getWorkflows.getData({
+				count: 10,
+				start: 0,
+			}),
+		);
 
 		return {
 			status: "success",

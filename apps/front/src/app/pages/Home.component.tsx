@@ -51,14 +51,14 @@ export const HomePage: FC = () => {
 				count: 10,
 				start: 0,
 			},
-			currentData?.hasFailed
+			!currentData || currentData.hasFailed
 				? ({
 						hasFailed: false,
 						data: [workflowData],
 					} as const)
 				: ({
 						hasFailed: false,
-						data: [...(currentData?.data ?? []), workflowData],
+						data: [...(currentData.data ?? []), workflowData],
 					} as const),
 		);
 	}

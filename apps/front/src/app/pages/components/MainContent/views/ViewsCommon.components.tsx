@@ -7,6 +7,7 @@ export const ViewContainer = styled.div`
     flex: 1 0 90%;
     max-height: 100%;
     min-height: 0;
+    position: relative;
 `;
 export const ViewInnerContainer = styled(Flex)`
     max-height: 100%;

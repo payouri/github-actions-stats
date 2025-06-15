@@ -152,7 +152,6 @@ export const OverviewView: FC = () => {
 				<DataTable
 					data={Array.from(values.mostRanJobs.entries())
 						.sort(([, a], [, b]) => b - a)
-						.slice(0, 5)
 						.map(([label, value]) => ({
 							label,
 							value,
@@ -162,20 +161,20 @@ export const OverviewView: FC = () => {
 							key: "label",
 							label: "Most Ran Jobs",
 							getValue: ({ label }) => label,
-							colWidth: "calc(100% - 6rem)",
+							colWidth: "calc(100% - 8rem)",
 						},
 						{
 							key: "value",
 							label: "Count",
 							getValue: ({ value }) => value,
-							colWidth: "6rem",
+							colWidth: "8rem",
+							align: "right",
 						},
 					]}
 				/>
 				<DataTable
 					data={Array.from(values.mostRanSteps.entries())
 						.sort(([, a], [, b]) => b - a)
-						.slice(0, 5)
 						.map(([label, value]) => ({
 							label,
 							value,
@@ -185,20 +184,20 @@ export const OverviewView: FC = () => {
 							key: "label",
 							label: "Most Ran Steps",
 							getValue: ({ label }) => label,
-							colWidth: "calc(100% - 6rem)",
+							colWidth: "calc(100% - 8rem)",
 						},
 						{
 							key: "value",
 							label: "Value",
 							getValue: ({ value }) => value,
-							colWidth: "6rem",
+							colWidth: "8rem",
+							align: "right",
 						},
 					]}
 				/>
 				<DataTable
 					data={Array.from(values.mostTimeUsedJobs.entries())
 						.sort(([, a], [, b]) => b - a)
-						.slice(0, 5)
 						.map(([label, value]) => ({
 							label,
 							value,
@@ -208,20 +207,20 @@ export const OverviewView: FC = () => {
 							key: "Job name",
 							label: "Label",
 							getValue: ({ label }) => label,
-							colWidth: "calc(100% - 6rem)",
+							colWidth: "calc(100% - 8rem)",
 						},
 						{
 							key: "Minutes",
 							label: "Value",
 							getValue: ({ value }) => Math.ceil(value / 60 / 1000),
-							colWidth: "6rem",
+							colWidth: "8rem",
+							align: "right",
 						},
 					]}
 				/>
 				<DataTable
 					data={Array.from(values.mostTimeUsedSteps.entries())
 						.sort(([, a], [, b]) => b - a)
-						.slice(0, 5)
 						.map(([label, value]) => ({
 							label,
 							value,
@@ -231,13 +230,14 @@ export const OverviewView: FC = () => {
 							key: "Job step",
 							label: "Label",
 							getValue: ({ label }) => label,
-							colWidth: "calc(100% - 6rem)",
+							colWidth: "calc(100% - 8rem)",
 						},
 						{
 							key: "value",
 							label: "Minutes",
 							getValue: ({ value }) => Math.ceil(value / 60 / 1000),
-							colWidth: "6rem",
+							colWidth: "8rem",
+							align: "right",
 						},
 					]}
 				/>
