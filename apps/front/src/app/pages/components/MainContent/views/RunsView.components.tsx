@@ -1,37 +1,72 @@
 import type { StoredWorkflowRunWithKey } from "@github-actions-stats/workflow-entity";
 import {
+	GitHubLogoIcon,
+	MinusCircledIcon,
+	PlusCircledIcon,
+	ReloadIcon,
+} from "@radix-ui/react-icons";
+import {
 	Box,
-	Button,
 	Flex,
+	IconButton,
 	Link,
 	Progress,
 	ScrollArea,
 	Table,
-	IconButton,
 	Text,
 } from "@radix-ui/themes";
-import {} from "@radix-ui/themes";
 import type {
 	CellProps,
 	ColumnHeaderCellProps,
 } from "@radix-ui/themes/components/table";
-import { GitHubLogoIcon, ReloadIcon } from "@radix-ui/react-icons";
 import type { TextProps } from "@radix-ui/themes/components/text";
 import dayjs from "dayjs";
-import { useLayoutEffect, useRef, type FC } from "react";
-import { useLoaderData, useLocation, useParams } from "react-router-dom";
+import { useLayoutEffect, useRef, useState, type FC } from "react";
+import { useParams } from "react-router-dom";
+import { trpcReact } from "../../../../hooks/useRequest";
 import { ViewContainer, ViewInnerContainer } from "./ViewsCommon.components";
-import type { runsViewLoader } from "./loaders/RunsView.loader";
-import {
-	queryClient,
-	trpcReact,
-	trpcReactClient,
-} from "../../../../hooks/useRequest";
 
 export const DEFAULT_RUNS_PER_PAGE = 10;
 export const RUNS_PER_PAGE_OPTIONS = [DEFAULT_RUNS_PER_PAGE, 20, 50, 100];
 
 const tableColumns = [
+	{
+		id: "plus",
+		label: "",
+		sortable: false,
+		getData(
+			data: StoredWorkflowRunWithKey,
+			api: {
+				isRowOpen: boolean;
+				handleAction: (params: {
+					action: string;
+					data: StoredWorkflowRunWithKey;
+				}) => Promise<void> | void;
+			},
+		) {
+			return (
+				<Flex gap="1" align="center" justify="center">
+					<IconButton
+						size="1"
+						onClick={() => {
+							if (api.isRowOpen) {
+								api.handleAction({ action: "show_less", data: data });
+								return;
+							}
+							api.handleAction({ action: "show_more", data: data });
+						}}
+					>
+						{api.isRowOpen ? <MinusCircledIcon /> : <PlusCircledIcon />}
+					</IconButton>
+				</Flex>
+			);
+		},
+		cellProps: {
+			align: "center",
+			width: "2rem",
+			maxWidth: "2rem",
+		} as const,
+	},
 	{
 		id: "runDate",
 		label: "Run date",
@@ -250,6 +285,7 @@ const RunTable: FC<{
 	}) => void;
 }> = ({ isLoadingPage, workflowRuns, onTableScroll }) => {
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const [openedRuns, setOpenedRuns] = useState<Set<number>>(new Set());
 
 	useLayoutEffect(() => {
 		if (!scrollRef.current) return;
@@ -268,6 +304,31 @@ const RunTable: FC<{
 			scrollElement.removeEventListener("scroll", onScroll);
 		};
 	}, [onTableScroll]);
+	function handleAction(params: {
+		action: string;
+		data: StoredWorkflowRunWithKey;
+	}) {
+		// console.log("handleAction", params);
+		switch (params.action) {
+			case "show_more": {
+				return setOpenedRuns((prev) => {
+					const newSet = new Set(prev);
+					newSet.add(params.data.runId);
+					return newSet;
+				});
+			}
+			case "show_less": {
+				return setOpenedRuns((prev) => {
+					const newSet = new Set(prev);
+					newSet.delete(params.data.runId);
+					return newSet;
+				});
+			}
+			default: {
+				throw new Error("Invalid action");
+			}
+		}
+	}
 
 	return (
 		<>
@@ -333,30 +394,50 @@ const RunTable: FC<{
 					<Table.Body style={{ position: "relative", overflow: "auto" }}>
 						{workflowRuns.map((workflowRun) => {
 							return (
-								<Table.Row key={workflowRun.runId}>
-									{tableColumns.map((column) => {
-										const data = column.getData(workflowRun);
-										return (
-											<Table.Cell {...column.cellProps} key={column.id}>
-												{["string", "number", "boolean"].includes(
-													typeof data,
-												) ? (
-													<Text
-														color={
-															"getCellTextColor" in column
-																? column.getCellTextColor?.(workflowRun)
-																: undefined
-														}
-													>
-														{data}
-													</Text>
-												) : (
-													data
-												)}
+								<>
+									<Table.Row key={workflowRun.runId}>
+										{tableColumns.map((column) => {
+											const data = column.getData(workflowRun, {
+												isRowOpen: openedRuns.has(workflowRun.runId),
+												handleAction,
+											});
+											return (
+												<Table.Cell {...column.cellProps} key={column.id}>
+													{["string", "number", "boolean"].includes(
+														typeof data,
+													) ? (
+														<Text
+															color={
+																"getCellTextColor" in column
+																	? column.getCellTextColor?.(workflowRun)
+																	: undefined
+															}
+														>
+															{data}
+														</Text>
+													) : (
+														data
+													)}
+												</Table.Cell>
+											);
+										})}
+									</Table.Row>
+									{openedRuns.has(workflowRun.runId) ? (
+										<Table.Row key={`${workflowRun.runId}-opened`}>
+											<Table.Cell colSpan={tableColumns.length}>
+												<Box
+													style={{
+														border: "1px solid var(--gray-4)",
+														borderRadius: "var(--radix-radii-lg)",
+														padding: "1rem",
+													}}
+												>
+													<Text>More...</Text>
+												</Box>
 											</Table.Cell>
-										);
-									})}
-								</Table.Row>
+										</Table.Row>
+									) : null}
+								</>
 							);
 						})}
 					</Table.Body>

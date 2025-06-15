@@ -16,17 +16,11 @@ import {
 	type MouseEvent,
 	type ReactNode,
 } from "react";
+import type { ColumnDefinition } from "./DataTable.types";
 
 export const DataTable = <Data extends Record<string, unknown>>(props: {
 	data: Data[];
-	columns: {
-		key: keyof Data | (string & {});
-		label: string;
-		getValue: (data: Data) => string | number | ReactNode | null | undefined;
-		align?: "left" | "center" | "right";
-		alignHeader?: "left" | "center" | "right";
-		colWidth?: CellProps["width"];
-	}[];
+	columns: ColumnDefinition<Data>[];
 	getRowKey?: (data: Data) => string;
 	initialRowsCount?: number;
 }): ReactNode => {
@@ -46,22 +40,14 @@ export const DataTable = <Data extends Record<string, unknown>>(props: {
 		setDisplayRowsCount(newRowsCount);
 
 		if (event.target instanceof HTMLButtonElement) {
-			event.target.blur();
-			console.log({
-				lastRowRef: lastRowRef.current,
-				tableRef: tableRef.current,
-			});
+			event.target.blur(); // TODO: fix this
 			setTimeout(() => {
-				console.log("scroll");
-				console.log({
-					lastRowRef: lastRowRef.current,
-					tableRef: tableRef.current,
-				});
-				lastRowRef.current?.scrollIntoView({
-					block: "end",
-					behavior: "smooth",
-				});
-				tableRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+				if (event.target instanceof HTMLButtonElement) {
+					event.target.scrollIntoView({
+						block: "end",
+						behavior: "smooth",
+					});
+				}
 			}, 100);
 		}
 	}
@@ -80,28 +66,32 @@ export const DataTable = <Data extends Record<string, unknown>>(props: {
 						<Table.Header style={{ position: "sticky", top: "0" }}>
 							<Table.Row>
 								{columns.map(
-									({ key, label, colWidth, alignHeader, align }, index) => (
-										<Table.ColumnHeaderCell
-											width={colWidth}
-											maxWidth={colWidth}
-											key={`column-${key.toString()}`}
-											style={{
-												whiteSpace: "nowrap",
-												overflow: "hidden",
-												textOverflow: "ellipsis",
-											}}
-											align={alignHeader || align}
-										>
-											<Flex gap="2" display="inline-flex" align="center">
-												{label}
-												{index === columns.length - 1 ? (
-													<IconButton size="1">
-														<ChevronDownIcon />
-													</IconButton>
-												) : null}
-											</Flex>
-										</Table.ColumnHeaderCell>
-									),
+									({ label, cellProps, headerCellProps, key }, index) => {
+										return (
+											<Table.ColumnHeaderCell
+												width={headerCellProps?.width || cellProps?.width}
+												maxWidth={
+													headerCellProps?.maxWidth || cellProps?.maxWidth
+												}
+												key={`column-${key.toString()}`}
+												style={{
+													whiteSpace: "nowrap",
+													overflow: "hidden",
+													textOverflow: "ellipsis",
+												}}
+												align={headerCellProps?.align || cellProps?.align}
+											>
+												<Flex gap="2" display="inline-flex" align="center">
+													{label}
+													{index === columns.length - 1 ? (
+														<IconButton size="1">
+															<ChevronDownIcon />
+														</IconButton>
+													) : null}
+												</Flex>
+											</Table.ColumnHeaderCell>
+										);
+									},
 								)}
 							</Table.Row>
 						</Table.Header>
@@ -118,30 +108,34 @@ export const DataTable = <Data extends Record<string, unknown>>(props: {
 					<Table.Header>
 						<Table.Row style={{ position: "sticky", top: "0px" }}>
 							{columns.map(
-								({ key, label, colWidth, alignHeader, align }, index) => (
-									<Table.ColumnHeaderCell
-										width={colWidth}
-										maxWidth={colWidth}
-										key={`column-${key.toString()}`}
-										style={{
-											whiteSpace: "nowrap",
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-										}}
-										align={alignHeader || align}
-									>
-										<Flex gap="2" display="inline-flex" align="center">
-											{label}
-											{index === columns.length - 1 ? (
-												<Collapsible.Trigger asChild>
-													<IconButton size="1">
-														<MinusIcon />
-													</IconButton>
-												</Collapsible.Trigger>
-											) : null}
-										</Flex>
-									</Table.ColumnHeaderCell>
-								),
+								({ label, cellProps, headerCellProps, key }, index) => {
+									return (
+										<Table.ColumnHeaderCell
+											width={headerCellProps?.width || cellProps?.width}
+											maxWidth={
+												headerCellProps?.maxWidth || cellProps?.maxWidth
+											}
+											key={`column-${key.toString()}`}
+											style={{
+												whiteSpace: "nowrap",
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+											}}
+											align={headerCellProps?.align || cellProps?.align}
+										>
+											<Flex gap="2" display="inline-flex" align="center">
+												{label}
+												{index === columns.length - 1 ? (
+													<Collapsible.Trigger asChild>
+														<IconButton size="1">
+															<MinusIcon />
+														</IconButton>
+													</Collapsible.Trigger>
+												) : null}
+											</Flex>
+										</Table.ColumnHeaderCell>
+									);
+								},
 							)}
 						</Table.Row>
 					</Table.Header>
@@ -169,29 +163,30 @@ export const DataTable = <Data extends Record<string, unknown>>(props: {
 										key={rowKey}
 										ref={index === data.length - 1 ? lastRowRef : undefined}
 									>
-										{columns.map(({ key, colWidth, getValue, align }) => {
+										{columns.map(({ key, getCellData, cellProps }) => {
 											const columnKey = `${rowKey}-${key.toString()}`;
 											return (
 												<Table.Cell
-													width={colWidth}
-													maxWidth={colWidth}
+													width={cellProps?.width}
+													maxWidth={cellProps?.maxWidth || cellProps?.width}
 													key={columnKey}
 													style={{
 														whiteSpace: "nowrap",
 														overflow: "hidden",
 														textOverflow: "ellipsis",
 													}}
-													align={align}
+													align={cellProps?.align}
 												>
 													<Text
 														style={{
-															maxWidth: colWidth as string,
+															maxWidth: (cellProps?.maxWidth ||
+																"100%") as string,
 															whiteSpace: "nowrap",
 															overflow: "hidden",
 															textOverflow: "ellipsis",
 														}}
 													>
-														{getValue(v)}
+														{getCellData(v)}
 													</Text>
 												</Table.Cell>
 											);

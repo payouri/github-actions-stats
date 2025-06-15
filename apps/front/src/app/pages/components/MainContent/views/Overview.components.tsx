@@ -160,15 +160,18 @@ export const OverviewView: FC = () => {
 						{
 							key: "label",
 							label: "Most Ran Jobs",
-							getValue: ({ label }) => label,
-							colWidth: "calc(100% - 8rem)",
+							getCellData({ label }) {
+								return label;
+							},
+							cellProps: { width: "calc(100% - 8rem)" },
 						},
 						{
 							key: "value",
 							label: "Count",
-							getValue: ({ value }) => value,
-							colWidth: "8rem",
-							align: "right",
+							getCellData({ value }) {
+								return value;
+							},
+							cellProps: { width: "8rem", align: "right" },
 						},
 					]}
 				/>
@@ -183,15 +186,18 @@ export const OverviewView: FC = () => {
 						{
 							key: "label",
 							label: "Most Ran Steps",
-							getValue: ({ label }) => label,
-							colWidth: "calc(100% - 8rem)",
+							getCellData({ label }) {
+								return label;
+							},
+							cellProps: { width: "calc(100% - 8rem)" },
 						},
 						{
-							key: "value",
-							label: "Value",
-							getValue: ({ value }) => value,
-							colWidth: "8rem",
-							align: "right",
+							key: "count",
+							label: "Count",
+							getCellData({ value }) {
+								return value;
+							},
+							cellProps: { width: "8rem", align: "right" },
 						},
 					]}
 				/>
@@ -204,17 +210,20 @@ export const OverviewView: FC = () => {
 						}))}
 					columns={[
 						{
-							key: "Job name",
-							label: "Label",
-							getValue: ({ label }) => label,
-							colWidth: "calc(100% - 8rem)",
+							key: "job_name",
+							label: "Most Time Consuming Jobs",
+							getCellData({ label }) {
+								return label;
+							},
+							cellProps: { width: "calc(100% - 8rem)" },
 						},
 						{
-							key: "Minutes",
-							label: "Value",
-							getValue: ({ value }) => Math.ceil(value / 60 / 1000),
-							colWidth: "8rem",
-							align: "right",
+							key: "value",
+							label: "Minutes",
+							getCellData({ value }) {
+								return Math.ceil(value / 60 / 1000);
+							},
+							cellProps: { width: "8rem", align: "right" },
 						},
 					]}
 				/>
@@ -227,17 +236,20 @@ export const OverviewView: FC = () => {
 						}))}
 					columns={[
 						{
-							key: "Job step",
-							label: "Label",
-							getValue: ({ label }) => label,
-							colWidth: "calc(100% - 8rem)",
+							key: "step_name",
+							label: "Most Time Consuming Steps",
+							getCellData({ label }) {
+								return label;
+							},
+							cellProps: { width: "calc(100% - 8rem)" },
 						},
 						{
-							key: "value",
+							key: "duration",
 							label: "Minutes",
-							getValue: ({ value }) => Math.ceil(value / 60 / 1000),
-							colWidth: "8rem",
-							align: "right",
+							getCellData({ value }) {
+								return Math.ceil(value / 60 / 1000);
+							},
+							cellProps: { width: "8rem", align: "right" },
 						},
 					]}
 				/>
