@@ -15,6 +15,14 @@ export function formatGithubUsageDataToLocalUsageData(
 ): RunUsageData {
 	const durationPerLabel: Record<string, number> = {};
 	let totalMs = 0;
+	console.log(
+		"Object.keys(usageData.billable)",
+		Object.keys(usageData.billable),
+	);
+	console.log(
+		"Object.keys(jobsMap)",
+		jobsMap ? Object.keys(jobsMap).length : jobsMap,
+	);
 	const jobRuns = Object.entries(usageData.billable).reduce<GithubJobData[]>(
 		(acc, [osPlatform, osData]) => {
 			durationPerLabel[osPlatform] = osData.total_ms;
