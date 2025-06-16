@@ -42,7 +42,7 @@ export function createQueue<T extends DefaultJobsMap>(
 			attempts: 0,
 			removeOnComplete: true,
 			removeOnFail: true,
-			sizeLimit: 1024 / 4,
+			sizeLimit: 1024,
 			backoff: {
 				type: "exponential",
 				delay: 1000,
