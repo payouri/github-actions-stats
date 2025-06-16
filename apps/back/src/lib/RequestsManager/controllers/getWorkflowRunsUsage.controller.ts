@@ -78,6 +78,7 @@ export const buildGetWorkflowRunsUsageController = (
 
 				workflowRunsUsageData[runId] = formatGithubUsageDataToLocalUsageData(
 					response.data,
+					undefined,
 				);
 
 				if (

@@ -96,7 +96,7 @@ export const buildGetWorkflowRunsUsageRequest = (
 				});
 				totalWorkflowRunsUsageCount += 1;
 				workflowRunsUsageData[Number(runId)] =
-					formatGithubUsageDataToLocalUsageData(response.data);
+					formatGithubUsageDataToLocalUsageData(response.data, undefined);
 
 				// biome-ignore lint/complexity/noForEach: <explanation>
 				getJobsArray(workflowRunsUsageData[runId]).forEach((job) => {

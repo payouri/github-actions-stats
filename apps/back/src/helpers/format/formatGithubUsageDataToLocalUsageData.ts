@@ -9,7 +9,9 @@ import dayjs from "dayjs";
 
 export function formatGithubUsageDataToLocalUsageData(
 	usageData: components["schemas"]["workflow-run-usage"],
-	jobsMap?: Record<number, components["schemas"]["job"] | RunJobData>,
+	jobsMap:
+		| Record<number, components["schemas"]["job"] | RunJobData>
+		| undefined,
 ): RunUsageData {
 	const durationPerLabel: Record<string, number> = {};
 	let totalMs = 0;
@@ -17,10 +19,22 @@ export function formatGithubUsageDataToLocalUsageData(
 		(acc, [osPlatform, osData]) => {
 			durationPerLabel[osPlatform] = osData.total_ms;
 			totalMs += osData.total_ms;
+			console.log(
+				"osData",
+				osData.job_runs?.length,
+				osData.jobs,
+				osData.total_ms,
+			);
 			if (!osData || !osData.jobs || !osData.job_runs?.length) return acc;
 
 			for (const jobRun of osData.job_runs) {
 				const maybeData = jobsMap?.[jobRun.job_id];
+				console.log(
+					"maybeData",
+					!!maybeData,
+					maybeData?.steps?.length,
+					maybeData?.started_at,
+				);
 
 				acc.push({
 					job_id: jobRun.job_id,
