@@ -1,14 +1,9 @@
+import { Grid } from "@radix-ui/themes";
 import type { FC } from "react";
-import { ViewContainer, ViewInnerContainer } from "./ViewsCommon.components";
-import {
-	useMainContentDataLoader,
-	useRouteMainContentDataLoader,
-	useRouteStatsDataLoader,
-	useStatsDataLoader,
-} from "../MainContent.loader";
-import { NumberBox } from "../../../../components/NumberBox/NumberBox.component";
-import { Flex, Grid } from "@radix-ui/themes";
 import { DataTable } from "../../../../components/DataTable/DataTable.component";
+import { NumberBox } from "../../../../components/NumberBox/NumberBox.component";
+import { useRouteStatsDataLoader } from "../MainContent.loader";
+import { ViewContainer, ViewInnerContainer } from "./ViewsCommon.components";
 
 const StatsBoxes: FC<{
 	loading: boolean;

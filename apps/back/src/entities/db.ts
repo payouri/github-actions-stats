@@ -258,8 +258,17 @@ export const DB = {
 		aggregateAndSaveStats,
 		saveWorkflowData,
 		upsertWorkflowRunStat,
-		createPendingJob(params: Omit<PendingJob, "data"> & WorkflowQueueJobData) {
-			return pendingJobsMongoStorage.set(new ObjectId().toString(), params);
+		createPendingJob(
+			params: Omit<PendingJob, "data"> &
+				WorkflowQueueJobData & {
+					jobKey?: string;
+				},
+		) {
+			const { jobKey, ...jobData } = params;
+			return pendingJobsMongoStorage.set(
+				jobKey || new ObjectId().toString(),
+				jobData,
+			);
 		},
 	},
 } as const;

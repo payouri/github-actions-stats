@@ -25,10 +25,6 @@ function getMaps(params: InputRun) {
 		jobDurationMap: {},
 	};
 
-	console.log(
-		"params.usageData?.billable.jobRuns",
-		params.usageData?.billable.jobRuns?.length,
-	);
 	if (!params.usageData?.billable.jobRuns) return state;
 
 	for (const job of params.usageData?.billable.jobRuns ?? []) {

@@ -37,6 +37,7 @@ export const getWorkflowRunsProcedureInputSchema = z.object({
 	workflowKey: z.string(),
 	cursor: z.number().nullish(),
 	count: z.number(),
+	order: z.enum(["asc", "desc"]).default("desc"),
 });
 export const getAggregatedWorkflowStatsProcedureInputSchema = z.object({
 	workflowKey: z.string(),
@@ -118,7 +119,7 @@ function buildGetWorkflowRunsProcedure(dependencies: {
 	const { storedWorkflowRunMongoStorage } = dependencies;
 
 	return async ({ input }): GetWorkflowRunsProcedureResponse => {
-		const { cursor: start, count, workflowKey } = input;
+		const { cursor: start, count, workflowKey, order } = input;
 		const result = await storedWorkflowRunMongoStorage.query(
 			{
 				workflowKey,
@@ -126,6 +127,9 @@ function buildGetWorkflowRunsProcedure(dependencies: {
 			{
 				start: start ?? 0,
 				limit: count,
+				sort: {
+					runAt: order === "asc" ? 1 : -1,
+				},
 			},
 		);
 

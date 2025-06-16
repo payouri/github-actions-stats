@@ -36,6 +36,7 @@ async function handleWorkflowRunEvent<Env extends HonoRequestContext>(
 		| "workflow_run_name_missing"
 		| "workflow_missing"
 		| "failed_to_add_workflow_run"
+		| "failed_to_add_job"
 	>
 > {
 	const data: WorkflowRunEvent = await c.req.json();
@@ -113,23 +114,36 @@ async function handleWorkflowRunEvent<Env extends HonoRequestContext>(
 				},
 			};
 		}
+		const workflowRunKey = generateWorkflowRunKey({
+			workflowKey: formattedRun.workflowKey,
+			runId: formattedRun.runId,
+		});
 		const addJobResult = await DB.mutations.createPendingJob({
 			data: {
-				workflowRunKey: generateWorkflowRunKey({
-					workflowKey: formattedRun.workflowKey,
-					runId: formattedRun.runId,
-				}),
+				workflowRunKey,
 			},
 			group: DEFAULT_PENDING_JOB_GROUP,
 			method: POPULATE_RUN_AND_CREATE_STAT_JOB_NAME,
+			jobKey: `${POPULATE_RUN_AND_CREATE_STAT_JOB_NAME}/${workflowRunKey}`,
 		});
-		if (addJobResult)
+
+		if (addJobResult.hasFailed) {
 			return {
-				hasFailed: false,
-				data: {
-					status: "handled",
+				hasFailed: true,
+				error: {
+					code: "failed_to_add_job",
+					message: addJobResult.error.message,
+					error: addJobResult.error.error,
+					data: addJobResult.error.data,
 				},
 			};
+		}
+		return {
+			hasFailed: false,
+			data: {
+				status: "handled",
+			},
+		};
 	}
 
 	return {
