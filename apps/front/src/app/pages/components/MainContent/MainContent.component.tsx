@@ -1,5 +1,5 @@
 import { aggregatePeriodSchema } from "@github-actions-stats/workflow-entity";
-import { Flex } from "@radix-ui/themes";
+import { Button, Flex } from "@radix-ui/themes";
 import type { FC } from "react";
 import {
 	useLocation,
@@ -13,6 +13,7 @@ import { SelectDateRange } from "../../../components/SelectDateRange/SelectDateR
 import { TabNavigation } from "../../../components/TabNavigation/TabNavigation.component";
 import { useRouteHomePageDataLoader } from "../../Home.loader";
 import { getMainContentFormattedRoutes } from "./MainContent.router";
+import { queryClientUtils, trpcReactClient } from "../../../hooks/useRequest";
 
 export const NoWorkflows: FC = () => {
 	return <div>No workflows</div>;
@@ -44,6 +45,24 @@ const MainContent: FC = () => {
 	const initialPeriod = aggregatePeriodSchema.safeParse(
 		locationSearchParams.get("period"),
 	);
+	const isLoadingRefreshWorkflow =
+		queryClientUtils.refreshWorkflowRunsData.isMutating() > 0;
+	async function onRefreshWorkflowRunsClick() {
+		console.log(
+			"onRefreshWorkflowRunsClick",
+			workflowKey,
+			isLoadingRefreshWorkflow,
+		);
+		if (isLoadingRefreshWorkflow) return;
+		if (!workflowKey) throw new Error("Workflow key is not defined");
+
+		const response = await trpcReactClient.refreshWorkflowRunsData.mutate({
+			workflowKey,
+		});
+		if (response.hasFailed) {
+			throw new Error("Failed to refresh workflow runs");
+		}
+	}
 
 	return (
 		<Flex
@@ -83,29 +102,39 @@ const MainContent: FC = () => {
 					)}
 					links={getMainContentFormattedRoutes()}
 				/>
-				{shouldShowDatePicker({
-					matches,
-				}) ? (
-					<SelectDateRange
-						initialPeriod={
-							initialPeriod.success ? initialPeriod.data : "last_7_days"
-						}
-						onPeriodChange={({ period, from, to }) => {
-							locationSearchParams.set("period", period);
-							if (period === "custom") {
-								locationSearchParams.set("from", from.toISOString());
-								locationSearchParams.set("to", to.toISOString());
-							} else {
-								locationSearchParams.delete("from");
-								locationSearchParams.delete("to");
+				<Flex align="center" gap="2">
+					{shouldShowDatePicker({
+						matches,
+					}) ? (
+						<SelectDateRange
+							initialPeriod={
+								initialPeriod.success ? initialPeriod.data : "last_7_days"
 							}
-							navigate({
-								...location,
-								search: locationSearchParams.toString(),
-							});
-						}}
-					/>
-				) : null}
+							onPeriodChange={({ period, from, to }) => {
+								locationSearchParams.set("period", period);
+								if (period === "custom") {
+									locationSearchParams.set("from", from.toISOString());
+									locationSearchParams.set("to", to.toISOString());
+								} else {
+									locationSearchParams.delete("from");
+									locationSearchParams.delete("to");
+								}
+								navigate({
+									...location,
+									search: locationSearchParams.toString(),
+								});
+							}}
+						/>
+					) : null}
+					{workflowKey ? (
+						<Button
+							loading={isLoadingRefreshWorkflow}
+							onClick={onRefreshWorkflowRunsClick}
+						>
+							Refresh Workflow Runs
+						</Button>
+					) : null}
+				</Flex>
 			</Flex>
 			{outlet}
 		</Flex>

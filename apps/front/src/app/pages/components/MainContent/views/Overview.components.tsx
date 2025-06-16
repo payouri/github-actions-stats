@@ -169,6 +169,7 @@ export const OverviewView: FC = () => {
 							cellProps: { width: "8rem", align: "right" },
 						},
 					]}
+					getRowKey={({ label }) => label}
 				/>
 				<DataTable
 					data={Array.from(values.mostRanSteps.entries())
@@ -195,6 +196,7 @@ export const OverviewView: FC = () => {
 							cellProps: { width: "8rem", align: "right" },
 						},
 					]}
+					getRowKey={({ label }) => label}
 				/>
 				<DataTable
 					data={Array.from(values.mostTimeUsedJobs.entries())
@@ -221,6 +223,7 @@ export const OverviewView: FC = () => {
 							cellProps: { width: "8rem", align: "right" },
 						},
 					]}
+					getRowKey={({ label }) => label}
 				/>
 				<DataTable
 					data={Array.from(values.mostTimeUsedSteps.entries())
@@ -247,6 +250,7 @@ export const OverviewView: FC = () => {
 							cellProps: { width: "8rem", align: "right" },
 						},
 					]}
+					getRowKey={({ label }) => label}
 				/>
 			</ViewInnerContainer>
 		</ViewContainer>

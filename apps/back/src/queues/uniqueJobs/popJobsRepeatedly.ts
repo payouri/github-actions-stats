@@ -19,7 +19,7 @@ type Steps = Readonly<{
 
 export const POP_JOBS_REPEATEDLY_JOB_NAME = "pop-jobs-repeatedly" as const;
 const NO_JOB_DEFAULT_DELAY_MS = 5000;
-const JOB_ALREADY_PROCESSING_DELAY_MS = 1000;
+const JOB_ALREADY_PROCESSING_DELAY_MS = 100;
 
 const firstStep = {
 	name: "get-next-job",
@@ -114,7 +114,7 @@ export const PopJobsRepeatedly: {
 			}
 			throw new ReprocessLaterError({
 				message: "No pending jobs found",
-				delayMs: NO_JOB_DEFAULT_DELAY_MS,
+				delayMs: JOB_ALREADY_PROCESSING_DELAY_MS,
 				jobToken: jobData.token,
 			});
 		}

@@ -69,7 +69,10 @@ export const DataTable = <Data extends Record<string, unknown>>(props: {
 					<DataTableHeader columns={columns} isOpen={isOpen} />
 					<Table.Body>
 						{!data.length ? (
-							<DataTableNoData columnsCount={columns.length} />
+							<DataTableNoData
+								columnsCount={columns.length}
+								key={`${tableId}-no-data`}
+							/>
 						) : (
 							data.slice(0, displayRowsCount).map((v, index) => {
 								const rowKey = getRowKey?.(v) ?? String(index);

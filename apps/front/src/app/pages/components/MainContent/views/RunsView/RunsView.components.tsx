@@ -21,14 +21,9 @@ import type {
 } from "@radix-ui/themes/components/table";
 import type { TextProps } from "@radix-ui/themes/components/text";
 import dayjs from "dayjs";
-import { useLayoutEffect, useRef, useState, type FC } from "react";
+import { Fragment, useLayoutEffect, useRef, useState, type FC } from "react";
 import { useParams } from "react-router-dom";
-import {
-	queryClient,
-	queryClientUtils,
-	trpcReact,
-	trpcReactClient,
-} from "../../../../../hooks/useRequest";
+import { trpcReact, trpcReactClient } from "../../../../../hooks/useRequest";
 import { ViewContainer, ViewInnerContainer } from "../ViewsCommon.components";
 
 export const DEFAULT_RUNS_PER_PAGE = 10;
@@ -433,8 +428,12 @@ const RunTable: FC<{
 					<Table.Body style={{ position: "relative", overflow: "auto" }}>
 						{workflowRuns.map((workflowRun) => {
 							return (
-								<>
-									<Table.Row key={workflowRun.runId}>
+								<Fragment
+									key={`${workflowRun.runId}-${workflowRun.startedAt.toISOString()}`}
+								>
+									<Table.Row
+										key={`${workflowRun.runId}-${workflowRun.startedAt.toISOString()}`}
+									>
 										{tableColumns.map((column) => {
 											const data = column.getData(workflowRun, {
 												loadingReloads,
@@ -477,7 +476,7 @@ const RunTable: FC<{
 											</Table.Cell>
 										</Table.Row>
 									) : null}
-								</>
+								</Fragment>
 							);
 						})}
 					</Table.Body>
