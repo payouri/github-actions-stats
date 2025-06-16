@@ -14,7 +14,6 @@ export function formatGithubUsageDataToLocalUsageData(
 		| undefined,
 ): RunUsageData {
 	const durationPerLabel: Record<string, number> = {};
-	let totalMs = 0;
 	console.log(
 		"Object.keys(usageData.billable)",
 		Object.keys(usageData.billable),
@@ -27,10 +26,47 @@ export function formatGithubUsageDataToLocalUsageData(
 		"Object.values(jobsMap)",
 		jobsMap ? Object.values(jobsMap)[0] : jobsMap,
 	);
+
+	if (jobsMap && Object.keys(jobsMap).length > 0) {
+		let totalMs = 0;
+		const durationPerLabel: Record<string, number> = {};
+		const jobsRuns: GithubJobData[] = [];
+		for (const [_, job] of Object.entries(jobsMap)) {
+			const jobDuration = dayjs(job.completed_at).diff(
+				job.started_at,
+				"millisecond",
+			);
+			if (job.labels?.length) {
+				for (const label of job.labels) {
+					if (!durationPerLabel[label]) durationPerLabel[label] = 0;
+					durationPerLabel[label] += jobDuration;
+				}
+			}
+			totalMs += jobDuration;
+			jobsRuns.push({
+				job_id: job.id,
+				duration_ms: jobDuration,
+				data: runJobDataSchema.parse(job),
+			});
+		}
+
+		return {
+			run_duration_ms: totalMs,
+			billable: {
+				durationPerLabel,
+				totalMs,
+				jobsCount: jobsRuns.length,
+				jobRuns: jobsRuns,
+			},
+		};
+	}
+
+	let totalMs = usageData.run_duration_ms;
 	const jobRuns = Object.entries(usageData.billable).reduce<GithubJobData[]>(
 		(acc, [osPlatform, osData]) => {
 			durationPerLabel[osPlatform] = osData.total_ms;
-			totalMs += osData.total_ms;
+			if (!totalMs) totalMs = osData.total_ms;
+			else totalMs += osData.total_ms;
 			console.log(
 				"osData",
 				osData.job_runs?.length,
@@ -72,7 +108,7 @@ export function formatGithubUsageDataToLocalUsageData(
 		run_duration_ms: totalMs,
 		billable: {
 			durationPerLabel,
-			totalMs,
+			totalMs: totalMs ?? 0,
 			jobsCount: jobRuns.length,
 			jobRuns,
 		},
