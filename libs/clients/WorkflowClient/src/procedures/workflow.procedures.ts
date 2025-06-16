@@ -340,7 +340,7 @@ function buildRefreshWorkflowRunsData(dependencies: {
 			for (const chunk of runsChunks) {
 				if (chunk.length === 0) continue;
 				const setResult = await pendingJobStorage.set(
-					`refresh-runs-data-${chunk[0].runId}`,
+					`refresh-runs-data-${chunk[0].key}`,
 					{
 						method: "refresh-runs-data",
 						group: DEFAULT_PENDING_JOB_GROUP,
