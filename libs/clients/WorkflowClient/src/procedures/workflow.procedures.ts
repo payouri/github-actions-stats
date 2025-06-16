@@ -330,7 +330,7 @@ function buildRefreshWorkflowRunsData(dependencies: {
 					},
 					{
 						projection: {
-							runId: 1,
+							key: 1,
 						},
 					},
 				),
@@ -345,7 +345,7 @@ function buildRefreshWorkflowRunsData(dependencies: {
 						method: "refresh-runs-data",
 						group: DEFAULT_PENDING_JOB_GROUP,
 						data: {
-							runKeys: chunk.map((r) => r.runId),
+							runKeys: chunk.map((r) => r.key),
 						},
 					},
 				);
