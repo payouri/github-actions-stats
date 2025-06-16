@@ -111,6 +111,10 @@ const JobStepMap = {
 		const getRunDataResponse = await DB.queries.getRunData({
 			runKey: workflowRunKey,
 		});
+		console.log(
+			"computeStats",
+			getRunDataResponse?.usageData?.billable.jobRuns?.length,
+		);
 		if (!getRunDataResponse) {
 			return {
 				hasFailed: true,
