@@ -14,18 +14,6 @@ export function formatGithubUsageDataToLocalUsageData(
 		| undefined,
 ): RunUsageData {
 	const durationPerLabel: Record<string, number> = {};
-	console.log(
-		"Object.keys(usageData.billable)",
-		Object.keys(usageData.billable),
-	);
-	console.log(
-		"Object.keys(jobsMap)",
-		jobsMap ? Object.keys(jobsMap).length : jobsMap,
-	);
-	console.log(
-		"Object.values(jobsMap)",
-		jobsMap ? Object.values(jobsMap)[0] : jobsMap,
-	);
 
 	if (jobsMap && Object.keys(jobsMap).length > 0) {
 		let firstJobDate = dayjs();

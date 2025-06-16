@@ -34,10 +34,6 @@ export function buildUpsertWorkflowRunStat(dependencies: {
 		>,
 	): Promise<UpsertWorkflowRunStatResponse> {
 		const statToInsert = convertWorkflowRunToWorkflowRunStat(params);
-		console.log(
-			"statToInsert.stepsDurationMs",
-			Object.keys(statToInsert.stepsDurationMs).length,
-		);
 
 		const setResult = await workflowRunStatsStorage.set(
 			generateWorkflowRunKey({

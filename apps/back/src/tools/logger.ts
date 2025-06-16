@@ -7,7 +7,6 @@ export const toolLogger = createLogger({
 			format: {
 				options: {},
 				transform(info, opts) {
-					// console.log(info, opts);
 					return info;
 				},
 			},

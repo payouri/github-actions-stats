@@ -19,7 +19,6 @@ export async function initUniqueJobs(
 				opts: jobOpts,
 				data: job,
 			});
-			// if (res.token) console.log(await res.moveToWait(res.token));
 		}
 	}
 

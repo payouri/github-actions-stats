@@ -8,7 +8,6 @@ export function formatRunData(params: {
 	usageData: components["schemas"]["workflow-run-usage"];
 }): StoredWorkflowRun {
 	const { run, jobs, usageData } = params;
-	console.log("jobs.length", jobs.length);
 	const formattedUsageData = formatGithubUsageDataToLocalUsageData(
 		usageData,
 		jobs.reduce<Record<number, components["schemas"]["job"]>>((acc, val) => {

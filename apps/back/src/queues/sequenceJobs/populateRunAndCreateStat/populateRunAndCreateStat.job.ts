@@ -66,13 +66,6 @@ const JobStepMap = {
 			}),
 		]);
 
-		console.log(
-			"allGithubJobs.length",
-			allGithubJobs.length,
-			"runUsageDataResponse.data.run_duration_ms",
-			runUsageDataResponse.data.run_duration_ms,
-		);
-
 		const addWorkflowRunResult = await DB.mutations.addWorkflowRun({
 			workflowKey,
 			workflowRun: formatRunData({

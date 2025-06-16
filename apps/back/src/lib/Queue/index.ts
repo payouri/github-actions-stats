@@ -100,7 +100,6 @@ export function createQueue<T extends DefaultJobsMap>(
 	): ReturnType<Queue<T>["isExistingJob"]> {
 		const [jobId] = params;
 		const job = await queue.getJobState(jobId);
-		// console.log("isExistingJob", job);
 		return job !== "unknown";
 	}
 	async function getJob(
