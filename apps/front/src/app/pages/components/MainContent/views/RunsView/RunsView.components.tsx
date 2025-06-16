@@ -23,8 +23,13 @@ import type { TextProps } from "@radix-ui/themes/components/text";
 import dayjs from "dayjs";
 import { useLayoutEffect, useRef, useState, type FC } from "react";
 import { useParams } from "react-router-dom";
-import { trpcReact } from "../../../../hooks/useRequest";
-import { ViewContainer, ViewInnerContainer } from "./ViewsCommon.components";
+import {
+	queryClient,
+	queryClientUtils,
+	trpcReact,
+	trpcReactClient,
+} from "../../../../../hooks/useRequest";
+import { ViewContainer, ViewInnerContainer } from "../ViewsCommon.components";
 
 export const DEFAULT_RUNS_PER_PAGE = 10;
 export const RUNS_PER_PAGE_OPTIONS = [DEFAULT_RUNS_PER_PAGE, 20, 50, 100];
@@ -245,7 +250,16 @@ const tableColumns = [
 		id: "actions",
 		label: "",
 		sortable: false,
-		getData(workflowRun: StoredWorkflowRunWithKey) {
+		getData(
+			workflowRun: StoredWorkflowRunWithKey,
+			api: {
+				handleAction: (params: {
+					action: string;
+					data: StoredWorkflowRunWithKey;
+				}) => Promise<void> | void;
+			},
+		) {
+			const isLoading = queryClientUtils.refreshRunsData.isMutating();
 			return (
 				<Flex gap="1" align="center" justify="center">
 					<Link
@@ -261,7 +275,14 @@ const tableColumns = [
 							<GitHubLogoIcon />
 						</Flex>
 					</Link>
-					<IconButton variant="ghost" size="1">
+					<IconButton
+						variant="ghost"
+						loading={isLoading > 0}
+						size="1"
+						onClick={() => {
+							api.handleAction({ action: "reload_data", data: workflowRun });
+						}}
+					>
 						<ReloadIcon />
 					</IconButton>
 				</Flex>
@@ -304,7 +325,7 @@ const RunTable: FC<{
 			scrollElement.removeEventListener("scroll", onScroll);
 		};
 	}, [onTableScroll]);
-	function handleAction(params: {
+	async function handleAction(params: {
 		action: string;
 		data: StoredWorkflowRunWithKey;
 	}) {
@@ -323,6 +344,12 @@ const RunTable: FC<{
 					newSet.delete(params.data.runId);
 					return newSet;
 				});
+			}
+			case "reload_data": {
+				await trpcReactClient.refreshRunsData.mutate({
+					runKeys: [params.data.key],
+				});
+				return;
 			}
 			default: {
 				throw new Error("Invalid action");
@@ -399,7 +426,7 @@ const RunTable: FC<{
 										{tableColumns.map((column) => {
 											const data = column.getData(workflowRun, {
 												isRowOpen: openedRuns.has(workflowRun.runId),
-												handleAction,
+												handleAction: handleAction,
 											});
 											return (
 												<Table.Cell {...column.cellProps} key={column.id}>

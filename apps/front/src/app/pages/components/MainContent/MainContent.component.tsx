@@ -1,7 +1,14 @@
 import { aggregatePeriodSchema } from "@github-actions-stats/workflow-entity";
 import { Flex } from "@radix-ui/themes";
 import type { FC } from "react";
-import { useLocation, useNavigate, useOutlet, useParams } from "react-router";
+import {
+	useLocation,
+	useMatches,
+	useNavigate,
+	useOutlet,
+	useParams,
+	type UIMatch,
+} from "react-router";
 import { SelectDateRange } from "../../../components/SelectDateRange/SelectDateRange.component";
 import { TabNavigation } from "../../../components/TabNavigation/TabNavigation.component";
 import { useRouteHomePageDataLoader } from "../../Home.loader";
@@ -17,12 +24,21 @@ export const NoWorkflowSelected: FC = () => {
 
 // const statsLoader = async ({ workflowKey, period, from }: {
 
+function shouldShowDatePicker(params: {
+	matches: UIMatch[];
+}) {
+	return params.matches.some((match) =>
+		["workflow-overview"].includes(match.id),
+	);
+}
+
 const MainContent: FC = () => {
 	const { workflowKey } = useParams<{ workflowKey: string }>();
 	const safeUrlWorkflowKey = encodeURIComponent(workflowKey ?? "");
 	const outlet = useOutlet();
 	const location = useLocation();
 	const navigate = useNavigate();
+	const matches = useMatches();
 
 	const locationSearchParams = new URLSearchParams(location.search);
 	const initialPeriod = aggregatePeriodSchema.safeParse(
@@ -67,22 +83,29 @@ const MainContent: FC = () => {
 					)}
 					links={getMainContentFormattedRoutes()}
 				/>
-				<SelectDateRange
-					initialPeriod={
-						initialPeriod.success ? initialPeriod.data : "last_7_days"
-					}
-					onPeriodChange={({ period, from, to }) => {
-						locationSearchParams.set("period", period);
-						if (period === "custom") {
-							locationSearchParams.set("from", from.toISOString());
-							locationSearchParams.set("to", to.toISOString());
-						} else {
-							locationSearchParams.delete("from");
-							locationSearchParams.delete("to");
+				{shouldShowDatePicker({
+					matches,
+				}) ? (
+					<SelectDateRange
+						initialPeriod={
+							initialPeriod.success ? initialPeriod.data : "last_7_days"
 						}
-						navigate({ ...location, search: locationSearchParams.toString() });
-					}}
-				/>
+						onPeriodChange={({ period, from, to }) => {
+							locationSearchParams.set("period", period);
+							if (period === "custom") {
+								locationSearchParams.set("from", from.toISOString());
+								locationSearchParams.set("to", to.toISOString());
+							} else {
+								locationSearchParams.delete("from");
+								locationSearchParams.delete("to");
+							}
+							navigate({
+								...location,
+								search: locationSearchParams.toString(),
+							});
+						}}
+					/>
+				) : null}
 			</Flex>
 			{outlet}
 		</Flex>

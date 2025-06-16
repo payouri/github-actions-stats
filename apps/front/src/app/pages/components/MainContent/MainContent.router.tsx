@@ -4,7 +4,7 @@ import type { LoaderFunction, RouteObject } from "react-router";
 import { HomePageLoader } from "../../Home.loader";
 import { loadStatsData, loadWorkflowRunsData } from "./MainContent.loader";
 import { OverviewView } from "./views/Overview.components";
-import { RunsView } from "./views/RunsView.components";
+import { RunsView } from "./views/RunsView/RunsView.components";
 import {
 	RUNS_VIEW_LOADER_ID,
 	runsViewLoader,
