@@ -8,11 +8,10 @@ import {
 	type ReactNode,
 } from "react";
 import type { ColumnDefinition } from "./DataTable.types";
+import { DataTableFooter } from "./components/DataTableFooter.component";
 import { DataTableHeader } from "./components/DataTableHeader.component";
 import { DataTableNoData } from "./components/DataTableNoData.component";
 import { DataTableRow } from "./components/DataTableRow.component";
-import { DataTableShowMoreRow } from "./components/DataTableShowMoreRow.component";
-import { DataTableFooter } from "./components/DataTableFooter.component";
 
 export const DataTable = <Data extends Record<string, unknown>>(props: {
 	data: Data[];

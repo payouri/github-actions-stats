@@ -46,7 +46,7 @@ const tableColumns = [
 				handleAction: (params: {
 					action: string;
 					data: StoredWorkflowRunWithKey;
-				}) => Promise<void> | void;
+				}) => Promise<unknown> | unknown;
 			},
 		) {
 			return (
@@ -253,13 +253,14 @@ const tableColumns = [
 		getData(
 			workflowRun: StoredWorkflowRunWithKey,
 			api: {
+				loadingReloads: Set<number>;
 				handleAction: (params: {
 					action: string;
 					data: StoredWorkflowRunWithKey;
 				}) => Promise<void> | void;
 			},
 		) {
-			const isLoading = queryClientUtils.refreshRunsData.isMutating();
+			const isLoading = api.loadingReloads.has(workflowRun.runId);
 			return (
 				<Flex gap="1" align="center" justify="center">
 					<Link
@@ -277,7 +278,7 @@ const tableColumns = [
 					</Link>
 					<IconButton
 						variant="ghost"
-						loading={isLoading > 0}
+						loading={isLoading}
 						size="1"
 						onClick={() => {
 							api.handleAction({ action: "reload_data", data: workflowRun });
@@ -306,6 +307,7 @@ const RunTable: FC<{
 	}) => void;
 }> = ({ isLoadingPage, workflowRuns, onTableScroll }) => {
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const [loadingReloads, setLoadingReloads] = useState<Set<number>>(new Set());
 	const [openedRuns, setOpenedRuns] = useState<Set<number>>(new Set());
 
 	useLayoutEffect(() => {
@@ -346,8 +348,18 @@ const RunTable: FC<{
 				});
 			}
 			case "reload_data": {
+				setLoadingReloads((prev) => {
+					const newSet = new Set(prev);
+					newSet.add(params.data.runId);
+					return newSet;
+				});
 				await trpcReactClient.refreshRunsData.mutate({
 					runKeys: [params.data.key],
+				});
+				setLoadingReloads((prev) => {
+					const newSet = new Set(prev);
+					newSet.delete(params.data.runId);
+					return newSet;
 				});
 				return;
 			}
@@ -425,6 +437,7 @@ const RunTable: FC<{
 									<Table.Row key={workflowRun.runId}>
 										{tableColumns.map((column) => {
 											const data = column.getData(workflowRun, {
+												loadingReloads,
 												isRowOpen: openedRuns.has(workflowRun.runId),
 												handleAction: handleAction,
 											});

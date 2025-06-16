@@ -26,6 +26,20 @@ import { z } from "zod";
 import type { AsyncProcedureResponse, TRPCBuilder } from "../types.js";
 import { buildAggregateStatsOnPeriodAndSave } from "./helpers/aggregateStatsOnPeriod.js";
 
+function chunkArray<T>(arr: T[], size: number): T[][] {
+	return arr.reduce((acc, val, index) => {
+		const chunkIndex = Math.floor(index / size);
+		if (!acc[chunkIndex]) {
+			acc[chunkIndex] = [];
+		}
+		acc[chunkIndex].push(val);
+		return acc;
+	}, [] as T[][]);
+}
+
+export const refreshWorkflowRunsDataInputSchema = z.object({
+	workflowKey: z.string(),
+});
 export const refreshRunsDataInputSchema = z.object({
 	runKeys: z.array(z.string()),
 });
@@ -285,6 +299,81 @@ function buildUpsertWorkflowProcedure /* <Context extends object, Meta extends o
 	};
 }
 
+export type RefreshWorkflowRunsDataInput = z.infer<
+	typeof refreshWorkflowRunsDataInputSchema
+>;
+export type RefreshWorkflowRunsDataResponse = AsyncProcedureResponse<
+	undefined,
+	{
+		code: "failed_to_schedule_runs_refresh";
+		message: string;
+	}
+>;
+
+function buildRefreshWorkflowRunsData(dependencies: {
+	pendingJobStorage: PendingJobStorage;
+	workflowRunsStorage: StoredWorkflowRunsMongoStorage;
+}) {
+	const { pendingJobStorage, workflowRunsStorage } = dependencies;
+	return async function createWorkflowProcedure(workflowDataParams: {
+		input: RefreshWorkflowRunsDataInput;
+	}): RefreshWorkflowRunsDataResponse {
+		const {
+			input: { workflowKey },
+		} = workflowDataParams;
+
+		try {
+			const runsChunks = chunkArray(
+				await workflowRunsStorage.query(
+					{
+						workflowKey,
+					},
+					{
+						projection: {
+							runId: 1,
+						},
+					},
+				),
+				10,
+			);
+
+			for (const chunk of runsChunks) {
+				if (chunk.length === 0) continue;
+				const setResult = await pendingJobStorage.set(
+					`refresh-runs-data-${chunk[0].runId}`,
+					{
+						method: "refresh-runs-data",
+						group: DEFAULT_PENDING_JOB_GROUP,
+						data: {
+							runKeys: chunk.map((r) => r.runId),
+						},
+					},
+				);
+				if (setResult.hasFailed) {
+					return {
+						hasFailed: true,
+						code: "failed_to_schedule_runs_refresh",
+						message: setResult.error.code,
+					};
+				}
+			}
+
+			return {
+				hasFailed: false,
+			};
+		} catch (error) {
+			return {
+				hasFailed: true,
+				code: "failed_to_schedule_runs_refresh",
+				message:
+					error instanceof Error
+						? error.message
+						: "Failed to schedule runs refresh",
+			};
+		}
+	};
+}
+
 export type RefreshRunsDataInput = z.infer<typeof refreshRunsDataInputSchema>;
 export type RefreshRunsDataResponse = AsyncProcedureResponse<
 	undefined,
@@ -344,6 +433,7 @@ export function buildWorkflowsProcedures<
 	aggregatedWorkflowStatsMongoStorage: AggregatedWorkflowStatsMongoStorage;
 	pendingJobsMongoStorage: PendingJobStorage;
 	githubClient: Octokit["rest"];
+	abortSignal?: AbortSignal;
 }) {
 	const {
 		trpcInstance,
@@ -372,6 +462,10 @@ export function buildWorkflowsProcedures<
 	const refreshRunsDataProcedure = buildRefreshRunsData({
 		pendingJobStorage: pendingJobsMongoStorage,
 	});
+	const refreshWorkflowRunsDataProcedure = buildRefreshWorkflowRunsData({
+		pendingJobStorage: pendingJobsMongoStorage,
+		workflowRunsStorage: storedWorkflowRunMongoStorage,
+	});
 
 	return {
 		getWorkflows: trpcInstance.procedure
@@ -389,5 +483,8 @@ export function buildWorkflowsProcedures<
 		refreshRunsData: trpcInstance.procedure
 			.input(refreshRunsDataInputSchema)
 			.mutation(refreshRunsDataProcedure),
+		refreshWorkflowRunsData: trpcInstance.procedure
+			.input(refreshWorkflowRunsDataInputSchema)
+			.mutation(refreshWorkflowRunsDataProcedure),
 	};
 }
