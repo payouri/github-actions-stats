@@ -23,6 +23,10 @@ export function formatGithubUsageDataToLocalUsageData(
 		"Object.keys(jobsMap)",
 		jobsMap ? Object.keys(jobsMap).length : jobsMap,
 	);
+	console.log(
+		"Object.values(jobsMap)",
+		jobsMap ? Object.values(jobsMap)[0] : jobsMap,
+	);
 	const jobRuns = Object.entries(usageData.billable).reduce<GithubJobData[]>(
 		(acc, [osPlatform, osData]) => {
 			durationPerLabel[osPlatform] = osData.total_ms;
