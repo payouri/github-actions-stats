@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import {
 	WORKFLOW_MOUNT_POINT,
 	buildWorkflowRouter,
@@ -8,6 +7,8 @@ import { initTRPC } from "@trpc/server";
 import type { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { BlankEnv } from "hono/types";
+import { join } from "node:path";
+import { DB } from "../../entities/db.js";
 import {
 	workflowMongoStorage,
 	workflowRunsMongoStorage,
@@ -18,6 +19,7 @@ import {
 	workflowRunStatsMongoStorage,
 } from "../../entities/WorkflowStat/storage/mongo.js";
 import githubClient from "../../lib/githubClient.js";
+import { globalServerAbortController } from "../globalServerAbortController.js";
 
 export function mountTrpcServer<Env extends BlankEnv>(params: {
 	app: Hono<Env>;
@@ -31,6 +33,8 @@ export function mountTrpcServer<Env extends BlankEnv>(params: {
 		workflowStatsMongoStorage: workflowRunStatsMongoStorage,
 		pendingJobsMongoStorage: pendingJobsMongoStorage,
 		githubClient: githubClient.rest,
+		abortSignal: globalServerAbortController.signal,
+		getAggregatedWorkflowStats: DB.mutations.aggregateAndSaveStats,
 	});
 
 	app.use(

@@ -7,6 +7,8 @@ import {
 import type { MongoStorage } from "@github-actions-stats/storage";
 import type {
 	aggregatedStatSchema,
+	AggregatedWorkflowStat,
+	AggregatePeriod,
 	storedWorkflow,
 	storedWorkflowRun,
 	workflowStatSchema,
@@ -14,14 +16,15 @@ import type {
 import SuperJSON from "superjson";
 import type { Octokit } from "octokit";
 import type { pendingJobSchema } from "@github-actions-stats/pending-job-entity";
+import type { MethodResult } from "@github-actions-stats/types-utils";
 
 export type { GetWorkflowsProcedureInput, GetWorkflowsProcedureResponse };
 
-export const buildWorkflowRouter = <
+export type WorkflowClientDependencies<
 	Context extends object,
 	Meta extends object,
 	Builder extends TRPCBuilder<Context, Meta>,
->(dependencies: {
+> = {
 	trpc: Builder;
 	storedWorkflowMongoStorage: MongoStorage<typeof storedWorkflow>;
 	storedWorkflowRunMongoStorage: MongoStorage<typeof storedWorkflowRun>;
@@ -30,8 +33,32 @@ export const buildWorkflowRouter = <
 		typeof aggregatedStatSchema
 	>;
 	pendingJobsMongoStorage: MongoStorage<typeof pendingJobSchema>;
+	getAggregatedWorkflowStats: (
+		params: {
+			workflowKey: string;
+			period: AggregatePeriod;
+			from: Date;
+		},
+		options?: {
+			abortSignal?: AbortSignal;
+		},
+	) => Promise<
+		MethodResult<
+			AggregatedWorkflowStat[],
+			"failed_to_save_aggregated_workflow_stat" | "abort_signal_aborted"
+		>
+	>;
 	githubClient: Octokit["rest"];
-}) => {
+	abortSignal: AbortSignal | undefined;
+};
+
+export const buildWorkflowRouter = <
+	Context extends object,
+	Meta extends object,
+	Builder extends TRPCBuilder<Context, Meta>,
+>(
+	dependencies: WorkflowClientDependencies<Context, Meta, Builder>,
+) => {
 	const {
 		trpc,
 		storedWorkflowMongoStorage,
@@ -39,7 +66,9 @@ export const buildWorkflowRouter = <
 		workflowStatsMongoStorage,
 		aggregatedWorkflowStatsMongoStorage,
 		pendingJobsMongoStorage,
+		getAggregatedWorkflowStats,
 		githubClient,
+		abortSignal,
 	} = dependencies;
 	const trpcInstance = trpc.create({
 		transformer: SuperJSON,
@@ -54,6 +83,8 @@ export const buildWorkflowRouter = <
 		workflowStatsMongoStorage,
 		githubClient,
 		pendingJobsMongoStorage,
+		getAggregatedWorkflowStats,
+		abortSignal,
 	});
 
 	return {

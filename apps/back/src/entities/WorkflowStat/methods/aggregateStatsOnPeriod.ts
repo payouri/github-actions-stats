@@ -11,12 +11,11 @@ import type {
 	AggregatedWorkflowStatsMongoStorage,
 	WorkflowRunStatsMongoStorage,
 } from "../storage/mongo.js";
+import type { MethodResult } from "@github-actions-stats/types-utils";
+import dayjs from "dayjs";
 
 const limit = 100;
 
-/**
- * @deprecated use from DB instead
- */
 export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 	aggregatedWorkflowStatsMongoStorage: AggregatedWorkflowStatsMongoStorage;
 	workflowRunStatsMongoStorage: WorkflowRunStatsMongoStorage;
@@ -33,7 +32,12 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 		options?: {
 			abortSignal?: AbortSignal;
 		},
-	) {
+	): Promise<
+		MethodResult<
+			AggregatedWorkflowStat[],
+			"failed_to_save_aggregated_workflow_stat" | "abort_signal_aborted"
+		>
+	> {
 		const { workflowKey, from: fromDate, period } = params;
 		const { to, from, intervalMs } = getPeriodBoundaries(period, fromDate);
 		const { abortSignal } = options ?? {};
@@ -43,6 +47,8 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 			to,
 			intervalMs,
 		});
+
+		const allAggregatedStats: AggregatedWorkflowStat[] = [];
 
 		for (const batch of batches) {
 			if (abortSignal?.aborted) {
@@ -64,31 +70,57 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 				};
 			}
 			const { from: batchFrom, to: batchTo } = batch;
-			const aggregated: AggregatedWorkflowStat = {
-				period,
-				aggregatedJobsStats: {},
-				maxRunDurationMs: 0,
-				minRunDurationMs: Number.MAX_SAFE_INTEGER,
-				meanRunDurationMs: 0,
-				minCompletedRunDurationMs: Number.MAX_SAFE_INTEGER,
-				periodEnd: batchTo,
-				periodStart: batchFrom,
-				totalDurationMsByJobName: {},
-				totalDurationMsByStepsName: {},
-				totalDurationMsByStatus: {},
-				workflowId: -1,
-				workflowName: "",
-				runsCount: 0,
-				runsDetails: [],
-				runsIds: [],
-				runsDurationMs: 0,
-				statusCount: {},
-				workflowKey: "",
-			};
+			const [aggregated, runsCount] = await Promise.all([
+				aggregatedWorkflowStatsMongoStorage
+					.get(
+						join(
+							workflowKey,
+							period,
+							batchFrom.toISOString(),
+							batchTo.toISOString(),
+						),
+					)
+					.then((queryResult) => {
+						if (!queryResult)
+							return {
+								period,
+								aggregatedJobsStats: {},
+								maxRunDurationMs: 0,
+								minRunDurationMs: Number.MAX_SAFE_INTEGER,
+								meanRunDurationMs: 0,
+								minCompletedRunDurationMs: Number.MAX_SAFE_INTEGER,
+								periodEnd: batchTo,
+								periodStart: batchFrom,
+								totalDurationMsByJobName: {},
+								totalDurationMsByStepsName: {},
+								totalDurationMsByStatus: {},
+								workflowId: -1,
+								workflowName: "",
+								runsCount: 0,
+								runsDetails: [],
+								runsIds: [],
+								runsDurationMs: 0,
+								statusCount: {},
+								workflowKey,
+							};
+						return queryResult;
+					}),
+				workflowRunStatsMongoStorage.count({
+					workflowKey,
+					startedAt: {
+						$gte: batchFrom,
+						$lte: batchTo,
+					},
+				}),
+			]);
+			if (runsCount === aggregated.runsCount) {
+				allAggregatedStats.push(aggregated);
+				continue;
+			}
 
 			let current: WorkflowRunStat[] | null = null;
 			let total = 0;
-			while (current !== null && current.length > 0) {
+			while (current === null || current.length > 0) {
 				if (abortSignal?.aborted) {
 					return {
 						hasFailed: true,
@@ -107,6 +139,7 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 						},
 					};
 				}
+
 				current = await workflowRunStatsMongoStorage.query(
 					{
 						workflowKey,
@@ -117,6 +150,7 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 					},
 					{
 						limit,
+						start: current?.length || 0,
 						sort: {
 							startedAt: 1,
 						},
@@ -131,6 +165,7 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 						durationMs,
 						completionState,
 						jobDurationMap,
+						stepsDurationMs,
 						jobs,
 						workflowId,
 						workflowName,
@@ -180,12 +215,15 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 						})),
 					});
 
-					// biome-ignore lint/complexity/noForEach: <explanation>
-					jobs.forEach((job) => {
+					for (const job of jobs) {
 						const jobName = job.name;
-						aggregated.totalDurationMsByJobName[jobName] =
-							(aggregated.totalDurationMsByJobName[jobName] ?? 0) +
-							jobDurationMap[job.name];
+						if (!aggregated.totalDurationMsByJobName[jobName]) {
+							aggregated.totalDurationMsByJobName[jobName] = 0;
+						}
+						if (typeof jobDurationMap[job.jobId] === "number") {
+							aggregated.totalDurationMsByJobName[jobName] +=
+								jobDurationMap[job.jobId];
+						}
 						if (!aggregated.aggregatedJobsStats[jobName]) {
 							aggregated.aggregatedJobsStats[jobName] = {
 								name: jobName,
@@ -235,56 +273,70 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 						]!.durationMs += job.durationMs;
 
 						for (const step of job.steps) {
-							const { name: stepName, durationMs: stepDuration, status } = step;
+							const { name: stepName, durationMs: stepDuration } = step;
 							const computedStepName = `${jobName}>${stepName}`;
-							aggregated.totalDurationMsByStepsName[computedStepName] =
-								(aggregated.totalDurationMsByStepsName[computedStepName] ?? 0) +
-								stepDuration;
 							if (
-								!aggregated.aggregatedJobsStats[computedStepName]
-									.aggregatedSteps[stepName]
+								!aggregated.aggregatedJobsStats[jobName].aggregatedSteps[
+									stepName
+								]
 							) {
-								aggregated.aggregatedJobsStats[
-									computedStepName
-								].aggregatedSteps[stepName] = {
+								aggregated.aggregatedJobsStats[jobName].aggregatedSteps[
+									stepName
+								] = {
 									count: 0,
 									durationMs: 0,
 								};
 							}
-							aggregated.aggregatedJobsStats[computedStepName].count += 1;
-							aggregated.aggregatedJobsStats[computedStepName].durationMs +=
-								stepDuration;
+							aggregated.totalDurationMsByStepsName[computedStepName] =
+								(aggregated.totalDurationMsByStepsName?.[computedStepName] ??
+									0) + stepDuration;
+							aggregated.aggregatedJobsStats[jobName].aggregatedSteps[
+								stepName
+							].count += 1;
+							aggregated.aggregatedJobsStats[jobName].aggregatedSteps[
+								stepName
+							].durationMs += stepDuration;
 						}
-					});
+					}
 				}
 			}
 			aggregated.meanRunDurationMs /= total > 0 ? total : 1;
 			aggregated.runsCount = total;
 
-			const saveResult = await aggregatedWorkflowStatsMongoStorage.set(
-				join(workflowKey, period),
-				aggregated,
-			);
+			if (total > 0) {
+				const saveResult = await aggregatedWorkflowStatsMongoStorage.set(
+					join(
+						workflowKey,
+						period,
+						batchFrom.toISOString(),
+						batchTo.toISOString(),
+					),
+					aggregated,
+				);
 
-			if (saveResult.hasFailed) {
-				return {
-					hasFailed: true,
-					error: {
-						code: "failed_to_save_aggregated_workflow_stat",
-						message: "Failed to save aggregated workflow stat",
-						error: saveResult.error.error,
-						data: {
-							parentError: saveResult.error,
-							workflowKey,
-							period,
+				if (saveResult.hasFailed) {
+					return {
+						hasFailed: true,
+						error: {
+							code: "failed_to_save_aggregated_workflow_stat",
+							message: "Failed to save aggregated workflow stat",
+							error: saveResult.error.error,
+							data: {
+								parentError: saveResult.error,
+								workflowKey,
+								period,
+							},
 						},
-					},
-				};
+					};
+				}
 			}
+
+			allAggregatedStats.push(aggregated);
 		}
 
 		return {
 			hasFailed: false,
+			data: allAggregatedStats,
 		};
 	};
 }

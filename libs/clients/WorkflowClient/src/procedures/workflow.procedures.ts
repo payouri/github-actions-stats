@@ -6,9 +6,10 @@ import type {
 	EntityWithKey,
 	MongoStorage,
 } from "@github-actions-stats/storage";
+import type { MethodResult } from "@github-actions-stats/types-utils";
 import {
+	type AggregatePeriod,
 	type AggregatedWorkflowStat,
-	type StoredWorkflowDocument,
 	type StoredWorkflowRun,
 	type StoredWorkflowWithKey,
 	aggregatePeriodSchema,
@@ -24,7 +25,6 @@ import dayjs from "dayjs";
 import type { Octokit } from "octokit";
 import { z } from "zod";
 import type { AsyncProcedureResponse, TRPCBuilder } from "../types.js";
-import { buildAggregateStatsOnPeriodAndSave } from "./helpers/aggregateStatsOnPeriod.js";
 
 function chunkArray<T>(arr: T[], size: number): T[][] {
 	return arr.reduce((acc, val, index) => {
@@ -173,15 +173,23 @@ type GetAggregatedWorkflowStatsProcedureResponse = AsyncProcedureResponse<
 	}
 >;
 function buildGetAggregatedWorkflowStatsProcedure(dependencies: {
-	aggregatedWorkflowStatsMongoStorage: AggregatedWorkflowStatsMongoStorage;
-	workflowRunStatsMongoStorage: WorkflowRunStatsMongoStorage;
+	getAggregatedWorkflowStats: (
+		params: {
+			workflowKey: string;
+			period: AggregatePeriod;
+			from: Date;
+		},
+		options?: {
+			abortSignal?: AbortSignal;
+		},
+	) => Promise<
+		MethodResult<
+			AggregatedWorkflowStat[],
+			"failed_to_save_aggregated_workflow_stat" | "abort_signal_aborted"
+		>
+	>;
 }) {
-	const { aggregatedWorkflowStatsMongoStorage, workflowRunStatsMongoStorage } =
-		dependencies;
-	const aggregateStatsOnPeriod = buildAggregateStatsOnPeriodAndSave({
-		aggregatedWorkflowStatsMongoStorage,
-		workflowRunStatsMongoStorage,
-	});
+	const { getAggregatedWorkflowStats: aggregateStatsOnPeriod } = dependencies;
 
 	return async function getAggregatedWorkflowStatsProcedure(params: {
 		input: GetAggregatedWorkflowStatsProcedureInput;
@@ -431,6 +439,21 @@ export function buildWorkflowsProcedures<
 	storedWorkflowRunMongoStorage: StoredWorkflowRunsMongoStorage;
 	workflowStatsMongoStorage: WorkflowRunStatsMongoStorage;
 	aggregatedWorkflowStatsMongoStorage: AggregatedWorkflowStatsMongoStorage;
+	getAggregatedWorkflowStats: (
+		params: {
+			workflowKey: string;
+			period: AggregatePeriod;
+			from: Date;
+		},
+		options?: {
+			abortSignal?: AbortSignal;
+		},
+	) => Promise<
+		MethodResult<
+			AggregatedWorkflowStat[],
+			"failed_to_save_aggregated_workflow_stat" | "abort_signal_aborted"
+		>
+	>;
 	pendingJobsMongoStorage: PendingJobStorage;
 	githubClient: Octokit["rest"];
 	abortSignal?: AbortSignal;
@@ -439,8 +462,7 @@ export function buildWorkflowsProcedures<
 		trpcInstance,
 		storedWorkflowMongoStorage,
 		storedWorkflowRunMongoStorage,
-		workflowStatsMongoStorage,
-		aggregatedWorkflowStatsMongoStorage,
+		getAggregatedWorkflowStats,
 		pendingJobsMongoStorage,
 		githubClient,
 	} = dependencies;
@@ -452,8 +474,7 @@ export function buildWorkflowsProcedures<
 	});
 	const getAggregatedWorkflowStatsProcedure =
 		buildGetAggregatedWorkflowStatsProcedure({
-			aggregatedWorkflowStatsMongoStorage,
-			workflowRunStatsMongoStorage: workflowStatsMongoStorage,
+			getAggregatedWorkflowStats,
 		});
 	const upsertWorkflowProcedure = buildUpsertWorkflowProcedure({
 		githubClient,

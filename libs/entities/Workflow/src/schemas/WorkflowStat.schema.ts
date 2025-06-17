@@ -17,7 +17,7 @@ export const workflowStatSchema = z.object({
 	startedAt: z.date(),
 	completedAt: z.date(),
 	durationMs: z.number(),
-	jobDurationMap: z.record(z.string(), z.number()),
+	jobDurationMap: z.record(z.string(), z.number()), // jobId => durationMs
 	stepsDurationMs: z.record(z.string(), z.record(z.string(), z.number())),
 	jobs: z.array(
 		z.object({

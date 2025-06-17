@@ -25,9 +25,9 @@ function getMaps(params: InputRun) {
 		jobDurationMap: {},
 	};
 
-	if (!params.usageData?.billable.jobRuns) return state;
+	if (!params.usageData?.billable.jobRuns?.length) return state;
 
-	for (const job of params.usageData?.billable.jobRuns ?? []) {
+	for (const job of params.usageData.billable.jobRuns) {
 		const formattedJob: WorkflowRunStat["jobs"][number] = {
 			durationMs: job.duration_ms,
 			steps: [],
