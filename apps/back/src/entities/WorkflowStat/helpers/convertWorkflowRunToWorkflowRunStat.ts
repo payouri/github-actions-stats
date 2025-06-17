@@ -49,22 +49,26 @@ function getMaps(params: InputRun) {
 		state.stepsDurationMs[job.job_id] = {};
 		state.jobs.push(formattedJob);
 
-		if (!job.data.steps?.length) {
+		if (!job.data.steps?.length || job.data.conclusion === "skipped") {
 			continue;
 		}
 		for (const stepData of job.data.steps) {
-			const durationMs = dayjs(stepData.completed_at).diff(
-				stepData.started_at,
-				"milliseconds",
-			);
-			state.stepsDurationMs[job.job_id][stepData.name] = durationMs ?? 0;
+			const stepDurationMs =
+				stepData.conclusion === "skipped"
+					? 0
+					: dayjs(stepData.completed_at).diff(
+							stepData.started_at,
+							"milliseconds",
+						);
+			state.stepsDurationMs[job.job_id][stepData.name] = stepDurationMs;
 			formattedJob.steps.push({
 				jobId: stepData.number,
-				durationMs,
+				durationMs: stepDurationMs,
 				jobEnd: stepData.completed_at || new Date(),
 				jobStart: stepData.started_at || new Date(),
 				name: stepData.name,
 				status: stepData.status,
+				conclusion: stepData.conclusion || "unknown",
 			});
 		}
 	}

@@ -1,4 +1,7 @@
-import { runStatus } from "@github-actions-stats/common-entity";
+import {
+	runCompletionStatusSchema,
+	runStatus,
+} from "@github-actions-stats/common-entity";
 import {
 	type RunJobData,
 	type GithubJobData,
@@ -10,11 +13,14 @@ import dayjs from "dayjs";
 export function formatRunStepToGirlJobStep(
 	step: NonNullable<components["schemas"]["job"]["steps"]>[number],
 ): NonNullable<RunJobData["steps"]>[number] {
+	const conclusion = step.conclusion
+		? runCompletionStatusSchema.parse(step.conclusion)
+		: null;
 	return {
 		...step,
 		started_at: step.started_at ? new Date(step.started_at) : null,
 		completed_at: step.completed_at ? new Date(step.completed_at) : null,
-		conclusion: step.conclusion,
+		conclusion,
 		status: step.status,
 	};
 }
@@ -33,7 +39,7 @@ export function formatRawGithubJobToGithubJob(
 
 	return {
 		job_id: job.id,
-		duration_ms: durationMs,
+		duration_ms: durationMs < 0 ? 0 : durationMs,
 		data: {
 			...job,
 			conclusion: conclusion.success ? conclusion.data : null,

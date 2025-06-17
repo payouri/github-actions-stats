@@ -48,7 +48,7 @@ export const runJobDataSchema = z.object({
 		.array(
 			z.object({
 				status: runStepStatus,
-				conclusion: z.string().nullable(),
+				conclusion: runCompletionStatusSchema.nullable(),
 				name: z.string(),
 				number: z.number(),
 				started_at: z

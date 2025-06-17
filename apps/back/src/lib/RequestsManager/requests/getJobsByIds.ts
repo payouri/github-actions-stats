@@ -1,6 +1,7 @@
 import type { Api as GithubApi } from "@octokit/plugin-rest-endpoint-methods";
 import type { RunJobData } from "@github-actions-stats/workflow-entity";
 import type { MethodResult } from "../../../types/MethodResult.js";
+import { runCompletionStatusSchema } from "@github-actions-stats/common-entity";
 
 export type BuildGetJobsByIdsRequestDependencies = {
 	githubClient: GithubApi["rest"];
@@ -88,15 +89,22 @@ export const buildGetJobsByIds = (
 						? new Date(response.data.completed_at)
 						: null,
 					steps: response.data.steps
-						? response.data.steps.map((step) => ({
-								...step,
-								started_at: step.started_at ? new Date(step.started_at) : null,
-								completed_at: step.completed_at
-									? new Date(step.completed_at)
-									: null,
-								conclusion: step.conclusion,
-								status: step.status,
-							}))
+						? response.data.steps.map((step) => {
+								const conclusion = step.conclusion
+									? runCompletionStatusSchema.parse(step.conclusion)
+									: null;
+								return {
+									...step,
+									started_at: step.started_at
+										? new Date(step.started_at)
+										: null,
+									completed_at: step.completed_at
+										? new Date(step.completed_at)
+										: null,
+									conclusion,
+									status: step.status,
+								};
+							})
 						: undefined,
 				};
 				totalJobsCount += 1;

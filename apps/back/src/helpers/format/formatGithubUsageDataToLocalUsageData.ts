@@ -38,7 +38,6 @@ export function formatGithubUsageDataToLocalUsageData(
 					durationPerLabel[label] += jobDuration;
 				}
 			}
-			console.log("job.steps?.length", job.steps?.length);
 			totalMs += jobDuration;
 			jobsRuns.push({
 				job_id: job.id,

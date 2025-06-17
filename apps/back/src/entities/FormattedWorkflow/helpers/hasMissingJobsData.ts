@@ -8,7 +8,11 @@ export const hasMissingJobsData = (p: RunUsageData[]) => {
 			usage.billable.jobRuns.some((b) => !b.data) ||
 			usage.billable.jobRuns.length !== usage.billable.jobsCount ||
 			usage.billable.jobRuns.some(
-				(b) => b.duration_ms && !b.data?.steps?.length,
+				(b) =>
+					!b.data ||
+					(b.data.conclusion !== "skipped" &&
+						b.duration_ms &&
+						!b.data.steps?.length),
 			),
 	);
 };

@@ -36,6 +36,7 @@ export const workflowStatSchema = z.object({
 					jobStart: z.date(),
 					jobEnd: z.date(),
 					durationMs: z.number(),
+					conclusion: runCompletionStatusSchema.or(z.literal("unknown")),
 				}),
 			),
 		}),

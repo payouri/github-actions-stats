@@ -217,6 +217,8 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 
 					for (const job of jobs) {
 						const jobName = job.name;
+						if (job.conclusion === "skipped") continue;
+
 						if (!aggregated.totalDurationMsByJobName[jobName]) {
 							aggregated.totalDurationMsByJobName[jobName] = 0;
 						}
@@ -273,6 +275,7 @@ export function buildAggregateStatsOnPeriodAndSave(dependencies: {
 						]!.durationMs += job.durationMs;
 
 						for (const step of job.steps) {
+							if (step.conclusion === "skipped") continue;
 							const { name: stepName, durationMs: stepDuration } = step;
 							const computedStepName = `${jobName}>${stepName}`;
 							if (
