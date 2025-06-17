@@ -6,6 +6,9 @@ export const hasMissingJobsData = (p: RunUsageData[]) => {
 			typeof usage.run_duration_ms !== "number" ||
 			!usage.billable.jobRuns ||
 			usage.billable.jobRuns.some((b) => !b.data) ||
-			usage.billable.jobRuns.length !== usage.billable.jobsCount,
+			usage.billable.jobRuns.length !== usage.billable.jobsCount ||
+			usage.billable.jobRuns.some(
+				(b) => b.duration_ms && !b.data?.steps?.length,
+			),
 	);
 };
