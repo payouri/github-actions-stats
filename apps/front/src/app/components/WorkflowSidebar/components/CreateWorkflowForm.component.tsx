@@ -1,9 +1,10 @@
-import { upsertWorkflowProcedureInputSchema } from "@github-actions-stats/workflow-client/src/procedures/workflow.procedures";
+import { upsertWorkflowProcedureInputSchema } from "@github-actions-stats/workflow-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Flex, Text, TextField } from "@radix-ui/themes";
 import { Label } from "radix-ui";
 import type { FC } from "react";
 import { useForm } from "react-hook-form";
+import { GithubRepositorySelect } from "../../GithubRepositorySelect/GithubRepositorySelect.component";
 
 export const CreateWorkflowForm: FC<{
 	isCreatingWorkflow: boolean;
@@ -21,7 +22,7 @@ export const CreateWorkflowForm: FC<{
 		  }
 	>;
 }> = ({ isCreatingWorkflow, onCreateWorkflow }) => {
-	const { register, handleSubmit, subscribe } = useForm({
+	const { register, handleSubmit } = useForm({
 		resolver: zodResolver(upsertWorkflowProcedureInputSchema),
 	});
 
@@ -30,21 +31,11 @@ export const CreateWorkflowForm: FC<{
 			<Flex direction="column" gap="3">
 				<Label.Root>
 					<Text as="div" size="2" mb="1" weight="bold">
-						Organization
-					</Text>
-					<TextField.Root
-						{...register("githubOwner", {
-							required:
-								!upsertWorkflowProcedureInputSchema.shape.githubOwner.isOptional(),
-							disabled: isCreatingWorkflow,
-						})}
-						placeholder="e.g. org-name"
-					/>
-				</Label.Root>
-				<Label.Root>
-					<Text as="div" size="2" mb="1" weight="bold">
 						Repository
 					</Text>
+					<Flex width="100%">
+						<GithubRepositorySelect />
+					</Flex>
 					<TextField.Root
 						{...register("githubRepository", {
 							required:

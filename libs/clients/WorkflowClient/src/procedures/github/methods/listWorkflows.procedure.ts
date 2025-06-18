@@ -59,7 +59,7 @@ export function buildListRepositoryWorkflowProcedure(dependencies: {
 					})),
 					totalCount: response.data.total_count,
 					nextCursor:
-						response.data.workflows.length === count ? (count ?? 1) + 1 : null,
+						response.data.workflows.length === count ? (cursor ?? 1) + 1 : null,
 				},
 			};
 		} catch (error) {

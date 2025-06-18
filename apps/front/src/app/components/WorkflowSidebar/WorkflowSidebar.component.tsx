@@ -1,4 +1,4 @@
-import type { upsertWorkflowProcedureInputSchema } from "@github-actions-stats/workflow-client/src/procedures/workflow.procedures";
+import type { upsertWorkflowProcedureInputSchema } from "@github-actions-stats/workflow-client";
 import type { StoredWorkflowWithKey } from "@github-actions-stats/workflow-entity";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { Button, Dialog, Flex, RadioCards } from "@radix-ui/themes";

@@ -9,6 +9,11 @@ import {
 	listRepositoriesProcedureInputSchema,
 } from "./methods/listRepositories.procedure.js";
 
+export {
+	listRepositoriesProcedureInputSchema,
+	listRepositoryWorkflowProcedureInputSchema,
+};
+
 export type BuildGitHubProceduresDependencies<
 	Context extends object,
 	Meta extends object,

@@ -52,7 +52,7 @@ export function buildListRepositoriesProcedure(dependencies: {
 						name: r.full_name,
 						owner: r.owner.login,
 					})),
-					nextCursor: response.data.length === count ? (count ?? 1) + 1 : null,
+					nextCursor: response.data.length === count ? (cursor ?? 1) + 1 : null,
 				},
 			};
 		} catch (error) {
