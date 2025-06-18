@@ -4,11 +4,12 @@ import {
 	Flex,
 	type TextProps,
 	type HeadingProps,
+	Spinner,
 } from "@radix-ui/themes";
 import type { FC } from "react";
 
 export const NumberBox: FC<{
-	value: number;
+	value: number | "loading";
 	label: string;
 	bgColor?: string;
 	numberColor?: HeadingProps["color"];
@@ -37,7 +38,7 @@ export const NumberBox: FC<{
 			}}
 		>
 			<Heading size="7" color={numberColor}>
-				{Math.round(value)}
+				{value === "loading" ? <Spinner /> : Math.round(value)}
 			</Heading>
 			<Text
 				color={labelColor}

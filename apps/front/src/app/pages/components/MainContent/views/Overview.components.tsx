@@ -2,14 +2,21 @@ import { Grid } from "@radix-ui/themes";
 import type { FC } from "react";
 import { DataTable } from "../../../../components/DataTable/DataTable.component";
 import { NumberBox } from "../../../../components/NumberBox/NumberBox.component";
-import { useRouteStatsDataLoader } from "../MainContent.loader";
+import {
+	isLoadingStatsData,
+	useRouteStatsDataLoader,
+} from "../MainContent.loader";
 import { ViewContainer, ViewInnerContainer } from "./ViewsCommon.components";
+import { aggregatePeriodSchema } from "@github-actions-stats/workflow-entity";
+import dayjs from "dayjs";
+import { DEFAULT_DATE_PERIOD } from "../../../../components/SelectDateRange/SelectDateRange.component";
+import { useParams } from "react-router";
 
 const StatsBoxes: FC<{
 	loading: boolean;
 	boxes: {
 		label: string;
-		value: number;
+		value: number | "loading";
 	}[];
 }> = ({ loading, boxes }) => {
 	if (loading) {
@@ -49,6 +56,18 @@ const StatsBoxes: FC<{
 
 export const OverviewView: FC = () => {
 	const data = useRouteStatsDataLoader();
+	const { workflowKey } = useParams<{ workflowKey: string }>();
+	const searchParams = new URLSearchParams(window.location.search);
+	const period = aggregatePeriodSchema.safeParse(searchParams.get("period"));
+	const from = dayjs(searchParams.get("from"));
+	const isLoading = isLoadingStatsData({
+		from: from.isValid()
+			? from.endOf("hour").toDate()
+			: dayjs().endOf("hour").toDate(),
+		period: period.success ? period.data : DEFAULT_DATE_PERIOD,
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		workflowKey: workflowKey!,
+	});
 
 	const values = data.reduce<{
 		totalRuns: number;
@@ -127,19 +146,21 @@ export const OverviewView: FC = () => {
 					boxes={[
 						{
 							label: "Workflow runs",
-							value: values.totalRuns,
+							value: isLoading ? "loading" : values.totalRuns,
 						},
 						{
 							label: "Failures",
-							value: values.failuresCount,
+							value: isLoading ? "loading" : values.failuresCount,
 						},
 						{
 							label: "Total time running (minutes)",
-							value: Math.floor(values.totalTimeRunning / 1000 / 60),
+							value: isLoading
+								? "loading"
+								: Math.floor(values.totalTimeRunning / 1000 / 60),
 						},
 						{
 							label: "Longest run",
-							value: values.longestRun,
+							value: isLoading ? "loading" : values.longestRun,
 						},
 					]}
 					loading={!data}

@@ -1,6 +1,10 @@
 import type { AggregatePeriod } from "@github-actions-stats/workflow-entity";
 import { useLoaderData, useRouteLoaderData } from "react-router";
-import { queryClientUtils } from "../../../hooks/useRequest";
+import {
+	queryClientUtils,
+	trpcReact,
+	trpcReactClient,
+} from "../../../hooks/useRequest";
 import dayjs from "dayjs";
 
 export async function loadStatsData(params: {
@@ -53,7 +57,7 @@ export const useRouteMainContentDataLoader = () =>
 export const useMainContentDataLoader = useLoaderData<
 	Awaited<ReturnType<typeof loadWorkflowRunsData>>
 >;
-export const useRouteStatsDataLoader = () => {
+export function useRouteStatsDataLoader() {
 	const overviewData =
 		useRouteLoaderData<Awaited<ReturnType<typeof loadStatsData>>>(
 			"workflow-overview",
@@ -66,7 +70,22 @@ export const useRouteStatsDataLoader = () => {
 	}
 
 	return overviewData.stats.data;
-};
+}
+export function isLoadingStatsData(params: {
+	workflowKey: string;
+	period: AggregatePeriod;
+	from: Date;
+}) {
+	const { workflowKey, period, from } = params;
+
+	const query = trpcReact.getAggregatedWorkflowStats.useQuery({
+		workflowKey,
+		period,
+		from,
+	});
+
+	return !query.isSuccess && (query.isFetching || query.isLoading);
+}
 export const useStatsDataLoader = useLoaderData<
 	Awaited<ReturnType<typeof loadStatsData>>
 >;

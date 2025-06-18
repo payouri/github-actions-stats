@@ -3,7 +3,7 @@ import {
 	buildWorkflowsProcedures,
 	type GetWorkflowsProcedureInput,
 	type GetWorkflowsProcedureResponse,
-} from "./procedures/workflow.procedures.js";
+} from "./procedures/workflow/workflow.procedures.js";
 import type { MongoStorage } from "@github-actions-stats/storage";
 import type {
 	aggregatedStatSchema,
@@ -17,6 +17,7 @@ import SuperJSON from "superjson";
 import type { Octokit } from "octokit";
 import type { pendingJobSchema } from "@github-actions-stats/pending-job-entity";
 import type { MethodResult } from "@github-actions-stats/types-utils";
+import { buildGitHubProcedures } from "./procedures/github/github.procedures.js";
 
 export type { GetWorkflowsProcedureInput, GetWorkflowsProcedureResponse };
 
@@ -74,7 +75,7 @@ export const buildWorkflowRouter = <
 		transformer: SuperJSON,
 	});
 	const router = trpcInstance.router;
-	const procedures = buildWorkflowsProcedures({
+	const workflowProcedures = buildWorkflowsProcedures({
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		trpcInstance: trpcInstance as any,
 		storedWorkflowMongoStorage,
@@ -86,10 +87,21 @@ export const buildWorkflowRouter = <
 		getAggregatedWorkflowStats,
 		abortSignal,
 	});
+	const githubProcedures = buildGitHubProcedures({
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		trpcInstance: trpcInstance as any,
+		githubClient,
+	});
 
 	return {
-		procedures,
-		router: router(procedures),
+		procedures: {
+			...workflowProcedures,
+			...githubProcedures,
+		},
+		router: router({
+			...workflowProcedures,
+			...githubProcedures,
+		}),
 		trpcInstance,
 	};
 };

@@ -7,7 +7,7 @@
 * redo ReadMe
 * better identifiers for workflow and runs
     * ~~keys are case insensitive~~
-    * workflow keys use workflow id instead of name
+    * workflow keys use workflow id instead of name (unsure if it's a good idea)
 * ~~add run start time and end time to workflow runs~~
 * ~~fix total count not being updated~~
 
@@ -18,10 +18,11 @@
 * give options to protect api
 * ~~implement workers to process workflow runs~~
 * add routes
-    * start aggregation on period
-    * get aggregation on period
-    * get runs list
+    * ~~start aggregation on period~~
+    * ~~get aggregation on period~~ 
+    * ~~get runs list~~
 * study trpc impl
+    * inject only procedure logic
 
 # CLI
 * ~~use better storage implementation~~
@@ -32,8 +33,9 @@
     * generate StatsCommand reimplemented
 
 # Frontend
-* merge this repo with the stat viewer repo > redo frontend
-* connect api
+* ~~merge this repo with the stat viewer repo > redo frontend~~
+* ~~connect api~~
+* make front more reactive when data changes
 
 # Tools
 * ~~add fix local workflow runs ids array~~
@@ -49,7 +51,7 @@
     * stats indexes
     * 
 * up one level usage and jobs data
-* add dead letter queue for jobs to process
+* ~~add dead letter queue for jobs to process~~
 
 # Github
 * add tests data to mock calls

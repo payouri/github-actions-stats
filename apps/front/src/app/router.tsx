@@ -10,7 +10,6 @@ export const AppRoutes = createBrowserRouter([
 		hydrateFallbackElement: <div>Loading...</div>,
 		Component: HomePage,
 		async loader({ params, context, request }) {
-			console.log(params, context, request);
 			const { start, count } = params;
 			return await HomePageLoader({
 				count: Number.isInteger(count) ? Number(count) : undefined,

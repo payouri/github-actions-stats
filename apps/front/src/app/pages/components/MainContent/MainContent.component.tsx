@@ -7,9 +7,15 @@ import {
 	useNavigate,
 	useOutlet,
 	useParams,
+	useSearchParams,
 	type UIMatch,
 } from "react-router";
-import { SelectDateRange } from "../../../components/SelectDateRange/SelectDateRange.component";
+import {
+	DEFAULT_DATE_PERIOD,
+	SelectDateRange,
+	type DatePeriod,
+	type DateRange,
+} from "../../../components/SelectDateRange/SelectDateRange.component";
 import { TabNavigation } from "../../../components/TabNavigation/TabNavigation.component";
 import { useRouteHomePageDataLoader } from "../../Home.loader";
 import { getMainContentFormattedRoutes } from "./MainContent.router";
@@ -40,19 +46,44 @@ const MainContent: FC = () => {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const matches = useMatches();
-
-	const locationSearchParams = new URLSearchParams(location.search);
+	const [locationSearchParams, updateSearchParams] = useSearchParams(
+		window.location.search,
+	);
 	const initialPeriod = aggregatePeriodSchema.safeParse(
 		locationSearchParams.get("period"),
 	);
+	if (!initialPeriod.success) {
+		updateSearchParams(
+			(current) => {
+				current.set("period", DEFAULT_DATE_PERIOD);
+				return new URLSearchParams(current);
+			},
+			{
+				replace: true,
+			},
+		);
+	}
+
+	function onPeriodChange(params: DateRange & { period: DatePeriod }) {
+		const { period, from, to } = params;
+		updateSearchParams((current) => {
+			current.set("period", DEFAULT_DATE_PERIOD);
+
+			current.set("period", period);
+			if (period === "custom") {
+				current.set("from", from.toISOString());
+				current.set("to", to.toISOString());
+			} else {
+				current.delete("from");
+				current.delete("to");
+			}
+			return new URLSearchParams(current);
+		});
+	}
+
 	const isLoadingRefreshWorkflow =
 		queryClientUtils.refreshWorkflowRunsData.isMutating() > 0;
 	async function onRefreshWorkflowRunsClick() {
-		console.log(
-			"onRefreshWorkflowRunsClick",
-			workflowKey,
-			isLoadingRefreshWorkflow,
-		);
 		if (isLoadingRefreshWorkflow) return;
 		if (!workflowKey) throw new Error("Workflow key is not defined");
 
@@ -108,22 +139,9 @@ const MainContent: FC = () => {
 					}) ? (
 						<SelectDateRange
 							initialPeriod={
-								initialPeriod.success ? initialPeriod.data : "last_7_days"
+								initialPeriod.success ? initialPeriod.data : DEFAULT_DATE_PERIOD
 							}
-							onPeriodChange={({ period, from, to }) => {
-								locationSearchParams.set("period", period);
-								if (period === "custom") {
-									locationSearchParams.set("from", from.toISOString());
-									locationSearchParams.set("to", to.toISOString());
-								} else {
-									locationSearchParams.delete("from");
-									locationSearchParams.delete("to");
-								}
-								navigate({
-									...location,
-									search: locationSearchParams.toString(),
-								});
-							}}
+							onPeriodChange={onPeriodChange}
 						/>
 					) : null}
 					{workflowKey ? (

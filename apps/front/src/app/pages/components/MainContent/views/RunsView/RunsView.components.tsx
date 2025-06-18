@@ -326,7 +326,6 @@ const RunTable: FC<{
 		action: string;
 		data: StoredWorkflowRunWithKey;
 	}) {
-		// console.log("handleAction", params);
 		switch (params.action) {
 			case "show_more": {
 				return setOpenedRuns((prev) => {

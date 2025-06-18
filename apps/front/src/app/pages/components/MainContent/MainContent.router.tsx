@@ -1,8 +1,8 @@
 import { aggregatePeriodSchema } from "@github-actions-stats/workflow-entity";
 import dayjs from "dayjs";
-import type { LoaderFunction, RouteObject } from "react-router";
-import { HomePageLoader } from "../../Home.loader";
-import { loadStatsData, loadWorkflowRunsData } from "./MainContent.loader";
+import type { RouteObject } from "react-router";
+import { DEFAULT_DATE_PERIOD } from "../../../components/SelectDateRange/SelectDateRange.component";
+import { loadStatsData } from "./MainContent.loader";
 import { OverviewView } from "./views/Overview.components";
 import { RunsView } from "./views/RunsView/RunsView.components";
 import {
@@ -13,39 +13,6 @@ import {
 const getSearchParamsFromUrl = (url: string) => {
 	const searchParams = new URLSearchParams(url.split("?")[1]);
 	return searchParams;
-};
-
-const loader = async (...loaderParams: Parameters<LoaderFunction>) => {
-	const [
-		{
-			params: { workflowKey },
-			request,
-		},
-	] = loaderParams;
-	if (!workflowKey) {
-		throw new Error("Workflow key is required");
-	}
-	const searchParams = getSearchParamsFromUrl(request.url);
-	const period = aggregatePeriodSchema.safeParse(searchParams.get("period"));
-	const from = dayjs(searchParams.get("from"));
-
-	const [homeLoaded, mainLoaded, statsLoaded] = await Promise.all([
-		HomePageLoader({}),
-		loadWorkflowRunsData({
-			workflowKey,
-		}),
-		loadStatsData({
-			workflowKey,
-			period: period.success ? period.data : "last_7_days",
-			from: from.isValid() ? from.toDate() : new Date(),
-		}),
-	]);
-	return {
-		...homeLoaded,
-		...mainLoaded,
-		...statsLoaded,
-		workflowKey,
-	};
 };
 
 export const MainContentRouter: RouteObject[] = [
@@ -67,7 +34,7 @@ export const MainContentRouter: RouteObject[] = [
 
 			return await loadStatsData({
 				workflowKey,
-				period: period.success ? period.data : "last_7_days",
+				period: period.success ? period.data : DEFAULT_DATE_PERIOD,
 				from: from.isValid() ? from.toDate() : new Date(),
 			});
 		},

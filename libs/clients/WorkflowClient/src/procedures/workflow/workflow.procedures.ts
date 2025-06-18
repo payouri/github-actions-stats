@@ -24,7 +24,7 @@ import { RequestError as OctokitRequestError } from "@octokit/request-error";
 import dayjs from "dayjs";
 import type { Octokit } from "octokit";
 import { z } from "zod";
-import type { AsyncProcedureResponse, TRPCBuilder } from "../types.js";
+import type { AsyncProcedureResponse, TRPCBuilder } from "../../types.js";
 
 function chunkArray<T>(arr: T[], size: number): T[][] {
 	return arr.reduce((acc, val, index) => {
@@ -432,9 +432,8 @@ function buildRefreshRunsData(dependencies: {
 export function buildWorkflowsProcedures<
 	Context extends object,
 	Meta extends object,
-	Instance extends ReturnType<TRPCBuilder<Context, Meta>["create"]>,
 >(dependencies: {
-	trpcInstance: Instance;
+	trpcInstance: ReturnType<TRPCBuilder<Context, Meta>["create"]>;
 	storedWorkflowMongoStorage: StoredWorkflowMongoStorage;
 	storedWorkflowRunMongoStorage: StoredWorkflowRunsMongoStorage;
 	workflowStatsMongoStorage: WorkflowRunStatsMongoStorage;

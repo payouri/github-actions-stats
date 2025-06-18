@@ -40,7 +40,6 @@ export const HomePage: FC = () => {
 		});
 	}
 	function onNewWorkflowAdded(workflowData: StoredWorkflowWithKey) {
-		console.log("onNewWorkflowAdded", workflowData);
 		const currentData = queryClientUtils.getWorkflows.getData({
 			count: 10,
 			start: 0,

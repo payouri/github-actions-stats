@@ -13,8 +13,10 @@ const DatePeriods = {
 	DAY: "day",
 } as const;
 
-type DatePeriod = (typeof DatePeriods)[keyof typeof DatePeriods];
-type DateRange = {
+export const DEFAULT_DATE_PERIOD = DatePeriods.LAST_7_DAYS;
+
+export type DatePeriod = (typeof DatePeriods)[keyof typeof DatePeriods];
+export type DateRange = {
 	from: Dayjs;
 	to: Dayjs;
 };
@@ -63,6 +65,7 @@ const DateRangeMap: Record<
 export interface SelectDateRangeProps {
 	initialPeriod?: DatePeriod;
 	onPeriodChange?: (period: DateRange & { period: DatePeriod }) => void;
+	loading?: boolean;
 }
 
 function upperCaseFirstLetter(str: string) {
@@ -73,7 +76,7 @@ function removeUnderscore(str: string) {
 }
 
 export const SelectDateRange: FC<SelectDateRangeProps> = ({
-	initialPeriod = DatePeriods.LAST_7_DAYS,
+	initialPeriod = DEFAULT_DATE_PERIOD,
 	onPeriodChange,
 }) => {
 	const options = Object.values(DatePeriods);
